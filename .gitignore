@@ -1,0 +1,44 @@
+# Secrets — never commit
+.env
+*.env
+certs/*.pem
+certs/*.key
+certs/*.crt
+
+# 1Password
+.op/
+
+# Runtime volumes
+volumes/
+
+# Audit logs (may contain sensitive tool call data)
+audit/
+
+# Schema mapping drafts (LLM-generated, pre-review)
+mappings/drafts/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+target/
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
+
+# Docker
+.docker/
+
+# Test artifacts
+test/**/certs/
+test/**/volumes/

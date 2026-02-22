@@ -1,0 +1,35 @@
+# Tidegate configuration — example with a mock echo server
+# For real deployments, schema mappings live in ../mappings/ (one per MCP server)
+# and are combined into this file or referenced from it.
+
+version: "1"
+
+defaults:
+  scan_timeout_ms: 500
+  scan_failure_mode: deny
+  unknown_field_policy: deny
+
+servers:
+  echo:
+    transport: http
+    url: http://localhost:4200/mcp
+    tools:
+      echo:
+        params:
+          message:
+            class: user_content
+            type: string
+            required: true
+            scan: [L1, L2, L3]
+      echo_system:
+        params:
+          channel:
+            class: system_param
+            type: string
+            validation: "regex:^#[a-z0-9-]+$"
+            required: true
+          message:
+            class: user_content
+            type: string
+            required: true
+            scan: [L1, L2, L3]

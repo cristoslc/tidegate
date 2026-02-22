@@ -1,0 +1,69 @@
+# Tidegate configuration — Docker Compose environment
+# Echo server is on mcp-net at hostname echo-server:4200
+# Hello-world notes server is on mcp-net at hostname hello-world:4300
+#
+# For local dev without Docker, use gateway/tidegate.yaml instead
+# (points to localhost).
+
+version: "1"
+
+defaults:
+  scan_timeout_ms: 500
+  scan_failure_mode: deny
+  unknown_field_policy: deny
+
+servers:
+  echo:
+    transport: http
+    url: http://echo-server:4200/mcp
+    tools:
+      echo:
+        params:
+          message:
+            class: user_content
+            type: string
+            required: true
+            scan: [L1, L2, L3]
+      echo_system:
+        params:
+          channel:
+            class: system_param
+            type: string
+            validation: "regex:^#[a-z0-9-]+$"
+            required: true
+          message:
+            class: user_content
+            type: string
+            required: true
+            scan: [L1, L2, L3]
+
+  hello-world:
+    transport: http
+    url: http://hello-world:4300/mcp
+    tools:
+      save_note:
+        params:
+          category:
+            class: system_param
+            type: string
+            validation: "enum:work,personal,ideas,urgent"
+            required: true
+          body:
+            class: user_content
+            type: string
+            required: true
+            scan: [L1, L2, L3]
+      list_notes:
+        params:
+          category:
+            class: system_param
+            type: string
+            validation: "enum:work,personal,ideas,urgent"
+            required: false
+      get_note:
+        params:
+          id:
+            class: system_param
+            type: string
+            validation: "regex:^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            required: true
