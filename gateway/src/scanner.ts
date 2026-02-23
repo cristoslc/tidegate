@@ -3,10 +3,12 @@
  *
  * L1 scanning runs in-process (TypeScript). L2/L3 go to Python subprocess.
  *
- * Scanner is stateless — no tool context, no session state.
+ * Scanner is stateless — no tool context, no session state. It receives
+ * only a value and returns allow/deny. The gateway decides which values
+ * to scan; the scanner has no knowledge of field names or classes.
  *
  * The Python subprocess communicates via NDJSON over stdin/stdout:
- *   Request:  {"field": "text", "value": "...", "layers": ["L2", "L3"]}
+ *   Request:  {"value": "..."}
  *   Response: {"allowed": true} or {"allowed": false, "reason": "...", "layer": "scanner_l2"}
  *
  * Subprocess lifecycle:
@@ -18,7 +20,6 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface, type Interface as ReadlineInterface } from "node:readline";
-import type { FieldMapping } from "./policy.js";
 
 export interface ScanResult {
   allowed: boolean;
@@ -40,9 +41,7 @@ let respawnAttempts = 0;
 let scannerReady = false;
 
 interface SubprocessRequest {
-  field: string;
   value: string;
-  layers: string[];
 }
 
 interface SubprocessResponse {
@@ -162,9 +161,7 @@ export function stopScanner(): void {
  * Returns a deny ScanResult if the subprocess is unavailable or times out.
  */
 async function scanSubprocess(
-  fieldName: string,
   value: string,
-  layers: string[],
   timeoutMs: number
 ): Promise<ScanResult> {
   if (!scannerReady || !scannerProcess?.stdin) {
@@ -176,9 +173,7 @@ async function scanSubprocess(
   }
 
   const request: SubprocessRequest = {
-    field: fieldName,
     value,
-    layers,
   };
 
   return new Promise<ScanResult>((resolve) => {
@@ -278,7 +273,7 @@ const SENSITIVE_KEY_PATTERNS: RegExp[] = [
 /**
  * L1 scan: in-process heuristics for credential patterns and sensitive JSON keys.
  */
-export function scanL1(fieldName: string, value: unknown): ScanResult {
+export function scanL1(value: unknown): ScanResult {
   if (typeof value !== "string") {
     return { allowed: true, layer: "scanner_l1" };
   }
@@ -309,27 +304,24 @@ export function scanL1(fieldName: string, value: unknown): ScanResult {
 }
 
 /**
- * Scan a field value according to its mapping's scan configuration.
+ * Scan a value through all detection layers.
  * L1 runs in-process. L2/L3 go to the Python subprocess.
+ *
+ * The scanner has no knowledge of field names or classes. The caller
+ * (router.ts) decides which values to scan; this function runs ALL
+ * checks on whatever value it receives.
  */
-export async function scanField(
-  fieldName: string,
+export async function scanValue(
   value: unknown,
-  mapping: FieldMapping,
   timeoutMs: number = 500
 ): Promise<ScanResult> {
-  const layers = mapping.scan ?? [];
-
   // L1: always in-process, synchronous
-  if (layers.includes("L1")) {
-    const l1Result = scanL1(fieldName, value);
-    if (!l1Result.allowed) return l1Result;
-  }
+  const l1Result = scanL1(value);
+  if (!l1Result.allowed) return l1Result;
 
   // L2/L3: delegate to Python subprocess
-  const subprocessLayers = layers.filter((l) => l === "L2" || l === "L3");
-  if (subprocessLayers.length > 0 && typeof value === "string") {
-    const result = await scanSubprocess(fieldName, value, subprocessLayers, timeoutMs);
+  if (typeof value === "string") {
+    const result = await scanSubprocess(value, timeoutMs);
     if (!result.allowed) return result;
   }
 

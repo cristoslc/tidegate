@@ -2,12 +2,14 @@
 scanner.py -- Stateless L2/L3 leak detection subprocess
 
 Protocol: NDJSON over stdin/stdout
-  Request:  {"field": "text", "value": "...", "layers": ["L2", "L3"]}
+  Request:  {"value": "..."}
   Response: {"allowed": true}
            or {"allowed": false, "reason": "...", "layer": "scanner_l2"}
 
 Runs as a long-lived child process of the gateway. One JSON line per
 request, one JSON line per response. No state between requests.
+The scanner has no knowledge of field names or classes — it runs ALL
+checks on every value it receives.
 
 L2: Checksum-validated patterns (deterministic, zero false positives)
   - Credit card numbers (Luhn algorithm)
@@ -257,22 +259,26 @@ def scan_l3(value: str) -> dict[str, Any] | None:
 # ── Main loop: NDJSON protocol ───────────────────────────────
 
 def process_request(request: dict[str, Any]) -> dict[str, Any]:
-    """Process a single scan request and return a response."""
+    """Process a single scan request and return a response.
+
+    Runs ALL checks (L2 + L3) on every value. The scanner has no
+    knowledge of field names or classes — the gateway decides which
+    values to send here.
+    """
     value = request.get("value")
-    layers = request.get("layers", [])
 
     if not isinstance(value, str):
         return {"allowed": True}
 
-    if "L2" in layers:
-        result = scan_l2(value)
-        if result is not None:
-            return result
+    # Always run L2 (checksum-validated patterns)
+    result = scan_l2(value)
+    if result is not None:
+        return result
 
-    if "L3" in layers:
-        result = scan_l3(value)
-        if result is not None:
-            return result
+    # Always run L3 (statistical / contextual analysis)
+    result = scan_l3(value)
+    if result is not None:
+        return result
 
     return {"allowed": True}
 

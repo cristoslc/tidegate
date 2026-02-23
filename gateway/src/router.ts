@@ -112,8 +112,8 @@ export async function handleToolCall(
 
   // Step 5: Leak scan on user_content fields
   const fieldsToScan = policy.getFieldsToScan(args, toolMapping);
-  for (const { fieldName, value, mapping } of fieldsToScan) {
-    const scanResult = await scanner.scanField(fieldName, value, mapping, config.defaults.scan_timeout_ms);
+  for (const { fieldName, value } of fieldsToScan) {
+    const scanResult = await scanner.scanValue(value, config.defaults.scan_timeout_ms);
     if (!scanResult.allowed) {
       const reason = `Field '${fieldName}' in tool '${toolName}' failed ${scanResult.layer} scan — ${scanResult.reason}`;
       writeAuditEntry({
@@ -148,9 +148,27 @@ export async function handleToolCall(
     return shapedDeny(toolName, reason);
   }
 
-  // Step 7-8: Response scanning (TODO: scan response content for leaks)
-  // For MVP, we pass through. Response field stripping and scanning
-  // will be implemented when we have real downstream servers to test against.
+  // Step 7-8: Response scanning — scan all text content for leaks before returning to agent
+  if (downstreamResult.content && Array.isArray(downstreamResult.content)) {
+    for (const item of downstreamResult.content) {
+      if (item.type === "text" && typeof item.text === "string") {
+        const scanResult = await scanner.scanValue(item.text, config.defaults.scan_timeout_ms);
+        if (!scanResult.allowed) {
+          const reason = `Response from tool '${toolName}' failed ${scanResult.layer} scan — ${scanResult.reason}`;
+          writeAuditEntry({
+            timestamp: new Date().toISOString(),
+            tool: toolName,
+            server: serverName,
+            verdict: "deny",
+            layer: scanResult.layer as AuditLayer,
+            reason,
+            durationMs: elapsed(),
+          });
+          return shapedDeny(toolName, reason);
+        }
+      }
+    }
+  }
 
   // Log allow
   writeAuditEntry({
