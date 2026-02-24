@@ -1,9 +1,8 @@
 /**
  * router.ts — Request lifecycle orchestration
  *
- * Pipeline: tool mapped? → fields mapped? → no extra fields? →
- * system_param validates? → user_content scans clean? →
- * forward via servers.ts → response clean? → return
+ * Pipeline: tool found? → allowed? → scan all string values →
+ * forward via servers.ts → scan response → return
  *
  * Denial at any step short-circuits with a shaped deny.
  * servers.ts is never called on the deny path.
@@ -34,23 +33,68 @@ function shapedDeny(toolName: string, reason: string): CallToolResult {
   };
 }
 
+// ── Recursive string extraction ───────────────────────────────
+
+/**
+ * Recursively extract all string values from an object or array.
+ * Returns an array of { path, value } pairs for audit trail clarity.
+ *
+ * Examples:
+ *   { message: "hello" }           → [{ path: "message", value: "hello" }]
+ *   { config: { name: "foo" } }    → [{ path: "config.name", value: "foo" }]
+ *   { items: ["a", "b"] }          → [{ path: "items[0]", value: "a" }, ...]
+ */
+function extractStringValues(
+  obj: Record<string, unknown>,
+  prefix: string = ""
+): Array<{ path: string; value: string }> {
+  const results: Array<{ path: string; value: string }> = [];
+
+  for (const [key, val] of Object.entries(obj)) {
+    const currentPath = prefix ? `${prefix}.${key}` : key;
+    collectStrings(val, currentPath, results);
+  }
+
+  return results;
+}
+
+function collectStrings(
+  val: unknown,
+  path: string,
+  results: Array<{ path: string; value: string }>
+): void {
+  if (typeof val === "string") {
+    results.push({ path, value: val });
+  } else if (Array.isArray(val)) {
+    for (let i = 0; i < val.length; i++) {
+      collectStrings(val[i], `${path}[${i}]`, results);
+    }
+  } else if (val !== null && typeof val === "object") {
+    for (const [key, nested] of Object.entries(val as Record<string, unknown>)) {
+      collectStrings(nested, `${path}.${key}`, results);
+    }
+  }
+  // Non-string primitives (number, boolean, null, undefined) are not scanned
+}
+
 // ── Tool list filtering ───────────────────────────────────────
 
 /**
- * Get the filtered tool list — only mapped tools are visible to the agent.
- * Merges tools from all downstream servers, filtering against policy.
+ * Get the filtered tool list — all discovered tools, filtered by allow_tools.
+ * Merges tools from all downstream servers.
  */
 export function getFilteredTools(): Tool[] {
   const config = policy.getConfig();
-  const mappedNames = new Set(policy.getMappedToolNames(config));
   const allDownstreamTools = servers.getAllTools();
   const filtered: Tool[] = [];
 
-  for (const [_serverName, tools] of allDownstreamTools) {
+  for (const [serverName, tools] of allDownstreamTools) {
+    const serverConfig = config.servers[serverName];
     for (const tool of tools) {
-      if (mappedNames.has(tool.name)) {
-        filtered.push(tool);
+      if (serverConfig && !policy.isToolAllowed(serverConfig, tool.name)) {
+        continue;
       }
+      filtered.push(tool);
     }
   }
 
@@ -61,7 +105,7 @@ export function getFilteredTools(): Tool[] {
 
 /**
  * Handle a tool call from the agent.
- * Full enforcement pipeline: validate → scan → forward → scan response → return.
+ * Full enforcement pipeline: resolve → allowed? → scan → forward → scan response → return.
  */
 export async function handleToolCall(
   toolName: string,
@@ -70,10 +114,10 @@ export async function handleToolCall(
   const elapsed = startTimer();
   const config = policy.getConfig();
 
-  // Step 1: Tool mapped?
-  const resolution = policy.resolveToolServer(config, toolName);
-  if (!resolution) {
-    const reason = `Tool '${toolName}' is not mapped — invisible to agent`;
+  // Step 1: Resolve tool → server (from discovered tools)
+  const serverName = servers.resolveToolServer(toolName);
+  if (!serverName) {
+    const reason = `Tool '${toolName}' not found on any downstream server`;
     writeAuditEntry({
       timestamp: new Date().toISOString(),
       tool: toolName,
@@ -86,43 +130,35 @@ export async function handleToolCall(
     return shapedDeny(toolName, reason);
   }
 
-  const { serverName, tool: toolMapping } = resolution;
-
-  // Step 2-4: Field validation (mapped? no extras? system_param validates?)
-  const validationResult = policy.validateToolCall(
-    toolName,
-    args,
-    toolMapping,
-    config.defaults.unknown_field_policy
-  );
-
-  if (!validationResult.allowed) {
+  // Step 2: Tool allowed? (check allow_tools if configured)
+  const serverConfig = config.servers[serverName];
+  if (serverConfig && !policy.isToolAllowed(serverConfig, toolName)) {
+    const reason = `Tool '${toolName}' is not in the allow_tools list for server '${serverName}'`;
     writeAuditEntry({
       timestamp: new Date().toISOString(),
       tool: toolName,
       server: serverName,
       verdict: "deny",
       layer: "policy",
-      field: validationResult.field,
-      reason: validationResult.reason,
+      reason,
       durationMs: elapsed(),
     });
-    return shapedDeny(toolName, validationResult.reason ?? "Field validation failed");
+    return shapedDeny(toolName, reason);
   }
 
-  // Step 5: Leak scan on user_content fields
-  const fieldsToScan = policy.getFieldsToScan(args, toolMapping);
-  for (const { fieldName, value } of fieldsToScan) {
+  // Step 3: Scan ALL string values in args
+  const stringValues = extractStringValues(args);
+  for (const { path, value } of stringValues) {
     const scanResult = await scanner.scanValue(value, config.defaults.scan_timeout_ms);
     if (!scanResult.allowed) {
-      const reason = `Field '${fieldName}' in tool '${toolName}' failed ${scanResult.layer} scan — ${scanResult.reason}`;
+      const reason = `tool '${toolName}' parameter '${path}' contains ${scanResult.reason}`;
       writeAuditEntry({
         timestamp: new Date().toISOString(),
         tool: toolName,
         server: serverName,
         verdict: "deny",
         layer: scanResult.layer as AuditLayer,
-        field: fieldName,
+        param_path: path,
         reason,
         durationMs: elapsed(),
       });
@@ -130,7 +166,7 @@ export async function handleToolCall(
     }
   }
 
-  // Step 6: Forward to downstream MCP server
+  // Step 4: Forward to downstream MCP server
   let downstreamResult: CallToolResult;
   try {
     downstreamResult = await servers.forward(serverName, toolName, args);
@@ -148,13 +184,13 @@ export async function handleToolCall(
     return shapedDeny(toolName, reason);
   }
 
-  // Step 7-8: Response scanning — scan all text content for leaks before returning to agent
+  // Step 5: Scan response text content
   if (downstreamResult.content && Array.isArray(downstreamResult.content)) {
     for (const item of downstreamResult.content) {
       if (item.type === "text" && typeof item.text === "string") {
         const scanResult = await scanner.scanValue(item.text, config.defaults.scan_timeout_ms);
         if (!scanResult.allowed) {
-          const reason = `Response from tool '${toolName}' failed ${scanResult.layer} scan — ${scanResult.reason}`;
+          const reason = `Response from tool '${toolName}' contains ${scanResult.reason}`;
           writeAuditEntry({
             timestamp: new Date().toISOString(),
             tool: toolName,

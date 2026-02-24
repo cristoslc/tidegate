@@ -1,7 +1,7 @@
 {
   "name": "@tidegate/gateway",
   "version": "0.1.0",
-  "description": "Schema-aware MCP gateway with field-level security policy",
+  "description": "MCP gateway with mirror+scan leak detection",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

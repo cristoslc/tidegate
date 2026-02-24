@@ -439,7 +439,7 @@ Presidio should **not** be replaced — it should be **supplemented**. The tools
 | Concern | Tool |
 |---|---|
 | Secret leakage (API keys, tokens) | Simple regex set, then detect-secrets |
-| PII leakage (names, addresses, SSNs) | Presidio (with tuning per UNKNOWNS.md item 2) |
+| PII leakage (names, addresses, SSNs) | Presidio (with tuning — see resolved credential injection research) |
 
 The secret detection tools have near-zero false positive rates on code because they match specific vendor prefixes. Presidio's PII detection will always have higher false positive rates on code, but that is a separate problem to solve separately. Do not conflate the two.
 
@@ -469,7 +469,7 @@ The layered approach allows each detection method to be enabled/disabled indepen
 
 ---
 
-## Key finding for UNKNOWNS.md item 2
+## Key finding: secret detection vs PII detection
 
 The original concern about Presidio's false positive rate on agent transcripts is valid but conflates two separate detection problems. Secret detection (API keys, tokens) and PII detection (names, phone numbers) require different tools with different precision/recall tradeoffs.
 

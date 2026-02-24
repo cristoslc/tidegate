@@ -12,7 +12,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { Tool, CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { ServerMapping } from "./policy.js";
+import type { ServerConfig } from "./policy.js";
 
 interface DownstreamConnection {
   client: Client;
@@ -29,7 +29,7 @@ const connections = new Map<string, DownstreamConnection>();
  */
 export async function connect(
   serverName: string,
-  serverConfig: ServerMapping
+  serverConfig: ServerConfig
 ): Promise<void> {
   if (connections.has(serverName)) {
     const existing = connections.get(serverName)!;
@@ -106,6 +106,20 @@ export async function forward(
   });
 
   return result as CallToolResult;
+}
+
+/**
+ * Resolve which downstream server owns a given tool.
+ * Returns the server name, or null if no server discovered this tool.
+ */
+export function resolveToolServer(toolName: string): string | null {
+  for (const [serverName, conn] of connections) {
+    if (!conn.connected) continue;
+    if (conn.tools.some((t) => t.name === toolName)) {
+      return serverName;
+    }
+  }
+  return null;
 }
 
 /**

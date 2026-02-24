@@ -14,9 +14,6 @@ volumes/
 # Audit logs (may contain sensitive tool call data)
 audit/
 
-# Schema mapping drafts (LLM-generated, pre-review)
-mappings/drafts/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -42,3 +39,11 @@ build/
 # Test artifacts
 test/**/certs/
 test/**/volumes/
+
+# Agent selection research — keep markdown only, ignore source code
+docs/research/completed/agent-selection/nanoclaw-main/**
+!docs/research/completed/agent-selection/nanoclaw-main/**/
+!docs/research/completed/agent-selection/nanoclaw-main/**/*.md
+docs/research/completed/agent-selection/openclaw-main/**
+!docs/research/completed/agent-selection/openclaw-main/**/
+!docs/research/completed/agent-selection/openclaw-main/**/*.md

@@ -36,13 +36,13 @@ services:
   # ── Tidegate gateway ─────────────────────────────────────
   tidegate:
     build:
-      context: gateway/
+      context: src/gateway/
       dockerfile: Dockerfile
     ports:
       - "4100:4100"
     volumes:
       - ./tidegate.yaml:/app/tidegate.yaml:ro
-      - ./scanner:/app/scanner:ro
+      - ./src/scanner:/app/scanner:ro
     environment:
       TIDEGATE_CONFIG: /app/tidegate.yaml
       TIDEGATE_PORT: "4100"
@@ -72,7 +72,7 @@ services:
   # ── Egress proxy (Squid CONNECT-only) ────────────────────
   egress-proxy:
     build:
-      context: egress-proxy/
+      context: src/egress-proxy/
       dockerfile: Dockerfile
     networks:
       - agent-net
@@ -97,7 +97,7 @@ services:
   # Replace with real MCP servers for production.
   echo-server:
     build:
-      context: gateway/
+      context: src/gateway/
       dockerfile: ../test/echo-server/Dockerfile
     networks:
       - mcp-net
@@ -116,11 +116,10 @@ services:
     restart: unless-stopped
 
   # ── Hello World MCP server (demo) ───────────────────────
-  # In-memory note-taking service that demonstrates Tidegate's
-  # field-level policy enforcement. See mappings/hello-world.yaml.
+  # In-memory note-taking demo server.
   hello-world:
     build:
-      context: hello-world/
+      context: src/hello-world/
       dockerfile: Dockerfile
     networks:
       - mcp-net

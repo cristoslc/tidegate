@@ -1,26 +1,99 @@
-# Research Index
+# Research
 
-Research investigations for Tidegate. Each subdirectory is a self-contained research topic with its own evaluation, findings, and recommendation.
+Spikes and exploratory investigations for Tidegate. Organized by lifecycle:
 
-## `leak-detection/` — Leak Detection Tool Selection
+- **`planning/`** — Questions identified but not yet investigated
+- **`active/`** — Ongoing investigation
+- **`completed/`** — Resolved research that informed implementation decisions
+- **`superseded/`** — Research replaced by newer approaches (kept for context)
 
-**Status**: Resolved — architecture selected, remaining questions are empirical (FP testing on real traffic)
+Each research item tracks lifecycle transitions with the commit where each stage change happened. This gives you the project state at the time of each transition — `git show <commit>` to see what existed, what didn't, what assumptions were in play.
 
-**Question**: What tools should Tidegate use to detect sensitive data in agent tool call parameters with acceptable false positive rates on code-heavy content?
+Architecture Decision Records live in `../adr/`, not here. A spike may produce an ADR as its output.
 
-**Answer**: 3-layer detection architecture scoped to data with structural signatures AND direct harm potential. Applied to `user_content` fields in MCP tool calls only — field classification eliminates false positives on `system_param` values entirely.
+## Convention
 
-1. **L1: JSON key-name heuristics** (~0.1ms) — scan for keys like `"ssn"`, `"credit_card"`, `"iban"` in structured data
-2. **L2: Checksum-validated patterns** (~0.1ms) — credit cards via Luhn, IBANs via mod-97, vendor-prefix credential regex
-3. **L3: Format + context validation** (~1-5ms) — SSNs with required context keywords, encoding detection, entropy anomaly
+Each research item has a lifecycle table at the top:
 
-Dependency: `python-stdnum` (~1MB). Not Presidio (800MB+, 25-1,250ms) and not NER (names not actionable, FP on code identifiers).
+```markdown
+## Lifecycle
 
-**Files**:
-- `pii-detection-evaluation.md` — Synthesis: tool landscape, 3-layer architecture recommendation
-- `evaluation.md` — Secret detection: 5-tool comparison (detect-secrets, TruffleHog, Gitleaks, Nightfall, simple regex)
-- `presidio-pii-evaluation.md` — Deep Presidio analysis (evaluated, not selected)
-- `ner-standalone-evaluation.md` — NER tools: spaCy, GLiNER, Flair, Stanza, DataFog (evaluated, not selected)
-- `pii-regex-evaluation.md` — Regex + checksum + heuristic PII detection (selected approach)
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| planning | `abc1234` | 2026-02-20 | Question identified during X |
+| active | `def5678` | 2026-02-21 | Started investigation |
+| completed | `ghi9012` | 2026-02-23 | Findings in findings.md; informed ADR-002 |
+```
 
-See `THREAT_MODEL.md` for the full sensitive data taxonomy.
+## Active
+
+*(No active spikes. See completed/ for recent findings.)*
+
+## Planning
+
+All items below identified at `138d920` (2026-02-23) from an adversarial threat model review, except protocol-abuse-resistance which predates the review.
+
+### `shaped-deny-oracle.md` — Shaped Deny as Adversarial Oracle
+
+Shaped denies return structured explanations. A prompt-injected agent receives the feedback and iterates toward evasion. Missing adversary profile: adaptive attacker using denial feedback.
+
+### `workspace-volume-toctou.md` — Workspace Volume TOCTOU
+
+tg-scanner scans a file, approves the command, file changes before the command reads it. Larger window than the `/proc/mem` TOCTOU already listed as residual risk.
+
+### `l1-fail-open-behavior.md` — L1 Fail-Open Behavior
+
+tg-scanner crash → `ENOSYS` → unrestricted `execve`. A "hard boundary" that fails open on component crash isn't a hard boundary.
+
+### `luhn-false-positive-rate.md` — Luhn False Positive Rate
+
+"Zero false positives by design" is stronger than the math. ~10% of random 16-digit numbers pass Luhn. Need empirical testing with prefix + length constraints.
+
+### `agent-memory-exfiltration.md` — Agent Memory as Exfiltration Vector
+
+Memory poisoning creates durable cross-session exfiltration. Distinct from one-shot prompt injection. Compounds with the shaped-deny oracle over multiple sessions.
+
+### `protocol-abuse-resistance.md` — MCP Protocol Abuse Resistance
+
+How should the gateway handle malformed, oversized, or adversarial MCP messages? Planning since `db146de` (2026-02-21).
+
+## Completed
+
+### `data-flow-taint-model.md` — Data Flow Taint Model → [ADR-002](../adr/proposed/002-taint-and-verify-data-flow-model.md)
+
+Enumerated all acquisition channels (8), exfiltration channels (8), and mapped which layer covers which input→output pair. Key finding: each layer is PRIMARY for different data flows — L1 inspects the source before transformation, L2/L3 scan at protocol boundaries. Semantic propagation through the LLM defeats all layers (fundamental limit). Produced the **taint-and-verify** rule: tainted data may leave if the output is inspectable and passes scanning; opaque output from tainted processes is blocked.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| planning | `138d920` | 2026-02-23 | Input/output channels first enumerated during L1 spike |
+| active | — | 2026-02-23 | Promoted from L1 spike; recognized as foundational |
+| completed | — | 2026-02-23 | Formalized as ADR-002 |
+
+### `l1-interpreter-coverage-gap.md` — L1 Coverage Gap (In-Process Interpreter Execution) → informed [ADR-002](../adr/proposed/002-taint-and-verify-data-flow-model.md)
+
+Adversarial review claimed seccomp-notify misses in-process encoding. Investigation confirmed seccomp-notify IS the correct enforcement mechanism — tg-scanner needs userspace capabilities (file I/O, pattern matching) that eBPF can't provide. eBPF serves as lightweight observation (not enforcement). Static analysis of scripts was later dropped (ADR-001 superseded by ADR-002) in favor of runtime taint tracking via eBPF `openat` observation. Findings absorbed into ADR-002's journal-based taint architecture.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
+| active | `138d920` | 2026-02-23 | Execution model audit + Falco/eBPF research |
+| completed | — | 2026-02-23 | ADR-001 validated; findings into ADR-002 |
+
+### `leak-detection/` — Leak Detection Tool Selection
+
+Evaluated 25+ tools. Selected 3-layer architecture: L1 key-name heuristics, L2 checksum-validated patterns (Luhn, mod-97), L3 format+context validation. Dependency: `python-stdnum`. Not Presidio (800MB+), not NER (FP on code).
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| completed | `db146de` | 2026-02-21 | Shipped with initial commit; research predates repo |
+
+## Superseded
+
+### `shell-wrapper/` — Shell Wrapper for Command Interception
+
+Superseded by seccomp-notify ([ADR-001](../adr/superseded/001-seccomp-notify-l1-interception.md)). Shell wrappers are bypassable via direct `execve()` from scripting runtimes.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| completed | `138d920` | 2026-02-22 | Research completed |
+| superseded | `138d920` | 2026-02-22 | ADR-001 adopted seccomp-notify instead |

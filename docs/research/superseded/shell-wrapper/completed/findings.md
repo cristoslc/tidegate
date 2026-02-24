@@ -2,7 +2,7 @@
 
 Research completed 2026-02-22 for the Tidegate project.
 
-Covers all 6 question areas from the research brief at `research/shell-wrapper/BRIEF.md`.
+Covers all 6 question areas from the research brief at `../brief.md`.
 
 ---
 

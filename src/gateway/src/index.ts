@@ -10,7 +10,7 @@
  * 3. Start upstream MCP server for agent connections
  */
 
-import { loadConfig, watchConfig, type TidegateConfig } from "./policy.js";
+import { loadConfig, type TidegateConfig } from "./policy.js";
 import * as servers from "./servers.js";
 import { startHost, stopHost } from "./host.js";
 import { initScanner, stopScanner } from "./scanner.js";
@@ -33,14 +33,6 @@ async function main(): Promise<void> {
     console.error(`[tidegate] Fatal: cannot load config from ${CONFIG_PATH}: ${err}`);
     process.exit(1);
   }
-
-  // Watch for config changes (hot-reload)
-  watchConfig(CONFIG_PATH, (newConfig) => {
-    console.error("[tidegate] Config reloaded");
-    console.error(
-      `[tidegate] ${Object.keys(newConfig.servers).length} server(s) configured: ${Object.keys(newConfig.servers).join(", ")}`
-    );
-  });
 
   // 2. Connect to downstream MCP servers
   for (const [serverName, serverConfig] of Object.entries(config.servers)) {

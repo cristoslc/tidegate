@@ -105,7 +105,7 @@ No confidence scores, no checksum validation, no JSON awareness, unmaintained si
 
 ## Recommendation: 3-Layer Detection Architecture
 
-> **Scope revision**: The original 4-layer recommendation included NER for person names (Layer 3), phone detection via libphonenumber, and email detection. These have been dropped after further analysis of what's actually *actionable* in agent traffic. See `THREAT_MODEL.md` for the full sensitive data taxonomy that drove this scoping.
+> **Scope revision**: The original 4-layer recommendation included NER for person names (Layer 3), phone detection via libphonenumber, and email detection. These have been dropped after further analysis of what's actually *actionable* in agent traffic. See `threat-model/sensitive-data.md` for the full sensitive data taxonomy that drove this scoping.
 >
 > **What was dropped and why**:
 > - **Person names (NER)**: Names flow through every tool call as normal operation. spaCy fires on CamelCase code identifiers. Not actionable — you can't block requests containing names.

@@ -16,7 +16,7 @@ export interface AuditEntry {
   server: string;
   verdict: AuditVerdict;
   layer: AuditLayer;
-  field?: string;
+  param_path?: string;
   reason?: string;
   durationMs: number;
 }
