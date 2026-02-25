@@ -27,7 +27,13 @@ Each research item has a lifecycle table at the top:
 
 ## Active
 
-*(No active spikes. See completed/ for recent findings.)*
+### `claudeclaw-vs-nanoclaw/` — ClaudeClaw vs NanoClaw as Agent-Container Runtime
+
+Evaluates [ClaudeClaw](https://github.com/moazbuilds/claudeclaw) as an alternative to NanoClaw for Tidegate's agent runtime. ClaudeClaw is a Claude Code plugin (~2.5K LOC) that runs agents as CLI subprocesses on the host with no container isolation. Finding: no process boundary, no container, prompt-based security only — cannot be wrapped at tool-call level. Same category as OpenClaw (network-level wrapping only). Reinforces ADR-003.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| active | — | 2026-02-25 | Source pulled, comparison written |
 
 ## Planning
 
@@ -78,6 +84,15 @@ Adversarial review claimed seccomp-notify misses in-process encoding. Investigat
 | planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
 | active | `138d920` | 2026-02-23 | Execution model audit + Falco/eBPF research |
 | completed | — | 2026-02-23 | ADR-001 validated; findings into ADR-002 |
+
+### `agent-selection/` — Agent Runtime Selection → [ADR-003](../adr/proposed/003-agent-runtime-selection.md)
+
+Compared NanoClaw and OpenClaw as agent runtimes. NanoClaw's container isolation provides the process boundary Tidegate needs; OpenClaw's monolithic Gateway has no boundary to wrap. Design spike produced pipeline architecture (tg-pipeline, filesystem job queue, detached containers, full filesystem IPC) and security policies.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| active | — | 2026-02-24 | NanoClaw + OpenClaw source pulled, analyzed |
+| completed | — | 2026-02-24 | Produced ADR-003 + design spike |
 
 ### `leak-detection/` — Leak Detection Tool Selection
 
