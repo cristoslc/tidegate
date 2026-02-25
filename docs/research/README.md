@@ -27,6 +27,14 @@ Each research item has a lifecycle table at the top:
 
 ## Active
 
+### `tideclaw-architecture/` — Tideclaw: Secure Wrapper for Login-Based AI Coding Tools
+
+Architecture spike for **Tideclaw** — a standalone product that wraps any login-based AI coding tool (Claude Code, Codex CLI, Aider, etc.) with credential isolation, MCP scanning, egress control, and taint tracking. Researched Claude Code (hooks, sandbox-runtime, MCP), Codex CLI (Landlock+seccomp, Rust rewrite, MCP support), Google Jules (ephemeral VMs), MCP security landscape (incidents, tool poisoning, elicitation), and agent sandboxing approaches (E2B, Daytona, Pipelock, Docker MCP Gateway, microsandbox, K8s Agent Sandbox). Key decisions: tool-agnostic wrapping via three modes (MCP gateway, network proxy, hybrid), compose generation from `tideclaw.yaml`, pre-built container images per tool, NanoClaw becomes optional orchestrator.
+
+| Stage | Commit | Date | Notes |
+|---|---|---|---|
+| active | — | 2026-02-25 | Spike started; comprehensive external research completed |
+
 ### `claudeclaw-vs-nanoclaw/` — ClaudeClaw vs NanoClaw as Agent-Container Runtime
 
 Evaluates [ClaudeClaw](https://github.com/moazbuilds/claudeclaw) as an alternative to NanoClaw for Tidegate's agent runtime. ClaudeClaw is a Claude Code plugin (~2.5K LOC) that runs agents as CLI subprocesses on the host with no container isolation. Finding: no process boundary, no container, prompt-based security only — cannot be wrapped at tool-call level. Same category as OpenClaw (network-level wrapping only). Reinforces ADR-003.
