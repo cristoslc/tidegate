@@ -1,6 +1,6 @@
 ---
 name: spec-management
-description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, PRD, Spike, ADR) through their lifecycle phases. Use when creating new spec artifacts, moving artifacts between phases, seeding implementation plans in bd, or validating cross-references between artifacts.
+description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, PRD, Spike, ADR, Persona) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a PRD, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
@@ -57,9 +57,9 @@ Maps an end-to-end user experience across features and touchpoints. Journeys des
 
 - **Folder structure:** `docs/journey/(JOURNEY-NNN)-<Title>/`
   - Primary file: `(JOURNEY-NNN)-<Title>.md` — the journey narrative.
-  - Supporting docs: journey map diagrams, persona profiles, flow charts, interview notes.
-- Frontmatter must include: title, status, author, created date, last updated date, parent Vision.
-- Must define: persona (who), goal (what they're trying to accomplish), steps/stages (the flow), pain points (friction), and opportunities (where the product can improve).
+  - Supporting docs: journey map diagrams, flow charts, interview notes.
+- Frontmatter must include: title, status, author, created date, last updated date, parent Vision, and linked Persona(s).
+- Must define: persona (who — reference a PERSONA-NNN artifact), goal (what they're trying to accomplish), steps/stages (the flow), pain points (friction), and opportunities (where the product can improve).
 - A Journey is "Validated" when its steps and pain points have been confirmed through user research, stakeholder review, or prototype testing.
 - Journeys are *discovery artifacts* — they inform Epic and PRD creation but are not directly implemented. They do NOT contain acceptance criteria or task breakdowns.
 
@@ -96,7 +96,19 @@ The atomic unit of user-facing requirements. Captures a single capability from t
 - Frontmatter must state: question, gate (e.g., Pre-MVP), risks addressed, dependencies, and what it blocks.
 - Gating spikes must define go/no-go criteria with measurable thresholds (not just "investigate X").
 - Gating spikes must recommend a specific pivot if the gate fails (not just "reconsider approach").
-- Spikes can belong to any artifact type (Vision, Epic, PRD, ADR). The owning artifact controls all spike tables: questions, risks, gate criteria, dependency graph, execution order, phase mappings, and risk coverage. There is no separate research roadmap document.
+- Spikes can belong to any artifact type (Vision, Epic, PRD, ADR, Persona). The owning artifact controls all spike tables: questions, risks, gate criteria, dependency graph, execution order, phase mappings, and risk coverage. There is no separate research roadmap document.
+
+### Personas (PERSONA-NNN)
+
+A user archetype that represents a distinct segment of the product's audience. Personas are cross-cutting — they are referenced by Journeys, Stories, Visions, and other artifacts but are not owned by any single one.
+
+- **Folder structure:** `docs/persona/(PERSONA-NNN)-<Title>/`
+  - Primary file: `(PERSONA-NNN)-<Title>.md` — the persona definition.
+  - Supporting docs: interview notes, survey data, behavioral research, demographic analysis.
+- Frontmatter must include: title, status, author, created date, last updated date, and links to all Journeys and Stories that reference this persona.
+- Must define: name/archetype label, demographic summary, goals and motivations, frustrations and pain points, behavioral patterns, and context of use (when/where/how they interact with the product).
+- A Persona is "Validated" when its attributes have been confirmed through user research, interviews, or data analysis — not just assumed.
+- Personas are *reference artifacts* — they inform Journey, Story, and PRD creation but are not directly implemented. They do NOT contain acceptance criteria, task breakdowns, or feature specifications.
 
 ### ADRs (ADR-NNN)
 
