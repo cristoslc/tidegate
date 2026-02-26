@@ -1,0 +1,6 @@
+interface:
+  display_name: "External Task Management"
+  short_description: "Track agent execution with an external task CLI"
+  default_prompt: >-
+    Use $external-task-management to bootstrap external task tracking and keep
+    state in bd.
