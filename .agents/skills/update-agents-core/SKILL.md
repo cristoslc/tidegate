@@ -32,16 +32,18 @@ This skill assumes the project was originally set up via the `import-agents-stan
 
 ### 2. Fetch latest
 
+Use a shallow fetch — only the tip commit is needed because the merge always squashes (no merge base is recorded between the two histories):
+
 ```bash
-git fetch agents-upstream l3-standalone
+git fetch --depth=1 agents-upstream l3-standalone
 ```
 
 ### 3. Check for changes
 
-Compare the fetched ref to what was last merged. Show the user a summary of what changed upstream:
+Compare the current HEAD to the fetched upstream. Use a two-dot diff (three-dot is unreliable with unrelated histories):
 
 ```bash
-git diff HEAD...agents-upstream/l3-standalone --stat
+git diff HEAD..agents-upstream/l3-standalone --stat -- .agents/ AGENTS.md
 ```
 
 If the diff is empty, tell the user they are already up to date and stop.
