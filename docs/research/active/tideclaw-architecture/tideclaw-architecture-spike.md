@@ -1,4 +1,4 @@
-# Tideclaw — Architecture Spike: Secure Wrapper for Login-Based AI Coding Tools
+# Tideclaw — Architecture Spike: Security-First Orchestrator for AI Coding Tools
 
 ## Lifecycle
 
@@ -8,22 +8,25 @@
 
 ## Purpose
 
-Design **Tideclaw** from scratch: a security framework that wraps *any* login-based AI coding tool (Claude Code, OpenAI Codex CLI, Google Gemini Code Assist, etc.) with credential isolation, tool-call scanning, egress control, and taint tracking — without requiring cooperation from the wrapped tool.
+Design **Tideclaw** from scratch: a security-first orchestrator for AI coding tools. Like ClaudeClaw or NanoClaw, Tideclaw is an orchestrator — it manages the lifecycle of an agentic runtime (Claude Code, Codex CLI, Aider, etc.). Unlike those orchestrators, Tideclaw's primary concern is providing the **process separation and enforcement seams** that Tidegate's security layers need to attach to.
 
-### Why "from scratch"?
+The user picks their agentic runtime. Tideclaw orchestrates it with credential isolation, network segmentation, MCP scanning boundaries, egress control, and taint tracking built into the orchestration topology.
 
-The current Tidegate approach (ADR-003) chose NanoClaw as the first agent runtime — a specific orchestrator that already has Docker containers and filesystem IPC. That gave Tidegate a clean wrapping seam but coupled the security framework to one orchestrator.
+### Why a new orchestrator?
 
-Tideclaw asks: **what if the product IS the secure runtime, and the user just points it at whichever AI coding tool they already use?**
+The current Tidegate approach (ADR-003) chose NanoClaw as the first agent runtime — a specific orchestrator that already has Docker containers and filesystem IPC. That gave Tidegate an enforcement seam but coupled the security framework to one orchestrator. The problem: NanoClaw's process boundaries weren't designed for security enforcement. They're incidental to its orchestration model, not intentional seams.
 
-The user doesn't install NanoClaw. They install Tideclaw. Tideclaw handles:
-- Container isolation for their chosen tool
-- MCP gateway scanning
-- Credential isolation
-- Egress control
-- Taint tracking
+Tideclaw asks: **what if the orchestrator IS designed around the seams?**
 
-The tool just runs inside the box, unaware it's wrapped.
+ClaudeClaw and NanoClaw are orchestrators that happen to use containers. Tideclaw is an orchestrator that exists *because of* containers — because process separation, network isolation, and mount boundaries are the seams that make security enforcement possible.
+
+Tideclaw provides:
+- Process separation between agent and MCP servers (the scanning seam)
+- Network segmentation between agent, gateway, and servers (the egress control seam)
+- Mount isolation for credentials (the credential isolation seam)
+- Kernel-level observation points (the taint tracking seam)
+
+The agentic runtime runs inside these seams, unmodified.
 
 ---
 
@@ -71,18 +74,18 @@ The tool just runs inside the box, unaware it's wrapped.
 - **Aider**: Python CLI, direct API calls, no sandbox, no MCP
 - **Continue.dev**: VS Code/JetBrains extension, MCP support, no sandbox
 
-### Summary: What's Wrappable?
+### Summary: What Can Tideclaw Orchestrate?
 
-| Tool | Has CLI? | Has sandbox? | Has MCP? | Wrapping approach |
+| Tool | Has CLI? | Has sandbox? | Has MCP? | Integration mode |
 |------|----------|-------------|----------|-------------------|
 | **Claude Code** | Yes | bubblewrap + seccomp | Yes (first-class) | **MCP gateway** — route all MCP calls through scanner |
 | **Codex CLI** | Yes | Landlock + seccomp | Yes (client + server) | **MCP gateway + proxy** — hybrid mode |
-| **Gemini (Jules)** | Yes (new CLI) | Yes (cloud VM) | Migrating to MCP | **Not wrappable locally** (cloud only) |
-| **Gemini (Code Assist)** | No (extension) | VS Code sandbox | Migrating to MCP | **Not wrappable** as CLI tool |
+| **Gemini (Jules)** | Yes (new CLI) | Yes (cloud VM) | Migrating to MCP | **Not orchestrable locally** (cloud only) |
+| **Gemini (Code Assist)** | No (extension) | VS Code sandbox | Migrating to MCP | **Not orchestrable** as CLI tool |
 | **Aider** | Yes | No | No | **Container + proxy** — full isolation |
 | **Continue.dev** | No (extension) | No | Yes | **MCP gateway** (if extracted from IDE) |
 
-**Conclusion**: Both **Claude Code** and **Codex CLI** now have MCP support, meaning Tideclaw can use MCP gateway mode for both. This is a significant development — the original Tidegate analysis assumed Codex had no MCP. Codex still benefits from proxy-mode scanning as a backup layer since its primary tool interface is shell commands, not MCP tools.
+**Conclusion**: Both **Claude Code** and **Codex CLI** now have MCP support, meaning Tideclaw can activate the MCP gateway seam for both. This is a significant development — the original Tidegate analysis assumed Codex had no MCP. Codex still benefits from the proxy seam as a backup layer since its primary tool interface is shell commands, not MCP tools.
 
 ---
 
@@ -214,24 +217,26 @@ Introduced in 2025-06-18 spec. MCP servers can request user input via `elicitati
 
 ### Core Concept
 
-Tideclaw is a **transparent security wrapper** for AI coding tools. It:
+Tideclaw is a **security-first orchestrator** for AI coding tools. It manages the lifecycle of an agentic runtime (Claude Code, Codex CLI, Aider, etc.) inside a topology that provides the enforcement seams Tidegate's security layers attach to:
 
-1. **Containerizes** the tool (if it isn't already containerized)
-2. **Interposes** on all MCP traffic (tool calls and responses)
-3. **Proxies** all network egress (HTTP/HTTPS)
-4. **Tracks** data flow via taint analysis
-5. **Isolates** credentials from the agent process
+1. **Process separation** — agent, gateway, MCP servers, and proxy run in separate containers
+2. **Network segmentation** — three isolated networks control what can talk to what
+3. **MCP interposition** — gateway sits between agent and MCP servers (the scanning seam)
+4. **Egress mediation** — proxy sits between agent and internet (the egress control seam)
+5. **Credential isolation** — mount boundaries ensure each container sees only its own credentials
+6. **Kernel observation** — eBPF/seccomp attach points for taint tracking
 
-The tool doesn't know it's wrapped. It sees MCP servers at the URLs it expects. It reaches the internet through a proxy it doesn't know about. Its file access is observed without its knowledge.
+The agentic runtime runs unmodified inside this topology. It sees MCP servers at the URLs it expects. It reaches the internet through a proxy it doesn't know about. Its file access is observed without its knowledge.
 
 ### Design Principles
 
-1. **Tool-agnostic**: Works with any CLI-based AI coding tool that can run in a container
-2. **No cooperation required**: The wrapped tool doesn't need modification, plugins, or special flags (beyond headless mode)
-3. **MCP-first scanning**: For tools with MCP support, scan at the MCP protocol level (highest fidelity)
-4. **Network-fallback scanning**: For tools without MCP, scan at the HTTP proxy level (lower fidelity but universal)
-5. **Defense in depth**: Both MCP and network scanning run simultaneously when available
-6. **Fail-closed**: Scanner unavailable = deny. Proxy down = no egress. Container crash = session over.
+1. **Seams first**: The orchestration topology is designed around the enforcement boundaries Tidegate needs. Every container boundary, network segment, and mount point exists to enable a security layer.
+2. **Runtime-agnostic**: Works with any CLI-based AI coding tool that can run in a container. The orchestrator provides the seams; the runtime is pluggable.
+3. **No cooperation required**: The agentic runtime doesn't need modification, plugins, or special flags (beyond headless mode). Seams are structural, not contractual.
+4. **MCP-first scanning**: For runtimes with MCP support, scan at the MCP protocol level (highest fidelity). The gateway seam provides structured tool name + argument + value visibility.
+5. **Network-fallback scanning**: For runtimes without MCP, scan at the HTTP proxy level (lower fidelity but universal). The proxy seam provides payload-level visibility.
+6. **Defense in depth**: Both MCP and network scanning run simultaneously when available. Multiple seams firing independently.
+7. **Fail-closed**: Scanner unavailable = deny. Proxy down = no egress. Container crash = session over.
 
 ### Architecture Overview
 
@@ -271,23 +276,25 @@ The tool doesn't know it's wrapped. It sees MCP servers at the URLs it expects. 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### The Three Wrapping Modes
+### The Three Integration Modes
 
-Tideclaw supports three wrapping modes based on the tool's capabilities:
+Tideclaw's orchestration topology adapts based on the agentic runtime's capabilities — specifically, which seams can be activated:
 
-#### Mode 1: MCP Gateway (Claude Code, Codex CLI, Continue.dev, any MCP-native tool)
+#### Mode 1: MCP Gateway (Claude Code, Codex CLI, Continue.dev, any MCP-native runtime)
 
 ```
 Agent → tg-gateway (scan all values) → downstream MCP servers
 Agent → egress-proxy → internet (LLM API only)
 ```
 
+**Seams activated**: MCP interposition (gateway) + egress mediation (proxy) + credential isolation (mount boundaries)
+
 **How it works**:
-- Tideclaw generates MCP config for the agent tool, pointing all servers at `http://tg-gateway:4100/mcp`
+- Tideclaw generates MCP config for the runtime, pointing all servers at `http://tg-gateway:4100/mcp`
 - The gateway mirrors tools from real downstream servers
 - Every tool call parameter and response is scanned (L1/L2/L3)
 - Shaped denies on policy violations
-- Agent sees one MCP endpoint; gateway fans out to real servers on `mcp-net`
+- Runtime sees one MCP endpoint; gateway fans out to real servers on `mcp-net`
 
 **Scanning fidelity**: **High**. Every string value in every tool call is scanned. Structured data is preserved. Tool name, argument names, and values are all visible.
 
@@ -299,40 +306,44 @@ Agent → egress-proxy → internet (LLM API only)
 
 **Codex CLI specific** (MCP mode):
 - Codex supports MCP via `rmcp-client` crate. Configure gateway as MCP server.
-- Run with `--sandbox danger-full-access` (Tideclaw provides isolation instead)
+- Run with `--sandbox danger-full-access` (Tideclaw's orchestration provides isolation instead)
 - `OPENAI_API_KEY` or ChatGPT OAuth auth passed via env/mount
-- Codex's shell commands (primary tool) are NOT MCP — they bypass the gateway. This is why Codex also needs Mode 2 (proxy) as a backup.
+- Codex's shell commands (primary tool) are NOT MCP — they bypass the gateway seam. This is why Codex also needs Mode 2 (proxy) as a backup.
 
-#### Mode 2: Network Proxy (Aider, any tool without MCP, backup for shell-heavy tools)
+#### Mode 2: Network Proxy (Aider, any runtime without MCP, backup for shell-heavy runtimes)
 
 ```
 Agent → egress-proxy (scan HTTP bodies) → internet
 Agent → egress-proxy (scan HTTP bodies) → external APIs
 ```
 
+**Seams activated**: Egress mediation (proxy) + credential isolation (mount boundaries). No MCP interposition.
+
 **How it works**:
-- Tideclaw runs the tool in a container on `agent-net` (internal) with proxy env vars
+- Tideclaw runs the runtime in a container on `agent-net` (internal) with proxy env vars
 - All HTTP/HTTPS traffic routes through `egress-proxy`
 - For LLM API domains: CONNECT passthrough (no inspection — encrypted, high volume)
 - For external API domains: MITM, scan request/response bodies, inject credentials
 - Domain allowlist controls what's reachable
 
-**Scanning fidelity**: **Medium**. HTTP request/response bodies are scanned, but there's no structured MCP framing. Scanner sees raw JSON/form payloads, not tool names and argument schemas.
+**Scanning fidelity**: **Medium**. HTTP request/response bodies are scanned, but there's no structured MCP framing. Scanner sees raw JSON/form payloads, not tool names and argument schemas. The proxy seam provides less visibility than the gateway seam.
 
 **Codex CLI backup layer**:
 - Codex's primary tool is a unified shell executor — shell commands don't go through MCP
-- If a shell command makes HTTP requests (curl, wget, Python requests), those hit the proxy
+- If a shell command makes HTTP requests (curl, wget, Python requests), those hit the proxy seam
 - Codex's env var stripping (`KEY`/`SECRET`/`TOKEN` excluded from subprocesses) provides additional defense
-- Tideclaw's proxy catches content-embedded credentials that Codex's env var filter misses
+- Tideclaw's proxy seam catches content-embedded credentials that Codex's env var filter misses
 
-#### Mode 3: Hybrid (tools with partial MCP + HTTP)
+#### Mode 3: Hybrid (runtimes with partial MCP + HTTP)
 
 ```
 Agent → tg-gateway (MCP tools, high-fidelity scan)
 Agent → egress-proxy (HTTP tools, medium-fidelity scan)
 ```
 
-**How it works**: Combine modes 1 and 2. MCP traffic goes through the gateway. Non-MCP HTTP traffic goes through the proxy. Both scanning pipelines run simultaneously.
+**Seams activated**: All — MCP interposition + egress mediation + credential isolation + kernel observation (when available).
+
+**How it works**: Combine modes 1 and 2. MCP traffic goes through the gateway seam. Non-MCP HTTP traffic goes through the proxy seam. Both scanning pipelines run independently.
 
 This is the default for Claude Code (which uses MCP for tools but HTTPS for the Anthropic API).
 
@@ -342,7 +353,7 @@ This is the default for Claude Code (which uses MCP for tools but HTTPS for the 
 # tideclaw.yaml
 version: "1"
 
-# Which AI tool to wrap
+# Which agentic runtime to orchestrate
 agent:
   tool: claude-code           # claude-code | codex | aider | custom
   image: tideclaw/claude-code:latest  # pre-built image or custom
@@ -406,23 +417,23 @@ taint:
 
 ### Container Images: Pre-Built vs Custom
 
-Tideclaw ships **pre-built container images** for supported tools:
+Tideclaw ships **pre-built container images** for supported runtimes:
 
 | Image | Base | Contents |
 |-------|------|----------|
 | `tideclaw/claude-code` | `node:22-slim` | Claude Code CLI, non-root user, MCP config template |
 | `tideclaw/codex` | `debian:bookworm-slim` | Codex CLI (Rust binary), non-root user, MCP + proxy config |
 | `tideclaw/aider` | `python:3.12-slim` | Aider, non-root user, proxy config |
-| `tideclaw/custom` | `ubuntu:24.04` | Base image with proxy config, user adds their tool |
+| `tideclaw/custom` | `ubuntu:24.04` | Base image with proxy config, user adds their runtime |
 
 Each image:
 - Runs as non-root user
 - Has `HTTPS_PROXY` pre-configured
-- Has MCP config templates (for MCP-capable tools)
+- Has MCP config templates (for MCP-capable runtimes)
 - Includes health check scripts
-- Is pinned to specific tool versions
+- Is pinned to specific runtime versions
 
-For **custom tools**, users can extend the base image:
+For **custom runtimes**, users can extend the base image:
 
 ```dockerfile
 FROM tideclaw/custom:latest
@@ -455,12 +466,12 @@ tideclaw down
 Under the hood, `tideclaw up`:
 1. Reads `tideclaw.yaml`
 2. Generates a `docker-compose.yaml` with:
-   - Agent container (tool-specific image)
+   - Agent container (runtime-specific image)
    - `tg-gateway` container
    - `egress-proxy` container
    - MCP server containers (one per configured server)
-   - Network topology (`agent-net`, `mcp-net`, `proxy-net`)
-3. Generates MCP config for the agent tool (pointing to gateway)
+   - Network topology / seams (`agent-net`, `mcp-net`, `proxy-net`)
+3. Generates MCP config for the agentic runtime (pointing to gateway seam)
 4. Generates proxy config (allowlists, credential injection rules)
 5. Runs `docker compose up --build`
 6. Waits for health checks
@@ -468,7 +479,7 @@ Under the hood, `tideclaw up`:
 
 ### How MCP Config Injection Works
 
-Each tool has a different MCP config format. Tideclaw generates the appropriate config:
+Each runtime has a different MCP config format. Tideclaw generates the appropriate config:
 
 **Claude Code** (`~/.claude/settings.json`):
 ```json
@@ -563,7 +574,7 @@ proxy-net
 - Only `egress-proxy` spans `agent-net` and `proxy-net`
 - Only `tg-gateway` spans `agent-net` and `mcp-net`
 
-### Enforcement Layers (same as Tidegate, reframed for Tideclaw)
+### Enforcement Layers (Tidegate components attached to Tideclaw seams)
 
 | Layer | What | Where | Fidelity |
 |-------|------|-------|----------|
@@ -575,55 +586,64 @@ Defense in depth: a credential in a tool call parameter hits L2 (gateway scan) A
 
 ---
 
-## Tideclaw vs Tidegate vs NanoClaw: Relationship
+## Tideclaw vs ClaudeClaw vs NanoClaw: Orchestrator Comparison
+
+All three are orchestrators. They differ in what they optimize for:
 
 ```
-NanoClaw (agent orchestrator)
+ClaudeClaw (orchestrator — optimizes for web UI + chat bridges)
+  - Web dashboard, WhatsApp/Telegram bridge
+  - User-facing interaction layer
+  - No security seams — trusts the runtime
+
+NanoClaw (orchestrator — optimizes for multi-session management)
+  - Container-per-session, skills, scheduling, memory
   - WhatsApp/Telegram bridge
-  - Spawns containers per session
-  - Skills, scheduling, memory
-  - Knows nothing about security
+  - Incidental container boundaries (not designed as security seams)
 
-Tidegate (security framework)
-  - MCP gateway + scanner
-  - Egress proxy
-  - Docker topology
-  - Taint tracking
-  - Wraps one specific agent runtime
-
-Tideclaw (secure agent runtime)
-  - IS Tidegate's security framework
-  - PLUS container management for any AI tool
-  - PLUS tool-specific config generation
-  - PLUS CLI for lifecycle management
-  - Replaces NanoClaw as the "runtime" layer
-  - Any tool can be the "agent" (Claude Code, Codex, etc.)
+Tideclaw (orchestrator — optimizes for security enforcement)
+  - Orchestration topology designed around enforcement seams
+  - Process separation, network segmentation, credential isolation
+  - Seams that Tidegate's security layers (gateway, proxy, scanner) attach to
+  - Runtime-agnostic: any CLI tool runs inside the topology
 ```
 
-**Key shift**: Tidegate was "security framework that wraps NanoClaw." Tideclaw is "security framework that IS the runtime, wrapping any tool."
+**Key distinction**: NanoClaw and ClaudeClaw use containers for operational reasons (isolation between sessions, deployment convenience). Tideclaw uses containers for security reasons (each container boundary is an enforcement seam). The topology isn't incidental — it's the point.
 
-### What Happens to NanoClaw?
+### Where does Tidegate fit?
 
-NanoClaw becomes one possible orchestrator that runs INSIDE a Tideclaw agent container. If the user wants WhatsApp integration, scheduled tasks, and multi-group sessions, they configure Tideclaw with a NanoClaw image. Tideclaw handles the security; NanoClaw handles the orchestration.
+Tidegate is NOT an orchestrator. It's the **security framework** — the gateway, scanner, proxy, and taint tracker. Tidegate's components attach to the seams that an orchestrator provides. The problem: most orchestrators don't provide the right seams. Tideclaw is the orchestrator designed to provide them.
 
-```yaml
-# tideclaw.yaml — NanoClaw as the agent
-agent:
-  tool: custom
-  image: nanoclaw:latest
-  auth:
-    mount: ~/.claude:/home/agent/.claude:ro
-  volumes:
-    - ./groups:/opt/nanoclaw/groups:ro
-    - ./data/ipc:/opt/nanoclaw/data/ipc:rw
+```
+Tidegate (security framework — the enforcement layers)
+  - MCP gateway + scanner (attaches to the MCP interposition seam)
+  - Egress proxy (attaches to the network segmentation seam)
+  - Taint tracker (attaches to the kernel observation seam)
+  - Needs an orchestrator that provides these seams
+
+Tideclaw (orchestrator — provides the seams Tidegate needs)
+  - Process separation → gateway can sit between agent and MCP servers
+  - Network segmentation → proxy can mediate all egress
+  - Mount isolation → credentials stay in their containers
+  - Kernel attach points → eBPF/seccomp can observe the agent
 ```
 
-But most users will just use Claude Code directly:
+### What happens to ClaudeClaw and NanoClaw?
+
+They're peer orchestrators with different priorities. A user who wants a web dashboard picks ClaudeClaw. A user who wants WhatsApp integration and multi-session scheduling picks NanoClaw. A user who wants security enforcement picks Tideclaw.
+
+In principle, the features aren't mutually exclusive — a future orchestrator could combine Tideclaw's security seams with ClaudeClaw's web UI. But that's a later concern. For now, Tideclaw focuses on getting the seams right.
 
 ```yaml
-# tideclaw.yaml — Claude Code as the agent (most common)
+# tideclaw.yaml — Claude Code as the agentic runtime (most common)
 agent:
   tool: claude-code
+```
+
+```yaml
+# tideclaw.yaml — Codex CLI as the agentic runtime
+agent:
+  tool: codex
 ```
 
 ---
@@ -641,7 +661,7 @@ agent:
 5. **Reuse existing tg-gateway** — Tidegate's gateway is Tideclaw's gateway. No changes needed.
 6. **Reuse existing egress-proxy** — Squid CONNECT-only proxy. No changes needed.
 
-### Phase 2: Multi-Tool Support
+### Phase 2: Multi-Runtime Support
 
 **Goal**: `tideclaw init --tool codex` also works.
 
@@ -659,9 +679,9 @@ agent:
 2. **Skill hardening** — SKILL.md rewriting for Claude Code.
 3. **PreToolUse hooks** — Claude Code framework-specific double-checking.
 
-### Phase 4: Orchestration
+### Phase 4: Extended Features
 
-**Goal**: Tideclaw can replace NanoClaw for users who want messaging + scheduling.
+**Goal**: Tideclaw offers messaging and scheduling features for users who need them (comparable to ClaudeClaw/NanoClaw convenience features).
 
 1. **Messaging bridge** — Optional container that bridges WhatsApp/Telegram/Slack to the agent.
 2. **Task scheduler** — Optional container for cron-style scheduled prompts.
@@ -671,48 +691,48 @@ agent:
 
 ## Key Design Decisions
 
-### D1: Tool runs unmodified inside the container
+### D1: Agentic runtime runs unmodified inside the topology
 
-The AI coding tool is installed as-is. No patches, no plugins, no forks. Tideclaw wraps it externally via:
-- MCP config injection (point tool's MCP at gateway)
-- Environment variables (HTTPS_PROXY)
-- Container isolation (network, filesystem)
+The AI coding tool is installed as-is. No patches, no plugins, no forks. Tideclaw's seams are structural (process boundaries, network segments, mount points), not contractual (APIs the runtime must implement):
+- MCP config injection (point runtime's MCP at gateway seam)
+- Environment variables (HTTPS_PROXY → proxy seam)
+- Container isolation (network, filesystem → all seams)
 
-**Why**: Maintainability. Tool updates don't break Tideclaw. Users can upgrade their tool independently. No vendor-specific code in the security layer.
+**Why**: Maintainability. Runtime updates don't break Tideclaw. Users can upgrade their runtime independently. No vendor-specific code in the security layer. The seams work because of topology, not cooperation.
 
-**Exception**: Some tools may need `--headless` or `--dangerously-skip-permissions` flags for unattended operation. These are documented per-tool, not code modifications.
+**Exception**: Some runtimes may need `--headless` or `--dangerously-skip-permissions` flags for unattended operation. These are documented per-runtime, not code modifications.
 
-### D2: MCP gateway is the primary scanning seam (when available)
+### D2: MCP gateway is the highest-fidelity seam
 
-For MCP-capable tools, the gateway provides the highest-fidelity scanning:
+For MCP-capable runtimes, the gateway seam provides the highest-fidelity scanning:
 - Structured tool name + argument names + values
 - Structured response content
-- Shaped denies the agent can understand and adjust to
+- Shaped denies the runtime can understand and adjust to
 
-The proxy provides backup scanning for traffic that bypasses MCP (direct HTTP calls, skill execution, etc.).
+The proxy seam provides backup scanning for traffic that bypasses MCP (direct HTTP calls, skill execution, etc.).
 
-**Why**: MCP framing lets us scan *semantically*. We know "this string is the `message` parameter of the `post_message` tool." The proxy only sees "this string is somewhere in a JSON body sent to api.slack.com." Gateway scanning can make better policy decisions.
+**Why**: MCP framing lets us scan *semantically*. We know "this string is the `message` parameter of the `post_message` tool." The proxy seam only sees "this string is somewhere in a JSON body sent to api.slack.com." The gateway seam enables better policy decisions.
 
-### D3: Credentials never enter the agent container
+### D3: Credentials never cross the mount isolation seam
 
 The agent container has exactly ONE credential: its own LLM API auth token (for Claude/OpenAI/Google API calls). All other credentials (Slack, GitHub, Gmail, etc.) live in:
 - MCP server containers (on `mcp-net`, unreachable from agent)
 - Proxy config (credential injection on matching domains)
 
-**Why**: If the agent is compromised (prompt injection, malicious skill), it cannot exfiltrate API credentials because it doesn't have them. The LLM API token is the residual risk (accepted — see threat model).
+**Why**: Mount isolation is an enforcement seam. Each container's credentials are bounded by its mount namespace. If the agent is compromised (prompt injection, malicious skill), it cannot exfiltrate API credentials because they don't exist in its mount namespace. The LLM API token is the residual risk (accepted — see threat model).
 
-### D4: Single MCP endpoint for the agent
+### D4: Single MCP endpoint consolidates the gateway seam
 
-The agent sees one MCP server at `http://tg-gateway:4100/mcp` that exposes all tools from all downstream servers. This is simpler than per-server endpoints and gives the gateway full control over tool visibility.
+The runtime sees one MCP server at `http://tg-gateway:4100/mcp` that exposes all tools from all downstream servers. All MCP traffic passes through a single interposition point.
 
-**Why**: Simplifies config injection. Only one MCP entry in the agent's settings. The gateway handles tool-to-server routing internally. Also enables cross-server policy (e.g., "don't allow tool X from server A if tool Y from server B was called in this session").
+**Why**: One seam is easier to enforce than many. Simplifies config injection — only one MCP entry in the runtime's settings. The gateway handles tool-to-server routing internally. Also enables cross-server policy (e.g., "don't allow tool X from server A if tool Y from server B was called in this session").
 
 ### D5: Compose generation, not static compose file
 
 The `tideclaw.yaml` config generates a Docker Compose spec at `tideclaw up` time. This is better than a hand-maintained `docker-compose.yaml` because:
-- Tool-specific containers and configs are generated dynamically
+- Runtime-specific containers and configs are generated dynamically
 - MCP server list changes don't require editing compose
-- Network topology is always correct (no manual network assignment errors)
+- Network topology (the seams) is always correct (no manual network assignment errors)
 - Credential injection rules are derived from `tideclaw.yaml`
 
 The generated compose file is written to `.tideclaw/docker-compose.yaml` for inspection.
@@ -727,6 +747,15 @@ The `tideclaw` CLI should be Go:
 - Consistent with tg-scanner (also Go for eBPF/seccomp)
 
 Alternative: POSIX shell script for Phase 1 (simpler, follows Tidegate's shell conventions), upgrade to Go for Phase 2+.
+
+### D7: Seams are structural, not contractual
+
+Tideclaw's enforcement seams come from the orchestration topology (container boundaries, network segments, mount namespaces), not from APIs or hooks the runtime must implement. This means:
+- Any CLI tool works, even ones with no plugin/hook system
+- Seams can't be bypassed by the runtime (they're below the application layer)
+- Security doesn't degrade when the runtime updates (no API contracts to break)
+
+The exception is MCP config injection — we rely on the runtime reading MCP config from a known location. But even if MCP config fails, the network and mount seams still enforce.
 
 ---
 
@@ -759,11 +788,11 @@ Claude Code uses `--resume <sessionId>` for session continuity. In a containeriz
 
 Different MCP servers have different transport requirements (HTTP, stdio, SSE). The gateway currently supports HTTP and stdio. Some community MCP servers may only support stdio.
 
-**Approach**: Gateway wraps stdio servers as child processes. These run inside the gateway container on `mcp-net` — acceptable isolation since the gateway is already trusted (it sees all tool calls).
+**Approach**: Gateway hosts stdio servers as child processes. These run inside the gateway container on `mcp-net` — acceptable isolation since the gateway is already trusted (it sees all tool calls).
 
 ### Q4: How does the user interact with the agent?
 
-Tideclaw wraps the tool but needs an interaction surface:
+Tideclaw orchestrates the runtime but needs an interaction surface:
 - **Terminal attach**: `tideclaw attach` → `docker exec -it agent-container <tool-cli>`
 - **API**: Expose the agent's MCP endpoint (through the gateway) for programmatic use
 - **Messaging bridge**: Optional NanoClaw-style WhatsApp/Telegram bridge
@@ -781,7 +810,7 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 - Provides `/tideclaw status`, `/tideclaw logs` commands
 
 **Pro**: Zero-friction installation for Claude Code users. Plugin marketplace distribution.
-**Con**: Couples to Claude Code. Can't wrap Codex or Aider this way. Plugin runs on host (not in container).
+**Con**: Couples to Claude Code. Can't orchestrate Codex or Aider this way. Plugin runs on host (not in container).
 
 **Recommendation**: Ship as standalone CLI first. Plugin as a convenience layer later (Phase 4+).
 
@@ -798,7 +827,7 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 | **Credential isolation** | Creds in MCP servers, never in agent | Agent has secrets + no network (capability separation) | Gateway injects credentials | Env vars in sandbox | Env var stripping (`KEY`/`SECRET`/`TOKEN`) |
 | **Taint tracking** | eBPF + seccomp-notify (Phase 3) | No | No | No | No |
 | **Shaped denies** | Yes (valid MCP result + explanation) | block/strip/warn/ask | No | No | No |
-| **Tool-agnostic** | Yes (any CLI tool) | MCP servers only | MCP servers only | Yes (any code) | Codex only |
+| **Runtime-agnostic** | Yes (any CLI tool) | MCP servers only | MCP servers only | Yes (any code) | Codex only |
 | **Self-hosted** | Yes | Yes | Yes | Cloud or BYOC | Yes |
 | **Elicitation scanning** | Planned | No | No | No | No |
 | **Audit logging** | NDJSON structured logs | Configurable | `--log-calls` | Partial | No |
@@ -807,7 +836,7 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 **Tideclaw's differentiation**:
 1. **Taint tracking** (eBPF + seccomp-notify) — no competitor has kernel-level data flow tracking
 2. **Shaped denies** — agent reads explanation and adjusts behavior, doesn't retry blindly
-3. **Tool-agnostic** — wraps any CLI tool, not just MCP servers
+3. **Runtime-agnostic** — orchestrates any CLI tool, not just MCP servers
 4. **Defense-in-depth** — three independent layers (taint, gateway, proxy) vs. single-layer approaches
 5. **Credential topology** — credentials in separate containers on isolated network, not env vars in the agent
 
@@ -830,19 +859,19 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 
 ## What This Spike Decided
 
-1. **Tideclaw is a standalone product** (not a NanoClaw plugin or Tidegate extension). It's a CLI that wraps any AI coding tool.
+1. **Tideclaw is an orchestrator** — a peer to ClaudeClaw and NanoClaw, not a layer above or below them. It's the orchestrator you choose when security enforcement is the priority.
 
-2. **Three wrapping modes**: MCP gateway (high fidelity), network proxy (medium fidelity), hybrid (both). Mode selected automatically based on tool capabilities.
+2. **The orchestrator's job is to provide seams**: process separation, network segmentation, credential isolation, kernel observation points. Tidegate's security layers (gateway, scanner, proxy, taint tracker) attach to these seams.
 
-3. **Claude Code and Codex CLI are the two launch tools**. Claude Code via MCP gateway mode. Codex via proxy mode.
+3. **Three integration modes**: MCP gateway (high fidelity), network proxy (medium fidelity), hybrid (both). Mode selected automatically based on the agentic runtime's capabilities — specifically, which seams can be activated.
 
-4. **Same security layers as Tidegate** (L1 taint, L2 gateway, L3 proxy), repackaged as a user-facing product with a CLI and config file.
+4. **Claude Code and Codex CLI are the two launch runtimes**. Claude Code via MCP gateway mode. Codex via hybrid mode (MCP + proxy).
 
-5. **NanoClaw becomes optional** — a possible orchestrator that runs inside Tideclaw for users who want messaging/scheduling. Most users just use Claude Code directly.
+5. **Runtime-agnostic design**: The agentic runtime is pluggable. Any CLI tool that can run in a container works inside Tideclaw's topology. Seams are structural (container boundaries, network segments), not contractual (APIs the runtime must implement).
 
-6. **Pre-built container images** for each supported tool. Custom Dockerfile support for unsupported tools.
+6. **Pre-built container images** for each supported runtime. Custom Dockerfile support for unsupported runtimes.
 
-7. **Compose generation** (not static compose file) from `tideclaw.yaml`.
+7. **Compose generation** (not static compose file) from `tideclaw.yaml`. The generated topology encodes the seams.
 
 ## What This Spike Did NOT Decide
 
@@ -851,7 +880,8 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 - Codex sandbox conflict resolution (needs empirical testing)
 - Session persistence model for containerized Claude Code
 - Pricing/distribution model (open source? paid? freemium?)
-- Whether to keep "Tidegate" as a name for the gateway component or rename everything to "Tideclaw"
+- Whether to keep "Tidegate" as a name for the security framework or fold it into "Tideclaw"
+- Whether Tideclaw's seam topology could be composed with other orchestrators' features (e.g., ClaudeClaw's web UI + Tideclaw's seams)
 
 ## References
 
