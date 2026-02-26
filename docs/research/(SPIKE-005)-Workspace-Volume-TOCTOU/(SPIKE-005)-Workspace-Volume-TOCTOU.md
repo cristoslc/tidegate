@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
 | updated | — | 2026-02-23 | Reframed for journal-based taint architecture (ADR-002 supersedes ADR-001) |
@@ -36,8 +36,8 @@ The scanner daemon reading a file asynchronously (after the process already read
 
 ## Related
 
-- [ADR-002](../../adr/proposed/002-taint-and-verify-data-flow-model.md) residual risk #5: TOCTOU between file open observation and file scan.
-- [ADR-001 (superseded)](../../adr/superseded/001-seccomp-notify-l1-interception.md) residual risk #1: TOCTOU on `/proc/<pid>/mem` (no longer applicable — no `execve` interception).
+- [ADR-002](../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #5: TOCTOU between file open observation and file scan.
+- [ADR-001 (superseded)](../../adr/superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) residual risk #1: TOCTOU on `/proc/<pid>/mem` (no longer applicable — no `execve` interception).
 
 ## Context at time of writing
 

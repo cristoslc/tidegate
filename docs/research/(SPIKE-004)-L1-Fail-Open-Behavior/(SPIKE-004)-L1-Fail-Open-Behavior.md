@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
 | updated | — | 2026-02-23 | Reframed for journal-based taint architecture (ADR-002 supersedes ADR-001) |
@@ -36,8 +36,8 @@ Under ADR-002, tg-scanner has three components that can fail independently:
 
 ## Related
 
-- [ADR-002](../../adr/proposed/002-taint-and-verify-data-flow-model.md) — the current L1 architecture
-- [ADR-001 (superseded)](../../adr/superseded/001-seccomp-notify-l1-interception.md) — original fail-open analysis still applies to seccomp-notify mechanism
+- [ADR-002](../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — the current L1 architecture
+- [ADR-001 (superseded)](../../adr/superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) — original fail-open analysis still applies to seccomp-notify mechanism
 
 ## Context at time of writing
 

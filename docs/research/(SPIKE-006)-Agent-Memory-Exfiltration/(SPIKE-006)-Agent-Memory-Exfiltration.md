@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
 
@@ -30,7 +30,7 @@ The threat model covers one-shot exfiltration well but doesn't trace persistent 
 
 ## Related
 
-- [ADR-002](../../adr/proposed/002-taint-and-verify-data-flow-model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
+- [ADR-002](../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
 - `shaped-deny-oracle.md` — denial feedback persistence in memory compounds both issues.
 
 ## Context at time of writing

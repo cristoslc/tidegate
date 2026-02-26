@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Status | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | proposed | — | 2026-02-23 | From L1 coverage gap spike + data flow taint model spike + journal architecture investigation |
 
@@ -231,7 +231,7 @@ Intercept every `execve` syscall. tg-scanner reads the script source, parses it 
 - **The journal architecture handles the same threat better.** Runtime observation of actual file access (eBPF `openat`) doesn't depend on understanding the script — the kernel observes the syscall regardless of obfuscation. `connect()` enforcement blocks tainted PIDs without needing to analyze the command.
 - **Sabotage prevention (the other `execve` use case) is handled by containerization.** Read-only filesystems, mounted directories, backups, and container isolation are the right controls for destructive commands — not command validation.
 
-See [ADR-001 (superseded)](../superseded/001-seccomp-notify-l1-interception.md) for the full original decision record.
+See [ADR-001 (superseded)](../superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) for the full original decision record.
 
 ### Expand seccomp-notify to `sendto`/`sendmsg`
 

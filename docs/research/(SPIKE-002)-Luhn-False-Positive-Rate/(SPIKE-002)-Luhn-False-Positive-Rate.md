@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
 

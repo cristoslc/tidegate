@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Status | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | proposed | — | 2026-02-24 | From agent-selection research spike comparing NanoClaw and OpenClaw |
 

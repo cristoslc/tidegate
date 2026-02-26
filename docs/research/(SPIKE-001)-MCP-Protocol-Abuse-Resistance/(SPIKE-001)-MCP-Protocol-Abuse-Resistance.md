@@ -2,7 +2,7 @@
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
+| Phase | Commit | Date | Notes |
 |---|---|---|---|
 | planning | `db146de` | 2026-02-21 | Initial commit; gateway had basic JSON-RPC parsing but no hardening |
 

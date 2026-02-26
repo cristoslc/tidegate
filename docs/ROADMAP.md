@@ -2,7 +2,7 @@
 
 From current state to `./setup.sh` on Mac, then hardening.
 
-See [current-state.md](current-state.md) for what exists today and [target-state.md](target-state.md) for the end goal.
+See [architecture overview](vision/(VISION-001)-Secure-AI-Agent-Deployment/architecture-overview.md) for what exists today and [target state](vision/(VISION-001)-Secure-AI-Agent-Deployment/target-state.md) for the end goal.
 
 ---
 
@@ -389,7 +389,7 @@ This is the load-bearing security layer that catches encryption-before-exfiltrat
 
 **Medium-high**. seccomp-notify on `connect()` has precedent (SocksTrace, force-bind-seccomp) unlike `execve`-gating which had no precedent. eBPF for `openat` observation is well-trodden. Main risks: scanner daemon latency on rapid file access patterns, taint explosion if many workspace files are sensitive, and Docker Desktop's runc configuration for seccomp-notify.
 
-See [ADR-002](adr/proposed/002-taint-and-verify-data-flow-model.md) for the full decision record. See [ADR-001 (superseded)](adr/superseded/001-seccomp-notify-l1-interception.md) for the original `execve`-gating design and why it was replaced.
+See [ADR-002](adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) for the full decision record. See [ADR-001 (superseded)](adr/superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) for the original `execve`-gating design and why it was replaced.
 
 ---
 
