@@ -1,3 +1,4 @@
+---
 interface:
   display_name: "External Task Management"
   short_description: "Track agent execution with an external task CLI"

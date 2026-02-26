@@ -1,35 +1,37 @@
-# Skills Drafts
+# skills-drafts/
 
-This directory houses skills that are not yet ready for active use:
+Disabled, draft, and experimental skills. No agent CLI scans this directory — contents are invisible to agents unless explicitly referenced by path.
 
-- Work-in-progress skills
-- Temporarily disabled skills undergoing debugging
-- Experimental features being explored
-- Archived skills retained for reference
+## When to use this directory
 
-No agent CLI scans this directory — contents are invisible to agents unless explicitly referenced by path.
+- **Work in progress**: Skills being authored or iterated on before they're ready for use.
+- **Temporarily disabled**: Active skills pulled out of rotation (debugging, seasonal, etc.).
+- **Experimental**: Ideas being explored that may never graduate to `skills/`.
+- **Archived**: Previously active skills kept for reference but no longer needed.
 
-## Promoting / demoting skills
+## Promoting a skill
 
 ```bash
-# Promote a draft to active
 mv .agents/skills-drafts/my-skill .agents/skills/
+```
 
-# Demote an active skill to draft
+## Demoting a skill
+
+```bash
 mv .agents/skills/my-skill .agents/skills-drafts/
 ```
 
-No changes are needed to `SKILL.md` content when moving between `skills/` and `skills-drafts/`.
-
 ## Structure
 
-Draft skills use the same layout as active skills:
+Skill directories here follow the same format as active skills:
 
 ```
 skills-drafts/
 └── my-skill/
-    ├── SKILL.md
-    ├── scripts/       # optional
-    ├── references/    # optional
-    └── assets/        # optional
+    ├── SKILL.md          # Standard frontmatter + instructions
+    ├── scripts/          # Optional
+    ├── references/       # Optional
+    └── assets/           # Optional
 ```
+
+No changes are needed to `SKILL.md` content when moving between `skills/` and `skills-drafts/`.

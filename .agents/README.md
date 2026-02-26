@@ -9,10 +9,11 @@ The `.agents/` directory is the canonical home for cross-CLI agent infrastructur
 ├── README.md              # This file
 ├── AGENTS-SETUP.md        # First-run bootstrap verification
 ├── skills/                # Active skills — auto-discovered by agents
-│   └── external-task-management/
+│   └── my-skill/
 │       └── SKILL.md
 └── skills-drafts/         # Disabled/draft skills — invisible to agents
-    └── README.md
+    └── wip-skill/
+        └── SKILL.md
 ```
 
 ## Skills Lifecycle
