@@ -5,6 +5,7 @@
 | Stage | Commit | Date | Notes |
 |---|---|---|---|
 | active | — | 2026-02-25 | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
+| active | — | 2026-02-27 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
 
 ## Purpose
 
@@ -42,7 +43,8 @@ The agentic runtime runs inside these seams, unmodified.
 - **Permissions**: Interactive approval or `--dangerously-skip-permissions` for headless
 - **Network**: Direct HTTPS to Anthropic API + any configured MCP servers. Sandbox mode forces all traffic through proxy with domain allowlists.
 - **Agent SDK**: `@anthropic-ai/claude-code` npm package, `query()` API with `bypassPermissions`. `can_use_tool` handler for custom permission logic. `SandboxSettings` for configuring excluded commands and sandbox policies.
-- **Key insight**: MCP is the primary extension mechanism. All external tools go through MCP. This is our scanning seam. The PreToolUse hook with input modification is directly analogous to Tideclaw's gateway interception. The sandbox-runtime is reusable for sandboxing downstream MCP servers.
+- **Skills**: First-class support. CLAUDE.md for persistent project context. `.claude/skills/` for on-demand expertise (SKILL.md format). Slash commands merged into skills (v2.1.3, Jan 2026). Skills use progressive disclosure (~50 tokens at rest, ~5,000 when activated). Plugins bundle skills + hooks + MCP into installable units.
+- **Key insight**: Claude Code extends via two planes: MCP (tool connectivity) and Skills (procedural knowledge). All external tools go through MCP — this is our scanning seam. The PreToolUse hook with input modification is directly analogous to Tideclaw's gateway interception. But skills also influence agent behavior — a malicious skill can instruct the agent to craft legitimate-looking tool calls that exfiltrate data. Tideclaw needs both MCP gateway scanning AND skill vetting. The sandbox-runtime is reusable for sandboxing downstream MCP servers.
 
 ### OpenAI Codex CLI
 - **Auth**: ChatGPT OAuth login or `OPENAI_API_KEY` env var. Credentials stored in OS keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service) or encrypted `~/.codex/auth.json`.
@@ -68,24 +70,64 @@ The agentic runtime runs inside these seams, unmodified.
 - **Network**: Jules VMs have full internet — no fine-grained egress controls. Google emphasizes "privacy by design" (no training on user code).
 - **Key insight**: VM-per-task with destruction provides strongest isolation but at compute cost. Full internet access is the opposite of Tideclaw's default-deny model. Jules' ephemeral VMs mean credentials cease to exist when the task ends — a clean answer to credential leakage that doesn't require scanning.
 
-### Emerging Tools
+### Goose (Block)
+- **Auth**: Any LLM provider API key. Stored in OS keyring. Supports 25+ providers including Anthropic, OpenAI, Google, xAI, Mistral, Bedrock, Vertex AI, plus local via Ollama/Docker Model Runner. Multi-model configuration (use different models per task).
+- **Billing**: Free and open source (Apache 2.0). You only pay your LLM provider.
+- **Execution**: **Rust** binary (Cargo workspace: `goose`, `goose-cli`, `goose-server`, `goose-mcp`). Agent loop dispatches tool calls to extensions. Context revision prunes old information to manage token usage. Errors are sent back to the model for self-correction. Up to 10 concurrent subagents with isolated execution contexts.
+- **MCP**: **Foundational** — MCP is the backbone of Goose's extensibility. All extensions (built-in and external) are MCP servers. Block co-designed MCP with Anthropic. Six extension types: Builtin (compiled Rust), Platform (in-process Rust), Frontend (UI-side), UVX (Python via uv), SSE/Streamable HTTP (remote), Stdio (local). Migrating from internal implementation to official `rmcp` Rust SDK.
+- **Skills**: **Yes — Agent Skills standard.** `SKILL.md` files with YAML frontmatter, stored in `~/.config/goose/skills`. Compatible with Claude Desktop and 40+ other agents. Progressive disclosure: only name/description loaded at startup, full instructions on demand. As of v1.25.0, unified **Summon extension** merges skills and recipes with `load` and `delegate` tools.
+- **Recipes**: Parameterized YAML workflow definitions. Support sub-recipes, retry logic, cron scheduling, extension requirements, max turns. Composable automation for CI/CD.
+- **Sandboxing**: **Yes (v1.25.0, Feb 23, 2026)**. macOS: Seatbelt (`sandbox-exec`) with dynamically generated profiles. Linux: bubblewrap (bwrap). Both work without Docker and can sandbox network access. SLSA provenance attestations on all release artifacts via Sigstore.
+- **Docker**: Official images at `ghcr.io/block/goose:<version>`. Debian Bookworm Slim, non-root UID 1000. Docker Compose workflows supported. Docker Model Runner integration for fully local LLM stacks.
+- **Headless/API**: `goose run` for non-interactive execution. `--quiet` suppresses non-response output. `--output-format json` or `stream-json` for structured output. `--no-session` for one-off CI invocations. `--max-turns <N>` to cap autonomous turns. Cron scheduling for recipes.
+- **Network**: No built-in network isolation beyond sandbox (no proxy, no domain allowlists). MCP servers connect to external APIs directly.
+- **Community**: 31K+ GitHub stars, 373+ contributors, 100+ releases in one year. Contributed to Linux Foundation AAIF (Dec 2025) alongside MCP and AGENTS.md. Block internal adoption: 60% of 12K employees use weekly. Red-teamed with published results ("Operation Pale Fire," Jan 2026).
+- **Key insight**: Goose is the strongest non-Claude/Codex alternative for Tideclaw. MCP-native architecture means the gateway seam activates cleanly. Rust binary means fast startup and single-binary distribution like Codex. Skills support means Tideclaw needs to consider skill security scanning (not just MCP tool scanning). Headless mode with structured JSON output makes container orchestration straightforward. The gap: no built-in egress control or credential isolation — exactly what Tideclaw provides.
+
+### Aider (Aider-AI)
+- **Auth**: Direct API keys for any LLM provider. `--api-key anthropic=<key>` or env vars. Supports OpenAI, Anthropic, Google, xAI, DeepSeek, Cohere, plus OpenRouter, Azure, Bedrock, Vertex AI, GitHub Copilot tokens. Local models via Ollama.
+- **Billing**: Free and open source (Apache 2.0). Pay your LLM provider.
+- **Execution**: **Python** single process. The architecture centers on a tree-sitter-based **repository map** that builds an AST graph of the entire codebase, then uses **PageRank** (personalized to chat context) to select the most relevant code for the LLM's context window. Modular coders (`aider/coders/`) support search/replace, diff, patch, editor-diff formats. Architect mode uses two LLM calls (plan then edit). Automatic lint-and-fix loop after every edit. Git commit after every change.
+- **MCP**: **No native support.** Open feature requests (Issues [#3314](https://github.com/Aider-AI/aider/issues/3314), [#4506](https://github.com/aider-ai/aider/issues/4506)) remain unaddressed. Community workarounds exist (mcpm-aider, third-party MCP servers wrapping aider). AiderDesk (GUI wrapper) has MCP, but the CLI does not.
+- **Skills/Plugins**: **None.** No formal plugin, skill, or extension system. No hook events. The `.aider.conventions` file provides basic project context but is not comparable to SKILL.md or CLAUDE.md. IDE integration via `--watch-files` (monitors `AI!`/`AI?` comments in code). Unofficial Python API (`from aider.coders import Coder`) exists but is undocumented and may break.
+- **Sandboxing**: **None.** Runs with full user permissions. No filesystem isolation, no network isolation. Must rely on external sandboxing (Docker containers, bubblewrap, etc.).
+- **Docker**: Official images (`paulgauthier/aider`, `paulgauthier/aider-full`). Runs as non-root. Limitation: `/run` command executes inside the container, making project test execution tricky.
+- **Headless/API**: Limited. `--message` / `-m` for single instruction. `--yes` for auto-approve. `--dry-run` for preview. No structured JSON output. No proper headless daemon mode.
+- **Network**: Direct HTTPS to LLM API. No proxy support. No egress control.
+- **Community**: 41K GitHub stars, 168 contributors, Apache 2.0. **Single maintainer risk** (Paul Gauthier). Self-dogfooding metric: 21-88% of each release written by aider itself. Maintains [LLM code editing leaderboards](https://aider.chat/docs/leaderboards/).
+- **Key insight**: Aider has the best code editing engine (tree-sitter + PageRank repo map) among open-source tools, but lacks every integration point Tideclaw needs: no MCP (no gateway seam), no headless mode (no container orchestration), no plugin system (no skill scanning needed but also no extensibility). Tideclaw could orchestrate aider in proxy-only mode (Mode 2), but the lack of MCP means medium-fidelity scanning only. The missing headless/API mode makes container lifecycle management harder than necessary.
+
+### llm CLI (Simon Willison)
+- **Auth**: API keys per provider. Supports OpenAI (built-in), plus 51+ plugins for Anthropic, Google, Mistral, Groq, xAI, OpenRouter, Bedrock, and 7 local model backends (Ollama, MLX, GGUF, llamafile, etc.).
+- **Execution**: **Python** single process, Click-based CLI + Python library. Plugin architecture via pluggy (entry-point-based discovery). Six hook types: `register_models`, `register_embedding_models`, `register_tools`, `register_fragment_loaders`, `register_template_loaders`, `register_commands`.
+- **Tool calling**: Added in v0.26 (May 2025). Inline Python functions via `--functions`, plugin-based tools (`--tool/-T`), templates with tools (v0.27). Agent loop via `--chain-limit` (max consecutive tool calls, default 5). Comprehensive SQLite logging of all tool calls.
+- **MCP**: **Community plugin only** (`llm-tools-mcp` by VirtusLab). Not in core. Simon Willison has stated intent to add native MCP client support but it is not yet built.
+- **Skills/Plugins**: Rich plugin ecosystem (51+ plugins) but for model access, tool registration, and fragment loading — not for coding workflows or agent behavior. No SKILL.md support. No coding skills.
+- **Sandboxing**: **None.** `llm-tools-docker` plugin (early alpha) grants access to a Docker container per chat session, but this is for tool execution, not agent sandboxing.
+- **Coding capabilities**: **Not a coding agent.** No built-in file editing, code manipulation, or autonomous iteration. Designed for chat, completion, and Unix pipelines (`cat file.py | llm "refactor this"`). `llm-cmd` plugin generates shell commands. Simon uses Claude Code for actual coding.
+- **Key differentiator**: SQLite logging of every interaction (the original motivation for building llm). Provider-agnostic. Unix pipeline composability. Fragments system for assembling context from multiple sources.
+- **Community**: 11K GitHub stars, single maintainer (Simon Willison). v0.28 (Dec 2025).
+- **Key insight**: llm is **not a viable base for Tideclaw**. It is a completion/chat tool, not a coding agent. It has no file editing, no autonomous agent loop, no code execution. Its plugin architecture is elegant but solves a different problem. Tideclaw could theoretically wrap llm as a provider abstraction layer, but that would mean building the entire agent runtime from scratch — defeating the purpose of having a base.
+
+### Other Emerging Tools
 - **Cursor Agent Mode**: IDE-embedded, no CLI, no container boundary
-- **Windsurf (Codeium)**: IDE-embedded
-- **Aider**: Python CLI, direct API calls, no sandbox, no MCP
+- **Windsurf (Codeium)**: IDE-embedded, "Memories" feature for persistent project context (conceptually similar to skills)
 - **Continue.dev**: VS Code/JetBrains extension, MCP support, no sandbox
 
 ### Summary: What Can Tideclaw Orchestrate?
 
-| Tool | Has CLI? | Has sandbox? | Has MCP? | Integration mode |
-|------|----------|-------------|----------|-------------------|
-| **Claude Code** | Yes | bubblewrap + seccomp | Yes (first-class) | **MCP gateway** — route all MCP calls through scanner |
-| **Codex CLI** | Yes | Landlock + seccomp | Yes (client + server) | **MCP gateway + proxy** — hybrid mode |
-| **Gemini (Jules)** | Yes (new CLI) | Yes (cloud VM) | Migrating to MCP | **Not orchestrable locally** (cloud only) |
-| **Gemini (Code Assist)** | No (extension) | VS Code sandbox | Migrating to MCP | **Not orchestrable** as CLI tool |
-| **Aider** | Yes | No | No | **Container + proxy** — full isolation |
-| **Continue.dev** | No (extension) | No | Yes | **MCP gateway** (if extracted from IDE) |
+| Tool | Has CLI? | Has sandbox? | Has MCP? | Has Skills? | Integration mode |
+|------|----------|-------------|----------|-------------|-------------------|
+| **Claude Code** | Yes | bubblewrap + seccomp | Yes (first-class) | Yes (SKILL.md, CLAUDE.md, hooks) | **MCP gateway** — route all MCP calls through scanner |
+| **Codex CLI** | Yes | Landlock + seccomp | Yes (client + server) | Yes (Agent Skills standard) | **MCP gateway + proxy** — hybrid mode |
+| **Goose** | Yes | bubblewrap / seatbelt (v1.25.0) | Yes (foundational) | Yes (SKILL.md + recipes) | **MCP gateway** — all extensions are MCP servers |
+| **Gemini (Jules)** | Yes (new CLI) | Yes (cloud VM) | Migrating to MCP | Yes (Agent Skills standard) | **Not orchestrable locally** (cloud only) |
+| **Gemini (Code Assist)** | No (extension) | VS Code sandbox | Migrating to MCP | Yes (Agent Skills standard) | **Not orchestrable** as CLI tool |
+| **Aider** | Yes | No | No | No (`.aider.conventions` only) | **Container + proxy** — full isolation |
+| **llm CLI** | Yes | No | Community plugin | No | **Not a coding agent** — completion tool only |
+| **Continue.dev** | No (extension) | No | Yes | No | **MCP gateway** (if extracted from IDE) |
 
-**Conclusion**: Both **Claude Code** and **Codex CLI** now have MCP support, meaning Tideclaw can activate the MCP gateway seam for both. This is a significant development — the original Tidegate analysis assumed Codex had no MCP. Codex still benefits from the proxy seam as a backup layer since its primary tool interface is shell commands, not MCP tools.
+**Conclusion**: **Claude Code**, **Codex CLI**, and **Goose** all have both MCP and Skills support, meaning Tideclaw can activate the MCP gateway seam for all three. Goose is the strongest open-source alternative — its MCP-native architecture means all extensions route through the gateway seam by design. The Skills column is new: the Agent Skills standard (agentskills.io, Dec 2025) has been adopted by 40+ agents, making skill security scanning a Tideclaw concern alongside MCP tool scanning (see Skills Paradigm section below).
 
 ---
 
@@ -211,6 +253,75 @@ Introduced in 2025-06-18 spec. MCP servers can request user input via `elicitati
 #### Key gap
 **MCP has no built-in concept of a security gateway between client and server.** The spec's security model is client-side consent (user approves tool calls). This fails when the agent runs headless with `--dangerously-skip-permissions`. Tideclaw fills this gap with server-side policy enforcement.
 
+### The Skills Paradigm (2025-2026)
+
+Skills are an emerging extension paradigm **complementary to MCP** that Tideclaw must account for alongside tool-level scanning. While MCP provides connectivity (structured tool APIs for accessing external systems), Skills provide expertise (natural-language instructions encoding domain knowledge and workflow logic). Both are attack surfaces. Tideclaw's original architecture over-indexed on MCP as the sole extension mechanism — the reality is that modern agentic runtimes have two extension planes: **tools (MCP)** and **knowledge (Skills)**.
+
+#### What are Skills?
+
+A skill is a folder containing a `SKILL.md` file with YAML frontmatter (name, description, allowed-tools) and a markdown body of instructions. Optional subfolders hold scripts, references, and assets. Skills teach agents *how* to perform tasks using the tools they have access to.
+
+**Progressive disclosure** is the key architectural feature: at session start, only skill name + description load (~50 tokens per skill). The full SKILL.md body (~5,000 tokens) loads on demand when the agent determines relevance. Compare this to MCP, where a typical 5-server setup consumes ~55,000 tokens upfront to load all tool definitions.
+
+#### Agent Skills open standard (Dec 2025)
+
+Anthropic released Agent Skills as an open standard at agentskills.io in December 2025. Adoption was rapid:
+- **40+ agents** adopted the SKILL.md format within weeks: Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, Cursor, Windsurf, Goose, Roo Code, Trae, Amp, and more.
+- **Vercel's skills.sh** (launched Jan 20, 2026): Package manager and registry. 110,000+ installs in four days across 17 agents. Snyk security scans on every install.
+- **96,000+ skills** in circulation across marketplaces (skills.sh, ClawHub/OpenClaw, SkillsMP) as of Feb 2026.
+
+Before the standard, each tool had its own approach: Cursor `.cursor/rules/*.mdc`, Windsurf `.windsurfrules`, GitHub Copilot `.github/copilot-instructions.md`, Aider `.aider.conventions`. The Agent Skills standard unifies these under a single portable format.
+
+#### Skills vs MCP: complementary, not competing
+
+| Dimension | Skills | MCP |
+|-----------|--------|-----|
+| **What it provides** | Procedural knowledge (how to do things) | Tool connectivity (what can be reached) |
+| **Format** | Natural language markdown | Structured JSON-RPC protocol |
+| **Token cost** | ~50 tokens at rest, ~5,000 when active | ~55,000 tokens for typical 5-server setup |
+| **Who can author** | Anyone who can write markdown | Developers who implement servers |
+| **Portability** | Works across 40+ agents via open standard | Requires client/server implementation |
+| **Security surface** | Prompt injection, memory poisoning, supply chain | Tool poisoning, RCE, supply chain |
+| **Relationship** | Consumes MCP tools | Consumed by Skills |
+
+A single skill can orchestrate multiple MCP servers (e.g., a "deploy" skill coordinating GitHub, Docker, and AWS MCP servers). A single MCP server can support dozens of skills. The full extension stack: CLAUDE.md (always-on context) → Skills (on-demand expertise) → MCP (external connections) → Hooks (guaranteed automation) → Plugins (packaging layer).
+
+#### Skills security: a new attack surface
+
+Skills represent a **distinct and serious security surface** that pattern scanning alone cannot address:
+
+**ClawHavoc campaign (Jan 2026)**: Security audit of ClawHub found 341 malicious skills (~12% of registry) delivering Atomic Stealer (AMOS), a macOS infostealer. Professional documentation, names like "solana-wallet-tracker" and "youtube-summarize-pro." Target: exchange API keys, wallet private keys, SSH credentials, browser passwords.
+
+**Snyk ToxicSkills study (Feb 2026)**: Scanning 3,984 skills from ClawHub and skills.sh:
+- **13.4% (534 skills)** contain critical-level security issues (malware, prompt injection, exposed secrets)
+- **36.82% (1,467 skills)** have at least one security flaw
+- 36% contain prompt injection
+- Snyk demonstrated going "from SKILL.md to shell access in three lines of markdown"
+
+**Key attack vectors**:
+1. **SKILL.md as code execution**: Natural-language instructions that result in shell commands, inheriting the agent's access. Traditional AppSec tools don't scan markdown for intent.
+2. **Memory poisoning**: Adversaries implant false information into agent long-term storage. Unlike session-scoped prompt injection, poisoned memory persists across sessions.
+3. **Supply chain poisoning**: Malicious skills published to registries with professional documentation. Same class of attack as npm/PyPI malware, adapted for AI skill ecosystems.
+4. **The "lethal trifecta"**: Skills are dangerous because agents combine access to private data + exposure to untrusted content + ability to communicate externally.
+
+**Why existing scanners fail**: Community skill scanners using denylist approaches are fundamentally flawed — you cannot block specific words in a system designed to understand concepts. Snyk found that a malicious skill received a verdict of CLEAN while the scanner itself was flagged as DANGEROUS.
+
+#### Implications for Tideclaw
+
+Tideclaw's original architecture focuses on three enforcement layers: taint tracking (L1), MCP gateway scanning (L2), and egress proxy scanning (L3). **Skills introduce a fourth attack surface that none of these layers address directly:**
+
+1. **L2 (MCP gateway)** catches malicious tool call parameters — but a poisoned skill can instruct the agent to craft tool calls that *look legitimate* while exfiltrating data. The parameters may not contain credential patterns; the *intent* is malicious.
+2. **L3 (egress proxy)** catches unauthorized network destinations — but a poisoned skill can instruct the agent to exfiltrate data through *allowed* channels (e.g., committing sensitive data to a GitHub repo the agent has write access to).
+3. **L1 (taint tracking)** catches file-to-network data flows — this layer *does* help, because taint tracking is intent-agnostic. If a skill causes the agent to read a sensitive file and then make a network call, the taint tracker fires regardless of whether the skill instructed it.
+
+**New enforcement seam needed**: Skill vetting/scanning before load. Options:
+- **(a) Static analysis of SKILL.md at load time**: Scan skill instructions for known malicious patterns (exfiltration instructions, credential harvesting, persistence mechanisms). Integrate with Snyk agent-scan or similar.
+- **(b) Skill allowlisting**: Tideclaw config specifies which skills are permitted. Unknown skills are blocked or require approval.
+- **(c) Skill isolation**: Run skills in separate context/subagent with restricted tool access (the `allowed-tools` frontmatter field enables this, but enforcement is runtime-dependent).
+- **(d) All of the above** (recommended for defense in depth).
+
+This is a **Phase 3 concern** (hardening), not MVP. But the architecture should anticipate it now.
+
 ---
 
 ## Tideclaw Architecture
@@ -235,7 +346,8 @@ The agentic runtime runs unmodified inside this topology. It sees MCP servers at
 3. **No cooperation required**: The agentic runtime doesn't need modification, plugins, or special flags (beyond headless mode). Seams are structural, not contractual.
 4. **MCP-first scanning**: For runtimes with MCP support, scan at the MCP protocol level (highest fidelity). The gateway seam provides structured tool name + argument + value visibility.
 5. **Network-fallback scanning**: For runtimes without MCP, scan at the HTTP proxy level (lower fidelity but universal). The proxy seam provides payload-level visibility.
-6. **Defense in depth**: Both MCP and network scanning run simultaneously when available. Multiple seams firing independently.
+6. **Skills-aware security**: Modern runtimes extend via two planes: tools (MCP) and knowledge (Skills/SKILL.md). Tideclaw's gateway seam covers the tool plane. The skills plane requires additional enforcement: skill vetting at load time, skill allowlisting, and skill isolation via restricted tool access. MCP is not the only extension mechanism — skills are becoming equally important.
+7. **Defense in depth**: MCP scanning, network scanning, skill vetting, and taint tracking run simultaneously when available. Multiple seams firing independently.
 7. **Fail-closed**: Scanner unavailable = deny. Proxy down = no egress. Container crash = session over.
 
 ### Architecture Overview
@@ -421,9 +533,10 @@ Tideclaw ships **pre-built container images** for supported runtimes:
 
 | Image | Base | Contents |
 |-------|------|----------|
-| `tideclaw/claude-code` | `node:22-slim` | Claude Code CLI, non-root user, MCP config template |
+| `tideclaw/claude-code` | `node:22-slim` | Claude Code CLI, non-root user, MCP config template, skill directory |
 | `tideclaw/codex` | `debian:bookworm-slim` | Codex CLI (Rust binary), non-root user, MCP + proxy config |
-| `tideclaw/aider` | `python:3.12-slim` | Aider, non-root user, proxy config |
+| `tideclaw/goose` | `debian:bookworm-slim` | Goose CLI (Rust binary), non-root user, MCP extension config pointing to gateway, proxy config. All extensions route through gateway seam. |
+| `tideclaw/aider` | `python:3.12-slim` | Aider, non-root user, proxy config (no MCP) |
 | `tideclaw/custom` | `ubuntu:24.04` | Base image with proxy config, user adds their runtime |
 
 Each image:
@@ -513,6 +626,17 @@ sandbox_mode = "danger-full-access"
 }
 ```
 Plus `HTTPS_PROXY=http://egress-proxy:3128` for shell commands that make HTTP requests.
+
+**Goose** (`~/.config/goose/config.yaml` — extension config pointing to gateway):
+```yaml
+extensions:
+  tideclaw:
+    type: streamable-http
+    uri: http://tg-gateway:4100/mcp
+    # All downstream MCP servers exposed via single gateway endpoint
+    # Goose sees one extension; gateway fans out to real servers on mcp-net
+```
+Plus `HTTPS_PROXY=http://egress-proxy:3128` for any direct HTTP traffic. Run with `--no-session --quiet --output-format json` for headless container operation. Goose's own sandbox (seatbelt/bubblewrap) should be disabled — Tideclaw's container topology provides the isolation.
 
 **Aider** (proxy-only, no MCP):
 ```
@@ -646,6 +770,12 @@ agent:
   tool: codex
 ```
 
+```yaml
+# tideclaw.yaml — Goose as the agentic runtime (best open-source option)
+agent:
+  tool: goose
+```
+
 ---
 
 ## Implementation Plan
@@ -663,20 +793,21 @@ agent:
 
 ### Phase 2: Multi-Runtime Support
 
-**Goal**: `tideclaw init --tool codex` also works.
+**Goal**: `tideclaw init --tool codex` and `tideclaw init --tool goose` also work.
 
 1. **Codex CLI container image** — `tideclaw/codex`. Rust binary + non-root user + MCP config pointing to gateway + `danger-full-access` sandbox mode + proxy env vars.
-2. **Proxy-mode scanning (MITM)** — Upgrade egress-proxy from CONNECT-only to MITM for allowed domains. This catches shell command HTTP traffic that bypasses MCP.
-3. **Credential injection** — Proxy injects auth headers on matching domains. Codex's shell commands can make API calls without knowing the credentials.
-4. **Aider container image** — `tideclaw/aider`. Python-based, proxy-only mode (no MCP).
-5. **Tool description scanning** — Scan `tools/list` responses from downstream MCP servers for poisoned descriptions (hidden instructions, rug-pull detection). Pipelock demonstrates this is feasible.
+2. **Goose container image** — `tideclaw/goose`. Rust binary + non-root user + MCP extension config pointing to gateway + proxy env vars. Goose's MCP-native architecture means ALL extensions route through the gateway seam (highest coverage among open-source tools). Disable Goose's own seatbelt/bubblewrap sandbox (Tideclaw provides the isolation layer). Run with `--no-session --quiet --output-format json` for headless operation.
+3. **Proxy-mode scanning (MITM)** — Upgrade egress-proxy from CONNECT-only to MITM for allowed domains. This catches shell command HTTP traffic that bypasses MCP.
+4. **Credential injection** — Proxy injects auth headers on matching domains. Codex's shell commands can make API calls without knowing the credentials.
+5. **Aider container image** — `tideclaw/aider`. Python-based, proxy-only mode (no MCP).
+6. **Tool description scanning** — Scan `tools/list` responses from downstream MCP servers for poisoned descriptions (hidden instructions, rug-pull detection). Pipelock demonstrates this is feasible.
 
 ### Phase 3: Hardening
 
 **Goal**: Full defense-in-depth.
 
 1. **tg-scanner + tidegate-runtime** — L1 taint tracking (eBPF + seccomp-notify).
-2. **Skill hardening** — SKILL.md rewriting for Claude Code.
+2. **Skill vetting** — Scan SKILL.md files at load time for malicious patterns (exfiltration instructions, credential harvesting, persistence). Integrate with Snyk agent-scan or equivalent. Skill allowlisting in `tideclaw.yaml`. Enforce `allowed-tools` restrictions from SKILL.md frontmatter.
 3. **PreToolUse hooks** — Claude Code framework-specific double-checking.
 
 ### Phase 4: Extended Features
@@ -818,27 +949,30 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 
 ## Comparison: Tideclaw vs Competitors
 
-| Dimension | Tideclaw | Pipelock | Docker MCP Gateway | E2B | Codex Sandbox |
-|-----------|----------|---------|-------------------|-----|---------------|
-| **Isolation** | Docker + network topology | Docker (2 containers) | MicroVM or Docker | Firecracker microVM | Landlock + seccomp |
-| **MCP scanning** | L1/L2/L3 (regex, checksums, entropy) | 9-layer DLP + injection detection | `--block-secrets` (regex) | No | No |
-| **Tool description scanning** | Not yet | Yes (rug-pull detection) | `--verify-signatures` | No | No |
-| **Egress control** | Proxy + domain allowlist + credential injection | Domain blocklist + SSRF protection | Container networking | IP/CIDR + SNI domain filtering | Binary on/off (seccomp) |
-| **Credential isolation** | Creds in MCP servers, never in agent | Agent has secrets + no network (capability separation) | Gateway injects credentials | Env vars in sandbox | Env var stripping (`KEY`/`SECRET`/`TOKEN`) |
-| **Taint tracking** | eBPF + seccomp-notify (Phase 3) | No | No | No | No |
-| **Shaped denies** | Yes (valid MCP result + explanation) | block/strip/warn/ask | No | No | No |
-| **Runtime-agnostic** | Yes (any CLI tool) | MCP servers only | MCP servers only | Yes (any code) | Codex only |
-| **Self-hosted** | Yes | Yes | Yes | Cloud or BYOC | Yes |
-| **Elicitation scanning** | Planned | No | No | No | No |
-| **Audit logging** | NDJSON structured logs | Configurable | `--log-calls` | Partial | No |
-| **Open source** | Yes (planned) | Yes (Apache-2.0) | Yes | Yes (Apache-2.0) | Yes (Apache-2.0) |
+| Dimension | Tideclaw | Pipelock | Docker MCP Gateway | Goose (native) | E2B | Codex Sandbox |
+|-----------|----------|---------|-------------------|----------------|-----|---------------|
+| **Isolation** | Docker + network topology | Docker (2 containers) | MicroVM or Docker | bubblewrap/seatbelt (process-level) | Firecracker microVM | Landlock + seccomp |
+| **MCP scanning** | L1/L2/L3 (regex, checksums, entropy) | 9-layer DLP + injection detection | `--block-secrets` (regex) | No | No | No |
+| **Tool description scanning** | Not yet | Yes (rug-pull detection) | `--verify-signatures` | No | No | No |
+| **Skill vetting** | Phase 3 (static analysis + allowlisting) | No | No | No | No | No |
+| **Egress control** | Proxy + domain allowlist + credential injection | Domain blocklist + SSRF protection | Container networking | No | IP/CIDR + SNI domain filtering | Binary on/off (seccomp) |
+| **Credential isolation** | Creds in MCP servers, never in agent | Agent has secrets + no network (capability separation) | Gateway injects credentials | No (env vars in process) | Env vars in sandbox | Env var stripping (`KEY`/`SECRET`/`TOKEN`) |
+| **Taint tracking** | eBPF + seccomp-notify (Phase 3) | No | No | No | No | No |
+| **Shaped denies** | Yes (valid MCP result + explanation) | block/strip/warn/ask | No | No | No | No |
+| **Runtime-agnostic** | Yes (any CLI tool) | MCP servers only | MCP servers only | N/A (is the runtime) | Yes (any code) | Codex only |
+| **Skills support** | Scans/vets skills loaded by runtime | No | No | Yes (Agent Skills standard) | No | Yes (Agent Skills standard) |
+| **Self-hosted** | Yes | Yes | Yes | Yes | Cloud or BYOC | Yes |
+| **Elicitation scanning** | Planned | No | No | No | No | No |
+| **Audit logging** | NDJSON structured logs | Configurable | `--log-calls` | No | Partial | No |
+| **Open source** | Yes (planned) | Yes (Apache-2.0) | Yes | Yes (Apache-2.0) | Yes (Apache-2.0) | Yes (Apache-2.0) |
 
 **Tideclaw's differentiation**:
 1. **Taint tracking** (eBPF + seccomp-notify) — no competitor has kernel-level data flow tracking
 2. **Shaped denies** — agent reads explanation and adjusts behavior, doesn't retry blindly
 3. **Runtime-agnostic** — orchestrates any CLI tool, not just MCP servers
-4. **Defense-in-depth** — three independent layers (taint, gateway, proxy) vs. single-layer approaches
+4. **Defense-in-depth** — four independent layers (taint, gateway, proxy, skill vetting) vs. single-layer approaches
 5. **Credential topology** — credentials in separate containers on isolated network, not env vars in the agent
+6. **Skills-aware security** — only security framework that addresses both the MCP tool plane and the Skills knowledge plane as distinct attack surfaces
 
 ---
 
@@ -852,8 +986,64 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 | **Malicious skill → read workspace file, base64, exfil** | Succeeds | L1 taint tracking: eBPF sees file open, seccomp blocks connect |
 | **Compromised MCP server → inject creds in response** | Tool receives and may forward | L2 gateway scans response, blocks credential patterns |
 | **Credential theft from env vars** | All creds in one process | Only LLM API auth in agent. All others isolated. |
+| **Malicious skill → instructs agent to craft legitimate-looking exfil** | Succeeds (agent follows skill instructions) | L1 taint tracking catches file-to-network flows regardless of intent. L3 proxy blocks non-allowlisted domains. **Partial mitigation** — skill vetting (Phase 3) adds pre-load static analysis. |
+| **Supply chain skill poisoning (registry)** | Succeeds (agent loads poisoned skill) | Skill allowlisting in `tideclaw.yaml` blocks unknown skills. Snyk agent-scan integration for static analysis. **Phase 3.** |
 | **Semantic rephrasing ("card ending in 4242")** | Not blocked | **Not blocked** (residual risk — fundamental limit of pattern scanning) |
 | **Exfil via LLM API request** | N/A (direct API access) | **Not blocked** (residual risk — LLM API must be reachable) |
+
+---
+
+## Tideclaw Base Evaluation: Best Non-Claude/Codex/Gemini Runtime
+
+If Tideclaw must work with a runtime that is not Claude Code, Codex CLI, or Gemini CLI, which tool makes the best base? Evaluated against Tideclaw's integration requirements:
+
+### Evaluation Criteria
+
+| Criterion | Weight | Why it matters for Tideclaw |
+|-----------|--------|----------------------------|
+| MCP support | Critical | Gateway seam requires MCP. Without it, only proxy mode (medium fidelity). |
+| Headless/API mode | Critical | Container orchestration requires non-interactive execution with structured output. |
+| Docker/containerization | High | Tideclaw's topology is container-based. The runtime must run cleanly in containers. |
+| Skills support | High | Skills are a major extension paradigm. The runtime should support or be compatible with the Agent Skills standard. |
+| Sandboxing (own) | Medium | Can be disabled in favor of Tideclaw's topology. Nice to have as defense-in-depth option. |
+| Model agnosticism | Medium | Users should choose their LLM. Lock-in to one provider reduces Tideclaw's value. |
+| Community/maintenance | Medium | Single-maintainer projects are riskier for production infrastructure. |
+| Code editing quality | High | The runtime must actually be good at writing code — that's the user's goal. |
+
+### Comparison
+
+| | **Goose** | **Aider** | **llm CLI** |
+|---|---|---|---|
+| MCP support | **Foundational** — all extensions are MCP | None (community workarounds) | Community plugin only |
+| Headless mode | **Yes** — `--quiet`, `--output-format json`, `--no-session`, recipes, cron | Minimal — `-m` flag, no structured output | Not applicable (not an agent) |
+| Docker | **Official images**, non-root, Compose workflows | Official images, but `/run` limitations | No official images |
+| Skills | **Yes** — Agent Skills standard, SKILL.md, recipes | None (`.aider.conventions` only) | None |
+| Own sandbox | **Yes** — bubblewrap (Linux), seatbelt (macOS), v1.25.0 | None | None |
+| Model agnosticism | **25+ providers** incl. local (Ollama) | Broad (any LLM via API) | Broadest (51+ plugins) |
+| Community | **31K stars, 373 contributors**, Linux Foundation AAIF | 41K stars but **single maintainer** | 11K stars, single maintainer |
+| Code quality | Full agent (file edit, shell, test, subagents) | **Best editing engine** (tree-sitter + PageRank repo map) | **Not a coding agent** |
+| Integration mode | **MCP gateway** (high fidelity) | Container + proxy only (medium fidelity) | Not viable |
+| Tideclaw seam coverage | **All seams activate**: MCP gateway, egress proxy, credential isolation, taint tracking | Proxy + credential isolation only. No MCP gateway seam. | — |
+
+### Recommendation: Goose
+
+**Goose is the clear best base for Tideclaw** outside of Claude Code, Codex CLI, and Gemini CLI. The reasoning:
+
+1. **MCP-native = full seam activation.** Every Goose extension is an MCP server. Point all extensions at the gateway → 100% tool call visibility. This is the highest scanning fidelity achievable. Aider, by contrast, has no MCP support — Tideclaw can only scan its HTTP traffic (medium fidelity) and cannot see structured tool calls at all.
+
+2. **Headless-ready for container orchestration.** `goose run --quiet --output-format json --no-session --max-turns N` gives Tideclaw exactly the non-interactive, structured-output interface needed for container lifecycle management. Aider's `-m` flag exists but produces no structured output and has no proper daemon mode.
+
+3. **Skills-aware.** Goose supports the Agent Skills standard, meaning Tideclaw's Phase 3 skill vetting/scanning applies cleanly. Aider has no skill system, which means fewer attack surfaces but also less extensibility for users.
+
+4. **Rust binary.** Like Codex CLI, Goose compiles to a single Rust binary — fast startup, no runtime dependency bloat inside the container. Aider requires a full Python environment.
+
+5. **Community sustainability.** 373+ contributors, Linux Foundation governance (AAIF), Block corporate backing, 100+ releases in one year. Compare to Aider's single-maintainer model.
+
+6. **The gap Tideclaw fills for Goose.** Goose v1.25.0 added sandboxing, but it's process-level (seatbelt/bubblewrap) — no credential isolation across containers, no MCP interposition scanning, no egress proxy with domain allowlists, no taint tracking. These are exactly Tideclaw's additions. Tideclaw + Goose is a natural pairing: Goose provides the agent runtime and MCP-native extensibility; Tideclaw provides the security topology.
+
+**Aider is a viable but distant second.** Its tree-sitter + PageRank code editing engine is genuinely best-in-class, but the lack of MCP, headless mode, and skills support means Tideclaw can only offer medium-fidelity protection. If a user specifically wants aider's editing quality inside Tideclaw's security topology, proxy-only mode works — but they lose the gateway seam.
+
+**llm CLI is not viable.** It is a chat/completion tool, not a coding agent. Tideclaw would need to build the entire agent runtime from scratch, defeating the purpose.
 
 ---
 
@@ -865,7 +1055,7 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 
 3. **Three integration modes**: MCP gateway (high fidelity), network proxy (medium fidelity), hybrid (both). Mode selected automatically based on the agentic runtime's capabilities — specifically, which seams can be activated.
 
-4. **Claude Code and Codex CLI are the two launch runtimes**. Claude Code via MCP gateway mode. Codex via hybrid mode (MCP + proxy).
+4. **Claude Code, Codex CLI, and Goose are the three launch runtimes**. Claude Code via MCP gateway mode. Codex via hybrid mode (MCP + proxy). Goose via MCP gateway mode (all extensions are MCP servers → highest coverage among open-source tools).
 
 5. **Runtime-agnostic design**: The agentic runtime is pluggable. Any CLI tool that can run in a container works inside Tideclaw's topology. Seams are structural (container boundaries, network segments), not contractual (APIs the runtime must implement).
 
@@ -873,12 +1063,16 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 
 7. **Compose generation** (not static compose file) from `tideclaw.yaml`. The generated topology encodes the seams.
 
+8. **Two extension planes, not one**: Modern agentic runtimes extend via MCP (tool connectivity) AND Skills (procedural knowledge). Tideclaw's gateway seam covers MCP. Skill security (vetting, allowlisting, isolation) is a Phase 3 concern but the architecture must anticipate it now.
+
 ## What This Spike Did NOT Decide
 
 - CLI implementation language (Go recommended, shell acceptable for Phase 1)
 - Plugin distribution model (standalone first, plugin later)
 - Codex sandbox conflict resolution (needs empirical testing)
+- Goose sandbox conflict resolution (disable Goose's seatbelt/bubblewrap when inside Tideclaw's topology? needs empirical testing)
 - Session persistence model for containerized Claude Code
+- Skill scanning approach (static analysis vs. allowlisting vs. isolation vs. all three)
 - Pricing/distribution model (open source? paid? freemium?)
 - Whether to keep "Tidegate" as a name for the security framework or fold it into "Tideclaw"
 - Whether Tideclaw's seam topology could be composed with other orchestrators' features (e.g., ClaudeClaw's web UI + Tideclaw's seams)
@@ -900,6 +1094,20 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 - Codex security docs: https://developers.openai.com/codex/security/
 - Codex cloud environments: https://developers.openai.com/codex/cloud/environments/
 - Google Jules: https://blog.google/technology/google-labs/jules/
+- Goose (Block): https://github.com/block/goose
+- Goose architecture: https://block.github.io/goose/docs/goose-architecture/
+- Goose v1.25.0 release: https://block.github.io/goose/blog/2026/02/23/goose-v1-25-0/
+- Goose in Docker: https://block.github.io/goose/docs/guides/goose-in-docker/
+- Goose + Docker (Docker blog): https://www.docker.com/blog/building-ai-agents-with-goose-and-docker/
+- Goose red team report: https://www.theregister.com/2026/01/12/block_ai_agent_goose/
+- Aider: https://aider.chat/
+- Aider GitHub: https://github.com/Aider-AI/aider
+- Aider Docker: https://aider.chat/docs/install/docker.html
+- Aider MCP request (Issue #4506): https://github.com/aider-ai/aider/issues/4506
+- Aider MCP request (Issue #3314): https://github.com/Aider-AI/aider/issues/3314
+- llm CLI: https://github.com/simonw/llm
+- llm tool calling (v0.26): https://simonwillison.net/2025/May/27/llm-tools/
+- llm plugin directory: https://llm.datasette.io/en/stable/plugins/directory.html
 
 ### MCP Security
 - MCP spec (latest): https://modelcontextprotocol.io/specification/2025-11-25
@@ -910,6 +1118,22 @@ One distribution model: Tideclaw as a Claude Code plugin. The plugin:
 - MCP tool poisoning: https://www.pillar.security/blog/the-security-risks-of-model-context-protocol-mcp
 - Securing MCP (paper): https://arxiv.org/abs/2511.20920
 - OWASP Agentic AI: https://www.kaspersky.com/blog/top-agentic-ai-risks-2026/55184/
+
+### Skills Paradigm and Security
+- Agent Skills specification: https://agentskills.io/specification
+- Claude Code skills docs: https://code.claude.com/docs/en/skills
+- Skills explained (Anthropic): https://claude.com/blog/skills-explained
+- Extending Claude with skills and MCP: https://claude.com/blog/extending-claude-capabilities-with-skills-mcp-servers
+- Claude Skills vs MCP (IntuitionLabs): https://intuitionlabs.ai/articles/claude-skills-vs-mcp
+- Vercel skills.sh: https://vercel.com/changelog/introducing-skills-the-open-agent-skills-ecosystem
+- Snyk ToxicSkills study: https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub/
+- Snyk SKILL.md to shell access: https://snyk.io/articles/skill-md-shell-access/
+- Snyk agent-scan: https://github.com/snyk/agent-scan
+- Snyk + Vercel securing skills: https://snyk.io/blog/snyk-vercel-securing-agent-skill-ecosystem/
+- ClawHavoc malicious campaign: https://snyk.io/articles/clawdhub-malicious-campaign-ai-agent-skills/
+- OpenClaw security (Cisco): https://blogs.cisco.com/ai/personal-ai-agents-like-openclaw-are-a-security-nightmare
+- Federal Register RFI on AI agent security: https://www.federalregister.gov/documents/2026/01/08/2026-00206/request-for-information-regarding-security-considerations-for-artificial-intelligence-agents
+- Linux Foundation AAIF: https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation
 
 ### Sandboxing and Agent Security
 - Pipelock: https://github.com/luckyPipewrench/pipelock
