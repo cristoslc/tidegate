@@ -75,7 +75,7 @@ The agentic runtime runs inside these seams, unmodified.
 - **Billing**: Free and open source (Apache 2.0). You only pay your LLM provider.
 - **Execution**: **Rust** binary (Cargo workspace: `goose`, `goose-cli`, `goose-server`, `goose-mcp`). Agent loop dispatches tool calls to extensions. Context revision prunes old information to manage token usage. Errors are sent back to the model for self-correction. Up to 10 concurrent subagents with isolated execution contexts.
 - **MCP**: **Foundational** — MCP is the backbone of Goose's extensibility. All extensions (built-in and external) are MCP servers. Block co-designed MCP with Anthropic. Six extension types: Builtin (compiled Rust), Platform (in-process Rust), Frontend (UI-side), UVX (Python via uv), SSE/Streamable HTTP (remote), Stdio (local). Migrating from internal implementation to official `rmcp` Rust SDK.
-- **Skills**: **Yes — Agent Skills standard.** `SKILL.md` files with YAML frontmatter, stored in `~/.config/goose/skills`. Compatible with Claude Desktop and 40+ other agents. Progressive disclosure: only name/description loaded at startup, full instructions on demand. As of v1.25.0, unified **Summon extension** merges skills and recipes with `load` and `delegate` tools.
+- **Skills**: **Yes — Agent Skills standard.** `SKILL.md` files with YAML frontmatter. Enabled by default via the **Summon extension** (v1.25.0), which unifies skills and recipes into two tools: `load` (inject skill instructions into context on demand) and `delegate` (spin up subagent with skill in isolation). Three discovery directories in priority order: `~/.claude/skills/` (global, shared with Claude Desktop — cross-agent portability), `.goose/skills/` (project-level, goose-specific), `.agents/skills/` (project-level, portable across all Agent Skills-compatible tools). Progressive disclosure: only name/description at startup, full SKILL.md on demand. Block runs an internal skills marketplace (100+ skills, curated bundles by team role).
 - **Recipes**: Parameterized YAML workflow definitions. Support sub-recipes, retry logic, cron scheduling, extension requirements, max turns. Composable automation for CI/CD.
 - **Sandboxing**: **Yes (v1.25.0, Feb 23, 2026)**. macOS: Seatbelt (`sandbox-exec`) with dynamically generated profiles. Linux: bubblewrap (bwrap). Both work without Docker and can sandbox network access. SLSA provenance attestations on all release artifacts via Sigstore.
 - **Docker**: Official images at `ghcr.io/block/goose:<version>`. Debian Bookworm Slim, non-root UID 1000. Docker Compose workflows supported. Docker Model Runner integration for fully local LLM stacks.
@@ -348,7 +348,7 @@ The agentic runtime runs unmodified inside this topology. It sees MCP servers at
 5. **Network-fallback scanning**: For runtimes without MCP, scan at the HTTP proxy level (lower fidelity but universal). The proxy seam provides payload-level visibility.
 6. **Skills-aware security**: Modern runtimes extend via two planes: tools (MCP) and knowledge (Skills/SKILL.md). Tideclaw's gateway seam covers the tool plane. The skills plane requires additional enforcement: skill vetting at load time, skill allowlisting, and skill isolation via restricted tool access. MCP is not the only extension mechanism — skills are becoming equally important.
 7. **Defense in depth**: MCP scanning, network scanning, skill vetting, and taint tracking run simultaneously when available. Multiple seams firing independently.
-7. **Fail-closed**: Scanner unavailable = deny. Proxy down = no egress. Container crash = session over.
+8. **Fail-closed**: Scanner unavailable = deny. Proxy down = no egress. Container crash = session over.
 
 ### Architecture Overview
 
@@ -392,7 +392,7 @@ The agentic runtime runs unmodified inside this topology. It sees MCP servers at
 
 Tideclaw's orchestration topology adapts based on the agentic runtime's capabilities — specifically, which seams can be activated:
 
-#### Mode 1: MCP Gateway (Claude Code, Codex CLI, Continue.dev, any MCP-native runtime)
+#### Mode 1: MCP Gateway (Claude Code, Codex CLI, Goose, Continue.dev, any MCP-native runtime)
 
 ```
 Agent → tg-gateway (scan all values) → downstream MCP servers
