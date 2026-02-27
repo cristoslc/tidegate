@@ -5,6 +5,8 @@ license: UNLICENSED
 allowed-tools: Bash, Read, Grep, Glob
 metadata:
   short-description: Update agents scaffolding from upstream
+  version: 1.0.0
+  author: cristos
 ---
 
 # Update Agents Core

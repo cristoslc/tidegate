@@ -5,6 +5,8 @@ license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Manage spec artifact creation and lifecycle
+  version: 1.1.0
+  author: cristos
 ---
 
 # Spec Management
@@ -57,11 +59,75 @@ Maps an end-to-end user experience across features and touchpoints. Journeys des
 
 - **Folder structure:** `docs/journey/(JOURNEY-NNN)-<Title>/`
   - Primary file: `(JOURNEY-NNN)-<Title>.md` — the journey narrative.
-  - Supporting docs: journey map diagrams, flow charts, interview notes.
+  - Supporting docs: flow charts, interview notes, extended research.
 - Frontmatter must include: title, status, author, created date, last updated date, parent Vision, and linked Persona(s).
 - Must define: persona (who — reference a PERSONA-NNN artifact), goal (what they're trying to accomplish), steps/stages (the flow), pain points (friction), and opportunities (where the product can improve).
 - A Journey is "Validated" when its steps and pain points have been confirmed through user research, stakeholder review, or prototype testing.
 - Journeys are *discovery artifacts* — they inform Epic and PRD creation but are not directly implemented. They do NOT contain acceptance criteria or task breakdowns.
+
+#### Mermaid journey diagram
+
+Every journey MUST include a Mermaid `journey` diagram embedded in the primary file. The diagram is a structured visualization of the narrative — it encodes stages, actions, satisfaction levels, and actors in a single view. Place the diagram immediately after the **Steps / Stages** section.
+
+**Syntax:**
+
+~~~markdown
+```mermaid
+journey
+    title <Journey Title>
+    section <Stage Name>
+      <Action>: <score>: <Actor>
+```
+~~~
+
+**Mapping conventions:**
+
+| Journey element | Mermaid element | Rule |
+|-----------------|-----------------|------|
+| Steps / stages | `section` blocks | One section per stage, in narrative order |
+| Actions within a stage | Task lines | Concise verb phrases (3-6 words) |
+| Persona | Actor name | Use the persona's archetype label from its PERSONA-NNN, not the artifact ID |
+| System / other actors | Additional actors | Add when a handoff or interaction with another party occurs |
+
+**Satisfaction scores** (1–5 scale):
+
+| Score | Sentiment | Signals |
+|-------|-----------|---------|
+| 5 | Delighted | Moment of delight, exceeds expectations |
+| 4 | Satisfied | Works well, minor friction at most |
+| 3 | Neutral | Functional but unremarkable |
+| 2 | Frustrated | Noticeable friction — flags a **pain point** |
+| 1 | Blocked | Severe friction or failure — flags a critical **pain point** |
+
+Every pain point identified in the narrative MUST appear as a score ≤ 2 task in the diagram, and every score ≤ 2 task MUST have a corresponding pain point in the narrative. This keeps the diagram and narrative in sync.
+
+**Example:**
+
+~~~markdown
+```mermaid
+journey
+    title First-Time Project Setup
+    section Discovery
+      Find product landing page: 4: Developer
+      Read getting-started guide: 3: Developer
+    section Installation
+      Install CLI tool: 5: Developer
+      Run init command: 4: Developer
+      Configure credentials: 2: Developer
+    section First Use
+      Create first project: 4: Developer
+      Invite team member: 1: Developer, Admin
+      Run first build: 5: Developer
+```
+~~~
+
+In this example, "Configure credentials" (2) and "Invite team member" (1) surface as pain points — the narrative must describe the corresponding friction and opportunities.
+
+**Workflow integration:**
+
+- When creating a journey, draft the narrative first, then build the diagram from it. The diagram is a *derived visualization*, not the source of truth — the narrative is.
+- When updating a journey (adding stages, revising pain points), update **both** the narrative and the diagram in the same commit.
+- When transitioning a journey to Validated, confirm that satisfaction scores reflect validated research findings, not initial assumptions. Adjust scores as user feedback dictates.
 
 ### Epics (EPIC-NNN)
 

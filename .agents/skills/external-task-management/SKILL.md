@@ -5,6 +5,8 @@ license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Track agent execution with an external task CLI
+  version: 1.0.0
+  author: cristos
 ---
 
 # External Task Management

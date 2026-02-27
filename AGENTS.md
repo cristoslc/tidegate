@@ -78,6 +78,10 @@ docker compose up --build
 | Change audit format | `src/gateway/src/audit.ts` |
 | Docker topology | `docker-compose.yaml` |
 
+## Skill routing
+
+When the user wants to create, plan, write, update, transition, or review any documentation artifact (Vision, Journey, Epic, Story, PRD, Spike, ADR, Persona) or their supporting docs (architecture overviews, competitive analyses, journey maps), **always invoke the spec-management skill**. This includes requests like "write a PRD", "let's plan the next feature", "create an ADR for this decision", "move the spike to Active", "add a user story", or "update the architecture overview." The skill contains the procedures, formats, and validation rules — do not improvise artifact creation from the reference tables below.
+
 ## Documentation lifecycle workflow
 
 ### General rules
@@ -96,12 +100,13 @@ Phases are **available waypoints**, not mandatory gates. Artifacts may skip inte
 | Type | Path | Format | Phases |
 |------|------|--------|--------|
 | Product Vision | `docs/vision/` | Folder containing titled `.md` + supporting docs (competitive analysis, market research, etc.) | Draft → Active → Sunset · Abandoned |
-| User Journey | `docs/journey/` | Folder containing titled `.md` + supporting docs (journey maps, persona profiles, diagrams) | Draft → Validated → Archived · Abandoned |
+| User Journey | `docs/journey/` | Folder containing titled `.md` with embedded Mermaid journey diagram + supporting docs | Draft → Validated → Archived · Abandoned |
 | Epics | `docs/epic/` | Folder containing titled `.md` + supporting docs | Proposed → Active → Complete → Archived · Abandoned |
 | User Story | `docs/story/` | Markdown file per story | Draft → Ready → Implemented · Abandoned |
 | PRDs | `docs/prd/` | Folder containing titled `.md` + supporting docs | Draft → Review → Approved → Implemented → Deprecated · Abandoned |
 | Research / Spikes | `docs/research/` | Folder containing titled `.md` (not `README.md`) | Planned → Active → Complete · Abandoned |
 | ADRs | `docs/adr/` | Markdown file directly in phase directory | Draft → Proposed → Adopted → Retired · Superseded · Abandoned |
+| Personas | `docs/persona/` | Folder containing titled `.md` + supporting docs (interview notes, research data) | Draft → Validated → Archived · Abandoned |
 
 ### Artifact hierarchy
 
@@ -113,6 +118,7 @@ Product Vision (VISION-NNN) — one per product or product area
   │     ├── PRD (PRD-NNN) — feature specification
   │     │     └── Implementation Plan (bd epic + swarm)
   │     └── ADR (ADR-NNN) — architectural decision (cross-cutting)
+  ├── Persona (PERSONA-NNN) — user archetype (cross-cutting)
   └── Research Spike (SPIKE-NNN) — can attach to any artifact ↑
 ```
 
@@ -121,8 +127,9 @@ Product Vision (VISION-NNN) — one per product or product area
 - Every User Journey MUST reference a parent Vision.
 - Every User Story MUST reference a parent Epic.
 - Every PRD MUST reference a parent Epic.
-- Spikes can belong to any artifact type (Vision, Journey, Epic, Story, PRD, ADR). The owning artifact controls all spike tables.
+- Spikes can belong to any artifact type (Vision, Journey, Epic, Story, PRD, ADR, Persona). The owning artifact controls all spike tables.
 - ADRs are cross-cutting: they link to all affected Epics/PRDs but are not owned by any single one.
+- Personas are cross-cutting: they link to all Journeys, Stories, and other artifacts that reference them but are not owned by any single one.
 - An artifact may only have one parent in the hierarchy but may reference siblings or cousins via `related` links.
 
-For artifact creation, lifecycle transitions, and implementation plan workflows, use the **spec-management** skill.
+For detailed procedures, see the **spec-management** skill (referenced in Skill routing above).

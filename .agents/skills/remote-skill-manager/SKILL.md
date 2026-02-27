@@ -6,6 +6,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Fetch, track, and update remote skills
   related-adr: ADR-002-Remote-Skills-Reference-Pattern
+  version: 1.0.0
+  author: cristos
 ---
 
 # Remote Skill Manager
