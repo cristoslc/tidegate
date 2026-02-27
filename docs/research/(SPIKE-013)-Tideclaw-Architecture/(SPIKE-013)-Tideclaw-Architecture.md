@@ -76,6 +76,21 @@ Modern agentic runtimes have **two extension planes** — both are attack surfac
 
 **Skills key gap**: 96,000+ skills in circulation (Feb 2026), 13.4% contain critical security issues (Snyk ToxicSkills study). Denylist scanners are fundamentally flawed — you cannot block specific words in a system designed to understand concepts. Skills require a **new enforcement seam** (skill vetting before load) that Tideclaw's L1/L2/L3 layers don't directly address. L1 (taint tracking) helps because it's intent-agnostic. Skill vetting is a Phase 3 concern, but the architecture anticipates it now.
 
+### Tool-Call Process Isolation
+
+> Full analysis of all four runtimes: [tool-isolation.md](./tool-isolation.md)
+
+**No runtime provides per-tool-call isolation.** All four sandbox the session or the subprocess, not individual tool invocations. Within a sandbox boundary, all tool calls share the same filesystem view, network policy, and credential set.
+
+| Runtime | Sandbox boundary | What's sandboxed | Key gap |
+|---------|-----------------|-----------------|---------|
+| **Claude Code** | Per-Bash-command (bubblewrap/Seatbelt) | Bash subprocess only | Read/Write/Edit/Glob/Grep are in-process (Node.js) with app-level permission checks only — no OS sandbox. MCP servers (stdio) are unsandboxed child processes. |
+| **Codex CLI** | Per-command (Landlock + seccomp + env clearing) | Every shell command | Network is binary (all/nothing) — no domain-level filtering. Env var stripping catches `KEY`/`SECRET`/`TOKEN` but not content-embedded credentials. |
+| **Gemini CLI** | Per-tool-call (Seatbelt or Docker) | All tools when sandbox is enabled | **Sandbox is OFF by default.** Six Seatbelt profiles with proxied option. Docker mode provides full container isolation. |
+| **Goose** | Per-session (Seatbelt wraps entire `goosed` process) | All tools + all child processes | **macOS only** — Linux bubblewrap not yet shipped (v1.25.0). Builtin extensions (developer, shell) run in-process with no separate boundary. |
+
+**What Tideclaw adds**: Runtimes sandbox the agent; Tideclaw sandboxes the topology. The runtime prevents the agent from accessing files or network. Tideclaw prevents credentials from existing where they can be stolen (mount isolation), prevents tool calls from containing exfiltrated data (L2 gateway scanning), and prevents network traffic from reaching unauthorized destinations (L3 egress proxy) — regardless of what the agent's own sandbox does or doesn't enforce.
+
 ---
 
 ## Tideclaw Architecture
