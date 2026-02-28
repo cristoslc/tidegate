@@ -21,7 +21,8 @@ blocks: [ADR-004]
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-02-28 | bb16b22 | Initial creation |
-| Active | 2026-02-28 | 4bd2303 | Research complete; findings and recommendation written |
+| Active | 2026-02-28 | 4bd2303 | Initial findings: transport evaluation, data plane separation |
+| Active | 2026-02-28 | 5391e13 | Revised: privilege separation model (orchestrator/subagent/interceptor) |
 
 ## Purpose
 
@@ -53,283 +54,330 @@ IPC is a fourth outbound data path that reaches external systems without hitting
 
 ## Findings
 
-### Q1: IPC Transport Models
+### The key insight: privilege separation, not IPC scanning
 
-#### Evaluated models
+The original framing — "how do we scan the IPC channel?" — is the wrong question. Scanning IPC is trying to add a checkpoint to a channel that shouldn't carry unchecked data in the first place. The right question: **how do we structure the agent hierarchy so that processes with access to sensitive data can never reach external channels directly?**
 
-| Model | Mechanism | Scanning injection | Structured? | Atomicity | Taint interaction |
-|-------|-----------|-------------------|-------------|-----------|-------------------|
-| **Filesystem JSON** | Shared volume, `rename()` | Sidecar watcher or inline at reader | Yes (JSON) | `rename()` is atomic | Write not gated by `connect()` — no L1 enforcement |
-| **Unix domain socket** | UDS in shared volume | Proxy on UDS path | Framing-dependent | Stream-based | `connect()` fires but seccomp filter must allow `AF_UNIX` for MCP stdio — can't selectively block |
-| **Named pipe (FIFO)** | Kernel byte stream | Inline only (no random access) | No — raw bytes | None | No `connect()` involved |
-| **gRPC over UDS** | Protobuf RPC over UDS | gRPC interceptor/middleware | Yes (protobuf) | Per-RPC | Over-engineered: adds protobuf compilation, heavy deps |
-| **MCP over HTTP** | JSON-RPC via tg-gateway | **Existing gateway scanner** | Yes (MCP) | Per-request | Same as all MCP tool calls — L2 scanning, no L1 gap |
+The answer is privilege separation between an orchestrator agent and its subagents, with an interceptor at the boundary.
 
-#### Analysis
+#### The model
 
-**Filesystem JSON** is what NanoClaw uses. It works, but the scanning injection point is awkward — you need either a sidecar watcher or inline scanning at the orchestrator. The fundamental problem: the IPC MCP server runs *inside* the agent container, so the data is already in its final form (a JSON file) by the time any external component sees it. Scanning must happen after the write, not before.
+```
+                         User
+                          ↕
+                  ┌───────────────┐
+                  │  Orchestrator  │  Can talk to the outside world.
+                  │  Agent         │  Cannot touch the workspace.
+                  │                │
+                  │  Tools:        │
+                  │  · send_message│
+                  │  · schedule_task
+                  │  · spawn_agent │
+                  └──┬──────┬──┬──┘
+                     │      │  │
+                ┌────┴──┐┌──┴──┴──┐
+                │Intrcp ││Intrcp  │   Scans subagent output.
+                │A      ││B       │   Sanitizes or terminates.
+                └────┬──┘└────┬───┘
+                     │        │
+                ┌────┴──┐┌────┴───┐
+                │Sub    ││Sub     │   Can touch the workspace.
+                │agent A││agent B │   Cannot talk to the outside world.
+                │       ││        │
+                │Tools: ││Tools:  │
+                │· read  ││· read  │
+                │· write ││· write │
+                │· bash  ││· bash  │
+                │· grep  ││· grep  │
+                └───────┘└────────┘
+```
 
-**Unix domain sockets** are tempting because `connect()` on a UDS fires the same syscall as TCP `connect()`. But ADR-002's seccomp-notify filter cannot selectively block UDS connections to the IPC socket while allowing UDS connections to MCP servers (stdio transport). The seccomp BPF filter operates on syscall arguments — it can distinguish `AF_UNIX` from `AF_INET`, but not one UDS path from another (path resolution requires userspace logic). Blocking all `AF_UNIX` `connect()` breaks stdio MCP servers. Allowing all `AF_UNIX` `connect()` means no enforcement.
+**Orchestrator agent**: Has messaging tools (`send_message`, `schedule_task` — via tg-gateway). Can spawn and manage subagents. Has **no** workspace access — cannot read files, cannot run code, cannot call filesystem tools. Its only inputs are user prompts and sanitized subagent results.
 
-**Named pipes** have no random access (can't scan before the reader consumes) and no built-in framing (must layer a protocol on top). Worse in every dimension than filesystem JSON.
+**Subagents**: Have workspace tools (read, write, edit, bash, glob, grep). Can read sensitive files, run code, modify the workspace. Have **no** messaging tools — cannot call `send_message`, cannot reach external channels. Their only output path is IPC back to the orchestrator, which passes through the interceptor.
 
-**gRPC over UDS** adds protobuf compilation and heavy runtime dependencies for no security benefit over MCP-over-HTTP. The scanning injection point (gRPC interceptor) is equivalent to a gateway middleware.
+**Interceptor**: Sits on the IPC channel between each subagent and the orchestrator. Processes every subagent→orchestrator message. Three outcomes:
 
-**MCP over HTTP (via tg-gateway)** eliminates the problem entirely. The IPC tools become regular MCP tools. The gateway's existing `router.ts` pipeline — `extractStringValues()` → `scanValue()` (L1 regex + L2/L3 Python subprocess) → `shapedDeny()` on violation — handles IPC payloads with zero new code. The in-container IPC MCP server pattern is not adopted; all agent→external communication routes through the gateway seam.
+1. **Pass** — output is clean, forward to orchestrator
+2. **Sanitize** — output contains detectable sensitive data, redact specific values and forward
+3. **Terminate** — output is opaque or unsalvageable, signal the orchestrator to kill this subagent and retry
 
-#### Conclusion
+#### Why this resolves the PID 1 problem
 
-**MCP over HTTP is the only model that reuses the existing scanning infrastructure without new code.** All others require building a parallel scanning injection point. The question is not "which IPC transport" but "should IPC exist as a separate channel at all, or should it be MCP?"
+ADR-002 identifies a fundamental residual risk: the agent framework process (PID 1) reads files directly and makes network connections. Tainting PID 1 blocks all agent functionality. The taint model accepts that PID 1 is outside enforcement scope.
+
+Privilege separation eliminates this problem structurally:
+
+- The **orchestrator** (which needs network access for messaging) **never reads workspace files**. It has no filesystem tools. It can't become tainted because it never accesses sensitive data.
+- The **subagents** (which read sensitive files) **can't reach external channels**. They have no messaging tools and no network path to the gateway or proxy.
+- The **interceptor** bridges the two: it inspects everything crossing the privilege boundary before the orchestrator sees it.
+
+There is no PID 1 problem because no single process needs both file access and external network access. The two capabilities are split across separate agents with an enforcement boundary between them.
+
+#### Sanitize vs terminate: why this is better than shaped denies
+
+The existing gateway returns a shaped deny — a binary decision (block the entire tool call) delivered back to the *same* agent that has the sensitive data in its context window. The agent retries, but the sensitive data is still in its context. It may rephrase, encode, or try a different tool.
+
+The interceptor is a **filter**, not a **gate**:
+
+| | Gateway shaped deny | Interceptor |
+|---|---|---|
+| **Granularity** | Binary: block the entire call | Surgical: redact specific values, pass the rest |
+| **Data path** | Deny bounces back to tainted agent | Clean/redacted data reaches untainted orchestrator |
+| **Retry model** | Same agent, same context window, same tainted data | Fresh subagent, clean context, modified prompt |
+| **Encoding evasion** | Agent can encode data and retry | Interceptor terminates on opaque output; orchestrator spawns clean subagent that never sees the original data |
+
+Sanitization example:
+- Subagent returns: `"Found 47 transactions. Largest: card 4532-0151-2345-6789, amount $12,500"`
+- Interceptor L2 scan: Luhn-valid credit card detected
+- Sanitize: `"Found 47 transactions. Largest: card [REDACTED: credit card], amount $12,500"`
+- Orchestrator receives the redacted result and can forward it to the user
+
+Termination example:
+- Subagent returns: `"Here is the analysis: aGVyZSBpcyB0aGUgY3JlZGl0IGNhcmQgbnVtYmVyOiA0NTMyLTAxNTEtMjM0NS02Nzg5..."` (base64-encoded exfiltration attempt)
+- Interceptor L3 scan: high-entropy base64 blob, can't sanitize (the entire payload is opaque)
+- Terminate: signal orchestrator "Subagent A terminated: opaque output detected"
+- Orchestrator kills subagent A, spawns subagent B with prompt: "Summarize the transactions without including specific card numbers or account details"
+- Subagent B reads the same files, produces a clean summary
+- Interceptor passes the clean summary to orchestrator
+
+The retry works because the **new subagent has a clean context window**. It never saw the orchestrator's messaging tools. It can't "remember" a previous exfiltration attempt. The orchestrator — which has messaging tools — never saw the raw sensitive data.
 
 ---
 
-### Q2: IPC Data Flow Mapping
+### Q1: IPC Transport — Implementation Detail
 
-#### NanoClaw agent→host data types
+The transport between subagent and interceptor is an implementation detail. The security model is defined by the privilege separation (tool disjointness + interceptor enforcement), not by the byte-level IPC mechanism.
 
-| Data type | IPC path | Content | Exfiltration risk | Forwarded to |
-|-----------|----------|---------|-------------------|--------------|
-| **Messages** | `ipc/{group}/messages/msg-{ts}.json` | `{type, text, group, ts}` | **HIGH** — `text` is unconstrained free-text | WhatsApp, Slack, web UI |
-| **Tasks** | `ipc/{group}/tasks/task-{ts}.json` | `{name, prompt, schedule, group}` | **HIGH** — `prompt` is unconstrained free-text | Future agent sessions |
-| **Session ID** | `ipc/{group}/session_id` | Short identifier string | Low — not free-text | Internal orchestrator state |
-| **Stdout markers** | stdout stream | `<<RESULT>>`, `<<DONE>>` | None — fixed enum strings | Internal orchestrator state |
+Any structured transport works:
 
-#### NanoClaw host→agent data types
+| Model | Mechanism | Fit |
+|-------|-----------|-----|
+| **Filesystem JSON** | Shared volume, `rename()` | Good. Interceptor watches pending dir, scans, promotes to scanned dir. Same pattern as SPIKE-011's sidecar model. |
+| **Unix domain socket** | UDS in shared volume | Good. Interceptor is a proxy on the UDS. Structured framing needed. |
+| **MCP over stdio** | JSON-RPC over pipe | Good. Interceptor wraps the subagent's MCP server. Natural fit for agent frameworks that already speak MCP. |
+| **MCP over HTTP** | JSON-RPC via network | Good. Interceptor runs as an HTTP proxy between subagent and orchestrator on an internal network. |
 
-| Data type | IPC path | Content | Risk |
-|-----------|----------|---------|------|
-| **Input prompts** | `ipc/{group}/input/prompt-{ts}.json` | `{text, sender, ts}` | Ingress (toward agent, not exfiltration) |
-| **Session meta** | `ipc/{group}/input/_meta.json` | Configuration | Low |
-| **Close sentinel** | `ipc/{group}/input/_close` | Empty file (presence signal) | None |
+The filesystem JSON model (NanoClaw-style) works fine when the interceptor is between the subagent's write and the orchestrator's read. The previous analysis correctly identified that scanning must happen at this boundary — the privilege separation model just makes the boundary explicit.
 
-#### Projected Tideclaw IPC data types
-
-| Category | Data type | Needs scanning? | Proposed channel |
-|----------|-----------|----------------|-----------------|
-| **Data plane** | Messages to external channels | **Yes** — free-text, highest risk | MCP tool via tg-gateway |
-| **Data plane** | Scheduled tasks / prompts | **Yes** — free-text prompts | MCP tool via tg-gateway |
-| **Data plane** | File sharing / attachments | **Yes** — file content | MCP tool via tg-gateway |
-| **Control plane** | Lifecycle status (ready, done, error) | **No** — fixed enum values, no user content | Filesystem signal files |
-| **Control plane** | Health checks | **No** — structured diagnostics | Docker HEALTHCHECK / filesystem |
-| **Control plane** | Shutdown signals | **No** — presence-only | Docker SIGTERM / filesystem sentinel |
-
-#### Key insight: control plane vs data plane separation
-
-NanoClaw's IPC channel carries both control-plane signals (session ID, stdout markers, close sentinel) and data-plane content (messages, tasks) over the same filesystem mechanism. This is the root cause of the scanning gap — the channel must be open for control signals, and data rides along unscanned.
-
-**Separating the two planes eliminates the problem.** Control signals use filesystem IPC (no scanning needed — fixed formats, no user content). Data-plane content routes through MCP tools via the gateway (full scanning).
+The transport choice should be driven by operational concerns (debugging, latency, atomicity), not security concerns. Security is enforced by the interceptor regardless of transport.
 
 ---
 
-### Q3: Scanning Injection Point — Detailed Analysis
+### Q2: Data Flow Mapping
 
-#### Option A: Inline scanning at orchestrator
+#### NanoClaw IPC data types (unchanged from initial analysis)
 
-```
-Agent → filesystem IPC → Orchestrator [import scanner, scan in-process] → External channel
-```
+| Data type | Direction | Content | Exfiltration risk | Proposed handler |
+|-----------|-----------|---------|-------------------|-----------------|
+| **Messages** | Agent→Host | `{type, text, group, ts}` | **HIGH** — `text` is unconstrained free-text | Interceptor scans; orchestrator forwards via messaging tool |
+| **Tasks** | Agent→Host | `{name, prompt, schedule, group}` | **HIGH** — `prompt` is unconstrained free-text | Interceptor scans; orchestrator calls `schedule_task` |
+| **Status** | Agent→Host | `ready`, `done`, `error` | Low — fixed enum | Pass through; orchestrator lifecycle management |
+| **Input prompts** | Host→Agent | `{text, sender, ts}` | Ingress (toward agent) | Orchestrator→interceptor→subagent; not an exfiltration path |
 
-**Implementation**: Orchestrator imports the scanner as a library. Before forwarding any IPC payload, calls `extractStringValues()` → `scanValue()` on all fields. Deny → drop message + log. Allow → forward.
+#### Privilege separation changes the flow
 
-**Performance**: L1 regex (~0.1ms) + L2 Python subprocess NDJSON (~1-3ms for Luhn/IBAN/SSN) + L3 entropy (~2-8ms) = **~3-12ms per payload**. Well within the <100ms interactive messaging budget.
+In NanoClaw's model, one agent handles everything — reads files, runs code, AND sends messages. All data types flow through the same IPC channel.
 
-**Trust analysis**: The orchestrator is already trusted infrastructure — it manages the Docker lifecycle, has access to configuration, and forwards content to external channels. Adding scanning doesn't materially change its trust level. If the orchestrator is compromised, the attacker controls the entire topology; IPC scanning bypass is the least of the problems.
-
-**Cross-language concern**: The gateway scanner is TypeScript (L1) + Python subprocess (L2/L3). If the orchestrator is in a different language (Go for `tideclaw` CLI), it would need to re-implement L1 regex patterns or shell out to the Python subprocess. This is a coupling concern — scanner logic must be importable by the orchestrator.
-
-**Verdict**: Pragmatic for a filesystem-IPC architecture. But if we can avoid building a separate scanning injection point entirely, that's strictly better.
-
-#### Option B: Sidecar scanner daemon
+In the privilege separation model:
 
 ```
-Agent writes → ipc/pending/msg-{ts}.json
-Scanner sidecar watches → scans → renames to ipc/scanned/msg-{ts}.json (or ipc/denied/)
-Orchestrator watches ipc/scanned/ → reads only scanner-approved files → forwards
+Subagent reads files, runs code
+    ↓ (results, analysis, summaries)
+Interceptor scans all string values
+    ↓ (clean/sanitized)
+Orchestrator receives task results
+    ↓ (decides what to forward externally)
+Orchestrator calls send_message via tg-gateway [L2 scan]
+    ↓
+Messaging bridge → WhatsApp/Slack
 ```
 
-**Implementation**: Scanner sidecar container watches `ipc/pending/` with `inotify`. Reads each file, scans all string values, renames atomically to `scanned/` (pass) or `denied/` (fail). Orchestrator watches `scanned/` only.
+The data is scanned **twice**: once at the interceptor (subagent→orchestrator boundary) and once at the gateway (orchestrator→external boundary). Defense in depth — the interceptor catches sensitive data before it enters the orchestrator's context, and the gateway catches anything that slips through when the orchestrator composes outbound messages.
 
-**TOCTOU mitigation**: The agent can write to `pending/` but not to `scanned/`. This requires separate volume mounts:
-- Agent: `ipc-pending:/workspace/ipc:rw`
-- Scanner: `ipc-pending:/scan/in:ro`, `ipc-scanned:/scan/out:rw`
-- Orchestrator: `ipc-scanned:/workspace/ipc:ro`
-
-The agent cannot bypass the scanner by writing directly to `scanned/` — it doesn't have that volume mounted.
-
-**PID attribution via fanotify**: `inotify` does not report which PID wrote a file. `fanotify` with `FAN_REPORT_PIDFD` (Linux 5.15+) can. This would enable taint-aware scanning: if the writing PID is tainted (per ADR-002's taint table), apply stricter scanning or deny outright. However, this adds kernel version requirements and complexity.
-
-**Performance**: Same L1/L2/L3 scan times (~3-12ms) + inotify event propagation (~1ms) + atomic rename (~0.1ms) = **~4-13ms per payload**. Within budget.
-
-**Verdict**: Better trust separation than Option A (scanner in its own container, potentially the same `tg-scanner` container that runs L1 taint tracking). But adds container complexity, volume topology, and a coordination protocol. Worth considering if filesystem IPC is chosen for the data plane — but Option C avoids the need entirely.
-
-#### Option C: Route data-plane IPC through tg-gateway (IPC-as-MCP)
-
-```
-Agent calls send_message MCP tool → tg-gateway [existing scan pipeline] → IPC MCP server on mcp-net → External channel
-```
-
-**Implementation**: The in-container IPC MCP server (`ipc-mcp-stdio.ts`) is NOT adopted. Instead, `send_message`, `schedule_task`, and similar tools are served by dedicated MCP servers on `mcp-net` — the same topology as `gmail-mcp`, `slack-mcp`, `github-mcp`.
-
-For Tideclaw Phase 4, the messaging bridges ARE these MCP servers:
-- `messaging-bridge-whatsapp` on `mcp-net`: serves `send_message` tool, forwards to WhatsApp
-- `messaging-bridge-slack` on `mcp-net`: serves `send_slack_message` tool, forwards to Slack
-- `task-scheduler` on `mcp-net`: serves `schedule_task` tool, manages cron-style scheduling
-
-The gateway scans every tool call through the existing pipeline (`router.ts:handleToolCall()` → `extractStringValues()` → `scanValue()`). No new scanning code. The audit trail captures every IPC interaction identically to every other MCP tool call.
-
-**Credential isolation**: Messaging bridge credentials (WhatsApp auth tokens, Slack bot tokens) stay in the bridge containers, not in the agent or orchestrator. Same isolation model as all other MCP servers.
-
-**Performance**: Agent → gateway HTTP (~0.5ms) + L1 scan (~0.1ms) + L2/L3 Python subprocess (~3-10ms) + gateway → bridge HTTP (~0.5ms) + bridge processing (~1ms) + return path (~1ms) = **~6-13ms per payload**. Within budget. Network hop overhead is minimal on Docker bridge networks (localhost latency).
-
-**What about the orchestrator?** In Option C, the orchestrator doesn't need to be in the data path for messaging at all. The agent calls `send_message` via MCP → gateway scans → messaging bridge sends to WhatsApp. The orchestrator manages lifecycle (start, stop, health), not message routing. This is a cleaner separation of concerns.
-
-**Phase 1 concern**: In Phase 1, there are no messaging bridges. The user attaches directly to the agent container (`tideclaw attach`). There is no `send_message` tool. IPC is control-plane only (lifecycle signals). No scanning needed for Phase 1.
-
-**Verdict**: Eliminates the IPC exfiltration path entirely for data-plane content. No new scanning infrastructure. Consistent enforcement model. The only cost is that messaging bridges must be implemented as MCP servers — but that's the right architecture anyway (credential isolation, tool allowlisting, audit logging all come for free).
-
-#### Option D (new): Hybrid — filesystem control plane + MCP data plane
-
-```
-Control plane: Agent → filesystem signals (ready/done/error) → Orchestrator (no scanning)
-Data plane:    Agent → tg-gateway [scan] → Bridge MCP server → External channel
-```
-
-This separates the two concerns:
-
-1. **Control plane** uses filesystem IPC: agent writes status files to a shared volume (`ipc/status/ready`, `ipc/status/done`, `ipc/status/error`). Orchestrator watches with inotify. No scanning needed — these are fixed-format, orchestrator-defined signals with no user-generated content. The agent can write `ready` or `done`, but there's no free-text field to abuse.
-
-2. **Data plane** uses MCP via tg-gateway: all user-generated content (`send_message`, `schedule_task`, file sharing) routes through the gateway seam. Full L1/L2/L3 scanning. Messaging bridges are MCP servers.
-
-This eliminates the IPC scanning problem for data-plane traffic entirely — it's just MCP. And the control plane doesn't need scanning because it's not a data channel.
-
-**Verdict**: This is the recommended architecture. See Recommendation below.
+The control plane (status, health, shutdown) doesn't need an interceptor — these signals use fixed schemas with no free-text fields. Same conclusion as the initial analysis: control plane is filesystem signals, no scanning needed.
 
 ---
 
-### Q4: Performance Analysis
+### Q3: Interceptor Design
 
-#### Scanner pipeline latency (from code analysis)
+The interceptor replaces Options A through D from the initial analysis. Those options asked "where do we inject scanning into the IPC channel?" The interceptor asks "what happens at the privilege boundary?"
 
-Measured against the existing `scanner.ts` (L1) and `scanner.py` (L2/L3) implementations:
+#### Processing pipeline
 
-| Layer | What it does | Latency (typical message ~500 chars) | Latency (long message ~5000 chars) |
-|-------|-------------|--------------------------------------|-------------------------------------|
-| **L1** (in-process TypeScript) | 14 credential regexes + 7 sensitive-key regexes = 21 pattern tests | ~0.05-0.1ms | ~0.5-1ms |
-| **L2** (Python subprocess) | Credit card regex + Luhn, IBAN regex + mod-97, SSN regex + area validation | ~1-3ms | ~2-5ms |
-| **L3** (Python subprocess) | SSN context keywords, base64+entropy, hex+entropy, sliding-window entropy (40-char window, step 10) | ~2-8ms | ~5-15ms |
-| **Subprocess overhead** | NDJSON write + readline response (persistent process, no spawn cost) | ~0.5ms | ~0.5ms |
+For every subagent→orchestrator message:
 
-The Python subprocess is long-lived (spawned once at startup, NDJSON protocol). No per-request spawn overhead. Fail-closed on subprocess crash with auto-respawn (up to 5 attempts with linear backoff).
+```
+1. Receive message from subagent
+2. Parse structured payload (JSON)
+3. Extract all string values (same extractStringValues() recursive walk)
+4. Scan each value through L1/L2/L3 pipeline
+5. Decision:
+   ├─ All clean           → PASS: forward message to orchestrator
+   ├─ Some values flagged → evaluate: can we redact?
+   │   ├─ Yes (isolated pattern in a field) → SANITIZE: replace with [REDACTED: reason], forward
+   │   └─ No (entire field is opaque/encoded) → TERMINATE
+   └─ Opaque payload      → TERMINATE: signal orchestrator
+```
 
-#### End-to-end per IPC payload
+#### Sanitization criteria
 
-| Architecture | Latency | Budget | Verdict |
-|-------------|---------|--------|---------|
-| Filesystem + inline scan (Option A) | ~3-12ms | <100ms | Pass |
-| Filesystem + sidecar scan (Option B) | ~4-13ms | <100ms | Pass |
-| MCP via gateway (Option C/D) | ~6-13ms | <100ms | Pass |
+| Scanner result | Redactable? | Action |
+|---------------|-------------|--------|
+| L1: credential pattern (`ghp_`, `sk_live_`, etc.) | **Yes** — pattern has clear boundaries | Replace matched substring with `[REDACTED: credential pattern]` |
+| L2: credit card (Luhn-validated) | **Yes** — number has clear boundaries | Replace with `[REDACTED: credit card ****NNNN]` |
+| L2: IBAN (mod-97 validated) | **Yes** — clear boundaries | Replace with `[REDACTED: IBAN CC**]` |
+| L2: SSN (format + area) | **Yes** — clear boundaries | Replace with `[REDACTED: SSN]` |
+| L3: high-entropy base64 blob | **No** — can't distinguish sensitive from non-sensitive content in the blob | Terminate |
+| L3: high-entropy hex string | **No** — same as base64 | Terminate |
+| L3: high-entropy sliding window | **No** — region boundaries are fuzzy | Terminate |
+| Multiple L1/L2 hits across many fields | **Depends** — evaluate density | If >N fields flagged, terminate (suggests deliberate exfiltration, not accidental inclusion) |
 
-All options are well within the <100ms budget for interactive messaging. The additional ~3ms from network hops in Option C/D is negligible on Docker bridge networks (same host, localhost-equivalent latency).
+The key distinction: **L1 and L2 patterns have clear boundaries** (the regex match defines exactly which bytes to redact). **L3 patterns are fuzzy** (entropy detection identifies a suspicious region but can't delimit the sensitive content). Redaction is safe when boundaries are known; termination is the only safe option when they're not.
 
-#### Throughput
+#### Termination signal
 
-The Python subprocess is serialized (one NDJSON request→response at a time). For typical IPC throughput (~1-10 messages/second), this is not a bottleneck. For high-frequency status updates (control plane), Option D bypasses scanning entirely — no throughput concern.
+When the interceptor terminates a subagent, it sends a structured signal to the orchestrator:
 
-If Option C/D is adopted, the gateway already handles concurrent MCP requests from the agent. IPC tool calls are just additional MCP requests — no new concurrency model needed.
+```json
+{
+  "type": "subagent_terminated",
+  "subagent_id": "A",
+  "reason": "opaque_output",
+  "detail": "High-entropy base64 blob detected in response field (L3, entropy 5.7 bits/char). Cannot sanitize — entire payload is opaque.",
+  "recommendation": "Retry with constrained prompt: request summary without raw data"
+}
+```
+
+The orchestrator uses this signal to:
+1. Kill the subagent container (clean up resources, prevent further IPC attempts)
+2. Decide whether to retry with a modified prompt or report failure to the user
+3. Log the incident for audit
+
+The orchestrator makes the retry decision — not the interceptor. The interceptor is stateless; the orchestrator has the task context needed to reformulate the prompt.
+
+#### Interceptor is not a gateway
+
+| Property | tg-gateway | Interceptor |
+|----------|-----------|-------------|
+| **Position** | Between agent and MCP servers | Between subagent and orchestrator agent |
+| **Protocol** | MCP JSON-RPC over HTTP | IPC (filesystem, UDS, pipe — implementation detail) |
+| **On deny** | Shaped deny (isError: false) back to the same agent | Sanitize if possible; terminate subagent if not |
+| **Retry** | Same agent retries with same context window | Orchestrator spawns fresh subagent with clean context |
+| **Scanner** | Same L1/L2/L3 pipeline | Same L1/L2/L3 pipeline + sanitization logic |
+| **Trust** | Agent is untrusted; MCP servers hold credentials | Subagent is untrusted; orchestrator holds messaging capability |
+
+The scanner pipeline is identical — both use `extractStringValues()` → `scanValue()`. The difference is what happens after a scan violation: the gateway blocks; the interceptor transforms or kills.
 
 ---
 
-### Q5: Same Scanner Pipeline or Separate?
+### Q4: Performance
 
-#### Finding: Same pipeline, no IPC-specific scanner needed
+#### Scanner pipeline latency (unchanged)
 
-The existing L1/L2/L3 scanner covers all relevant patterns for IPC payloads:
+| Layer | Latency (typical ~500 char message) | Latency (long ~5000 char message) |
+|-------|--------------------------------------|-------------------------------------|
+| **L1** (in-process regex, 21 patterns) | ~0.05-0.1ms | ~0.5-1ms |
+| **L2** (Python subprocess: Luhn, IBAN, SSN) | ~1-3ms | ~2-5ms |
+| **L3** (Python subprocess: entropy, base64, hex) | ~2-8ms | ~5-15ms |
+| **Subprocess NDJSON overhead** | ~0.5ms | ~0.5ms |
 
-| Pattern class | Scanner layer | IPC relevance |
-|--------------|--------------|---------------|
-| API keys, tokens (vendor prefixes: `ghp_`, `sk_live_`, `xoxb-`, etc.) | L1 | Agent could embed stolen credentials in messages |
-| Private key blocks (`-----BEGIN...`) | L1 | Agent could exfiltrate private keys via messages |
-| Sensitive JSON keys (`"password":`, `"ssn":`, etc.) | L1 | Agent could embed structured sensitive data |
-| Credit card numbers (Luhn-validated) | L2 | Agent could exfiltrate financial data |
-| IBANs (mod-97 validated) | L2 | Agent could exfiltrate financial data |
-| SSNs (format + area validated) | L2 | Agent could exfiltrate government IDs |
-| High-entropy base64/hex (Shannon entropy) | L3 | Agent could encode data before exfiltrating |
-| SSN with context keywords | L3 | Reduces false positives on SSN detection |
+#### Interceptor overhead
 
-IPC-specific heuristics considered and rejected:
+| Operation | Latency | Notes |
+|-----------|---------|-------|
+| Message receipt (filesystem inotify or UDS read) | ~1ms | Depends on transport |
+| String extraction | ~0.1ms | Same `extractStringValues()` as router.ts |
+| L1/L2/L3 scan | ~3-12ms | Same pipeline as gateway |
+| Sanitization (if needed) | ~0.1ms | String replacement at known offsets |
+| Forward to orchestrator | ~1ms | Depends on transport |
+| **Total (pass or sanitize)** | **~5-15ms** | Well within <100ms interactive budget |
 
-- **Message length anomaly**: Unreliable — agents legitimately produce long outputs (code blocks, analysis summaries). No reliable threshold distinguishes exfiltration from legitimate verbosity.
-- **Frequency analysis**: Agents legitimately send many messages during active sessions. High-frequency messaging is not a reliable exfiltration signal.
-- **Encoding detection**: Already covered by L3 entropy analysis. Base64/hex detection in the sliding-window entropy scanner catches encoded payloads in IPC messages the same way it catches them in MCP tool calls.
+Termination has no latency budget — it's an error path. The orchestrator decides when (and whether) to retry.
 
-**The IPC payload is just another string value.** The same `extractStringValues()` recursive extraction from `router.ts` works on IPC JSON payloads — it walks the object tree and scans every string. An IPC message `{"type": "send_message", "text": "Here's the data: sk_live_abc123..."}` is scanned identically to an MCP tool call `{"name": "gmail.send_email", "arguments": {"body": "Here's the data: sk_live_abc123..."}}`.
+#### Double-scan overhead
 
-If Option C/D (MCP via gateway) is adopted, this question is moot — the existing pipeline runs automatically. No decision needed.
+Data is scanned twice: at the interceptor (subagent→orchestrator) and at the gateway (orchestrator→external). Total overhead per outbound message: ~10-30ms. Still well within the <100ms interactive messaging budget.
+
+The double scan is not redundant — each catches different things:
+- Interceptor catches sensitive data leaking from workspace to orchestrator context
+- Gateway catches sensitive data in the orchestrator's composed outbound message (which may include data from multiple subagents, user prompts, or orchestrator-generated content)
 
 ---
 
-### Q6: Taint Tracking (ADR-002) Interaction
+### Q5: Interceptor Scanning — Same Pipeline, New Actions
 
-This is the most nuanced question. The answer depends on a critical detail in ADR-002's taint model.
+The existing L1/L2/L3 scanner is the right detection engine. The question from the original framing ("same pipeline or separate?") becomes: **same detection, different response actions.**
 
-#### The PID 1 problem
+| Scanner layer | Detection | Gateway action | Interceptor action |
+|--------------|-----------|----------------|-------------------|
+| L1 (credential patterns) | Vendor-prefix regex | Shaped deny (block call) | **Sanitize** (redact matched pattern, forward rest) |
+| L2 (checksum-validated) | Luhn, mod-97, SSN format | Shaped deny (block call) | **Sanitize** (redact validated number, forward rest) |
+| L3 (entropy/statistical) | Shannon entropy, base64 | Shaped deny (block call) | **Terminate** (opaque — can't delimit sensitive content) |
 
-ADR-002 identifies a known residual risk:
+The scanner's `ScanResult` already returns `{ allowed, reason, layer }`. The interceptor uses `layer` to choose its response:
+- `scanner_l1` or `scanner_l2` → attempt sanitization (clear match boundaries)
+- `scanner_l3` → terminate (fuzzy boundaries, can't safely redact)
 
-> Agent framework process (PID 1 in the container) reads files directly (not via child process). It also makes network connections for MCP and LLM calls. Tainting PID 1 blocks all agent functionality. Need to distinguish framework-level file reads from script-level file reads, or accept that the framework process is outside taint enforcement scope.
+No new detection logic. The scanner is reused as-is. What changes is the *enforcement action* downstream of the scan.
 
-This means:
+#### IPC-specific heuristics (reconsidered)
 
-1. **PID 1 (agent framework) is NOT tainted** even when it reads sensitive files — tainting it would block all agent functionality
-2. PID 1 makes all MCP tool calls (including IPC tools in Option C/D)
-3. PID 1 would write IPC files (in a filesystem IPC model)
-4. **L1 taint tracking does NOT protect the IPC path from PID 1**
+The initial analysis rejected IPC-specific heuristics (message length anomaly, frequency analysis). In the interceptor model, one additional heuristic becomes viable:
 
-This is the same gap as for MCP tool calls. L1 taint tracking protects against child processes (Bash subprocesses running scripts), not against the agent framework itself. The defense for PID 1 is L2 pattern scanning at the gateway — which is exactly what Option C/D provides for IPC.
+- **Taint-aware escalation**: If the subagent's IPC output triggers many L1/L2 matches in a single message (e.g., >3 distinct sensitive values across different fields), escalate from sanitize to terminate. A single accidental inclusion is normal; many hits suggests the subagent is attempting bulk exfiltration. The orchestrator retries with a more constrained prompt.
 
-#### Child process IPC writes (filesystem model)
+This is a density threshold, not a new detection pattern. It uses the existing L1/L2 scanner — just counts hits instead of stopping at the first one.
 
-In a filesystem IPC model (Options A/B), a tainted child process could theoretically write directly to the IPC volume:
+---
 
-1. Child process (PID 4523) reads `secret.csv` → eBPF logs `openat` → PID tainted
-2. Child process writes `ipc/messages/msg-{ts}.json` containing exfiltrated data
-3. `write()` to filesystem is NOT `connect()` — seccomp-notify does not fire
-4. **Gap**: tainted data reaches IPC without hitting the L1 enforcement barrier
+### Q6: Taint Model — Per-Subagent, Not Per-PID
 
-However, in practice this doesn't happen. In NanoClaw's model, child processes (scripts) return results to PID 1 via stdout/return value. PID 1 then calls the IPC MCP server. The child process doesn't write to IPC directly — it doesn't know the IPC paths or protocol.
+The privilege separation model changes the taint granularity from PID to subagent.
 
-In a Tideclaw context with Option C/D, this gap doesn't exist: child processes can't make MCP tool calls (only PID 1 can). And if a tainted child process tries to `connect()` to the gateway directly, seccomp-notify blocks it.
+#### ADR-002's PID-level taint model
 
-#### Extending seccomp-notify to IPC writes — why it doesn't work
+ADR-002 tracks taint per-PID:
+1. eBPF observes `openat` → logs `{pid, file_path, seq}`
+2. Scanner daemon reads file contents → if sensitive, taints the PID
+3. seccomp-notify on `connect()` → blocks tainted PIDs from TCP connections
 
-Could we intercept `write()` or `rename()` for IPC paths from tainted PIDs?
+**Residual risk (PID 1)**: The agent framework process (PID 1) reads files and makes network connections. Tainting it blocks all functionality. PID 1 is outside taint scope.
 
-- **`write()` frequency**: `write()` fires thousands of times per second for any process. At ~5-7μs per seccomp-notify round-trip, this is the same catastrophic performance cliff as intercepting `sendto()` (rejected in ADR-002).
-- **Path filtering**: seccomp BPF operates on syscall arguments (fd numbers), not file paths. Filtering by IPC directory path requires resolving the fd → inode → path in userspace, which means intercepting every `write()` just to check the path.
-- **Conclusion**: Impractical. Same reasons ADR-002 rejected `sendto()` interception.
+#### Subagent-level taint model
 
-#### fanotify + taint check (alternative)
+In the privilege separation model, the taint boundary is the subagent:
 
-`fanotify` with `FAN_REPORT_PIDFD` (Linux 5.15+) can report which PID performed a filesystem operation. A scanner sidecar could:
+1. **Subagent reads sensitive file** → subagent is tainted (per-subagent state, not per-PID)
+2. **Tainted subagent produces output** → interceptor applies stricter scrutiny
+3. **Interceptor action on tainted subagent output**:
+   - L1/L2 match → sanitize (redact)
+   - L3 match (opaque) → terminate
+   - Clean output from tainted subagent → **pass, but flag** (the subagent accessed sensitive data; output looks clean, but semantic rephrasing can't be ruled out)
+4. **Orchestrator receives sanitized/flagged output** → never tainted itself
 
-1. Watch the IPC volume with fanotify
-2. When a file is written, check the PID against the taint table
-3. If tainted PID → deny (don't rename to `scanned/`)
+The "pass, but flag" case is important. A tainted subagent that produces apparently clean output may have semantically rephrased sensitive data. The interceptor can't detect this (fundamental limit of pattern-based detection). But the orchestrator can log the flag for audit: "This response originates from a subagent that accessed sensitive files X, Y, Z." The audit trail preserves the provenance even when detection fails.
 
-This is viable but complex:
-- Requires fanotify instead of inotify (fanotify provides PID; inotify does not)
-- Requires Linux 5.15+ for `FAN_REPORT_PIDFD`
-- Only useful for filesystem-based IPC (Options A/B), not for Option C/D
-- Adds kernel version requirements beyond ADR-002's existing 5.8+ requirement
+#### How the interceptor knows taint state
 
-**If Option C/D (MCP via gateway) is adopted, this is moot.** The taint tracking interaction for IPC is identical to all other MCP tool calls: PID 1 is outside taint scope, L2 pattern scanning is the defense. No new taint infrastructure needed.
+Two options:
 
-#### Taint interaction summary
+**Option 1: eBPF journal (ADR-002 infrastructure)**. The interceptor queries ADR-002's taint table for the subagent container's PIDs. If any PID in the subagent's cgroup is tainted, the subagent is tainted. This reuses the existing L1 infrastructure (eBPF on `openat` + scanner daemon + taint table). The interceptor becomes a consumer of the taint table, not a separate taint tracker.
 
-| Architecture | L1 taint coverage | L2/L3 coverage | Net |
-|-------------|-------------------|----------------|-----|
-| Filesystem IPC (Options A/B) | **Gap**: PID 1 not tainted, child write to IPC not gated by `connect()`. fanotify could partially close but adds complexity. | Inline or sidecar scan covers L2/L3 patterns | L2/L3 only (same as MCP for PID 1 writes) |
-| MCP via gateway (Option C/D) | Same gap as all MCP: PID 1 not tainted. But child processes can't make MCP calls, and tainted child `connect()` to gateway is blocked. | Gateway pipeline covers L1/L2/L3 automatically | **Strictly better**: child process exfiltration via IPC is impossible (no direct MCP access), and PID 1 gets the same L2/L3 defense as all MCP calls |
+**Option 2: Interceptor-level file access tracking**. The interceptor watches the subagent's workspace volume with inotify/fanotify. When the subagent opens a file, the interceptor scans the file contents. If sensitive, the subagent is tainted at the interceptor level. This is simpler (no eBPF, no taint table) but less precise (inotify doesn't report PIDs; fanotify with `FAN_REPORT_PIDFD` does but requires Linux 5.15+).
+
+Recommendation: **Option 1** if ADR-002's eBPF infrastructure is available (Tideclaw Phase 3+). **Option 2** as a fallback for environments without eBPF (Phase 1-2), or if the interceptor needs to work independently of L1.
+
+#### What this solves
+
+| Problem | PID-level taint (ADR-002) | Subagent-level taint (this model) |
+|---------|--------------------------|----------------------------------|
+| PID 1 reads sensitive files + makes network calls | Residual risk: PID 1 outside taint scope | **Solved**: orchestrator never reads files; subagents can't make network calls |
+| Encrypted exfiltration via IPC | Not covered (IPC writes not gated by `connect()`) | **Solved**: interceptor terminates on opaque output; orchestrator retries with clean subagent |
+| Tainted data in agent context window | Agent retries with same context (shaped deny) | **Solved**: terminated subagent is killed; new subagent has clean context |
+| Semantic rephrasing | Fundamental limit — undetectable | Still a limit, but **flagged**: audit trail records that output came from tainted subagent |
+
+The privilege separation model doesn't eliminate semantic rephrasing (nothing can — it's a fundamental limit of pattern-based detection). But it strictly reduces the attack surface: a compromised subagent can't directly reach external channels, and the orchestrator — which can reach external channels — never has raw sensitive data in its context.
 
 ---
 
@@ -337,96 +385,120 @@ This is viable but complex:
 
 | Criterion | Threshold | Result | Verdict |
 |-----------|-----------|--------|---------|
-| Viable scanning injection point | At least one option is architecturally sound | Option D (hybrid) eliminates the data-plane gap entirely by routing through existing gateway | **PASS** |
-| Scanning latency within budget | < 100ms interactive, < 1s tasks | ~6-13ms via MCP gateway, ~3-12ms inline | **PASS** |
-| Taint tracking integration path | ADR-002 extensible without excessive false positives | Option D inherits the same taint model as all MCP calls — no extension needed. PID 1 residual risk is pre-existing and accepted. | **PASS** |
+| Viable scanning injection point | At least one option is architecturally sound | Interceptor at privilege boundary; scans with existing L1/L2/L3 pipeline; adds sanitization and termination semantics | **PASS** |
+| Scanning latency within budget | < 100ms interactive, < 1s tasks | ~5-15ms at interceptor + ~5-15ms at gateway = ~10-30ms double scan | **PASS** |
+| Taint tracking integration path | ADR-002 extensible without excessive false positives | Per-subagent taint via eBPF taint table or interceptor-level file tracking; eliminates PID 1 residual risk | **PASS** |
 
-**Gate: GO.** Option D is viable, performant, and integrates cleanly with the existing taint model.
+**Gate: GO.**
 
 ---
 
 ## Recommendation
 
-### Architecture: Option D — Hybrid (filesystem control plane + MCP data plane)
+### Architecture: Orchestrator/Subagent Privilege Separation
 
 ```
-Control plane (lifecycle):  Agent → filesystem signals → Orchestrator
-Data plane (content):       Agent → tg-gateway [L1/L2/L3 scan] → Bridge MCP servers → External channels
+                         User
+                          ↕
+              ┌───────────────────────┐
+              │  Orchestrator Agent    │  Tools: send_message, schedule_task, spawn_agent
+              │  (no workspace access) │  Network: can reach tg-gateway on agent-net
+              │                        │  Mounts: NO workspace volume
+              └────┬────────────┬──────┘
+                   │            │
+             ┌─────┴──┐  ┌─────┴──┐
+             │Intercpt │  │Intercpt │  Scans: L1/L2/L3 pipeline (same as gateway)
+             │  A      │  │  B      │  Actions: pass / sanitize / terminate
+             └─────┬───┘  └────┬───┘
+                   │            │
+             ┌─────┴──┐  ┌─────┴──┐
+             │Subagent │  │Subagent │  Tools: read, write, edit, bash, glob, grep
+             │  A      │  │  B      │  Network: NONE (no gateway, no proxy, no internet)
+             │         │  │         │  Mounts: workspace volume (rw)
+             └─────────┘  └─────────┘
 ```
 
-#### Control plane: filesystem signals (no scanning)
+#### Tool separation (enforced by container topology)
 
-The orchestrator and agent communicate lifecycle state via filesystem presence/content:
+| Agent | Tools | Network | Workspace | Rationale |
+|-------|-------|---------|-----------|-----------|
+| **Orchestrator** | `send_message`, `schedule_task`, `spawn_agent` (via tg-gateway on agent-net) | agent-net → tg-gateway | **None** | Messaging capability, no sensitive data access |
+| **Subagents** | `read`, `write`, `edit`, `bash`, `glob`, `grep` (local, in-process) | **None** | Read-write | Workspace capability, no external communication |
+
+Disjoint tool sets enforce the privilege boundary at the container level. A subagent literally cannot call `send_message` — the tool doesn't exist in its MCP server list, and it has no network path to the gateway.
+
+#### Interceptor placement
+
+One interceptor per subagent. The interceptor can be:
+- A sidecar container that sits between the subagent's IPC output and the orchestrator's IPC input (filesystem model)
+- A proxy process that mediates UDS or pipe connections (socket model)
+- A component of the orchestrator that scans all inbound subagent data before it enters the orchestrator agent's context window
+
+The third option (interceptor as orchestrator component) is simplest for Phase 1. The orchestrator process reads subagent IPC, scans before injecting into the orchestrator agent's context. The security property holds as long as the scanning runs *before* the data enters the LLM's context window — once the orchestrator agent "sees" the data, it can rephrase and forward.
+
+#### Retry semantics
 
 ```
-ipc/
-├── status/
-│   ├── ready          # Agent has started and is accepting prompts
-│   ├── done           # Agent has completed its task
-│   └── error          # Agent encountered a fatal error (content: error message)
-├── health/
-│   └── heartbeat.json # Agent writes periodic health data (timestamp, memory, etc.)
-└── control/
-    └── shutdown       # Orchestrator writes to signal graceful shutdown
+Orchestrator spawns subagent A with task: "Analyze transactions in /data/financials/"
+    ↓
+Subagent A reads files, produces results
+    ↓
+Interceptor scans results
+    ├─ Clean → pass to orchestrator
+    ├─ L1/L2 match → sanitize (redact), pass to orchestrator
+    └─ L3 match or too many hits → TERMINATE
+         ↓
+    Orchestrator receives: { type: "subagent_terminated", reason: "opaque_output", ... }
+         ↓
+    Orchestrator kills subagent A
+         ↓
+    Orchestrator spawns subagent B with modified prompt:
+        "Analyze transactions in /data/financials/.
+         Summarize patterns and totals only.
+         Do not include specific account numbers, card numbers, or raw data."
+         ↓
+    Subagent B reads same files, produces sanitized summary
+         ↓
+    Interceptor scans → clean → pass to orchestrator
+         ↓
+    Orchestrator calls send_message via gateway [L2 scan] → user
 ```
 
-**Why no scanning**: These files have orchestrator-defined schemas. `ready` and `done` are empty files (presence is the signal). `heartbeat.json` has a fixed schema (`{timestamp, uptime_s, memory_mb}`). `error` contains a stack trace (low exfiltration utility — stack traces don't look like messages to WhatsApp). The agent cannot inject free-text into control signals because the orchestrator defines the schema and ignores unexpected fields.
-
-**Atomicity**: `rename()` for signal files (write to temp, rename into `status/`). Orchestrator watches `status/` with inotify.
-
-#### Data plane: MCP tools via tg-gateway (full scanning)
-
-All user-generated content routes through MCP tools served by dedicated bridge containers on `mcp-net`:
-
-| Tool | Served by | Credentials | Scanned by |
-|------|-----------|-------------|------------|
-| `send_whatsapp_message` | `messaging-bridge-whatsapp` | WhatsApp auth tokens | tg-gateway L1/L2/L3 |
-| `send_slack_message` | `messaging-bridge-slack` | Slack bot token | tg-gateway L1/L2/L3 |
-| `schedule_task` | `task-scheduler` | None (internal) | tg-gateway L1/L2/L3 |
-| `share_file` | `file-sharing-bridge` | Upload service creds | tg-gateway L1/L2/L3 |
-
-These are regular MCP servers. The gateway discovers their tools, mirrors them to the agent, and scans every call. The agent calls `send_whatsapp_message` the same way it calls `gmail.send_email` — through the gateway seam.
-
-**Credential isolation**: WhatsApp auth tokens live in `messaging-bridge-whatsapp`, not in the agent or orchestrator. Same isolation model as `gmail-mcp` having `GMAIL_CLIENT_ID`.
-
-**Audit trail**: Every message sent, task scheduled, or file shared is logged by the gateway's NDJSON audit log. The orchestrator doesn't need its own audit — the gateway is the single audit point for all agent→external communication.
+The orchestrator can implement retry policies:
+- **Max retries**: Kill the task after N terminations (prevent infinite retry loops)
+- **Prompt refinement**: Each retry adds more constraints ("do not include...", "summarize only...", "aggregate without individual records")
+- **Escalate to user**: After max retries, inform the user: "I couldn't produce a safe summary of the financial data. The files contain sensitive information that I'm not able to relay."
 
 #### Phase mapping
 
-| Phase | IPC model | Scanning | Notes |
-|-------|-----------|----------|-------|
-| **Phase 1 (MVP)** | Control plane only (filesystem signals) | None needed | No messaging bridges. User attaches directly. `tideclaw attach` |
-| **Phase 2 (multi-runtime)** | Control plane only | None needed | Multiple runtimes, still no messaging bridges |
-| **Phase 4 (messaging bridges)** | Control plane (filesystem) + data plane (MCP) | Gateway scans data plane automatically | Bridges are MCP servers. `send_message` is a tool call. |
+| Phase | Orchestrator | Subagents | Interceptor | Notes |
+|-------|-------------|-----------|-------------|-------|
+| **Phase 1 (MVP)** | CLI wrapper (`tideclaw` binary) | Single agent container (Claude Code / Codex / Goose) | Not yet needed — no messaging bridges, user attaches directly | Headless mode: `tideclaw attach` |
+| **Phase 2 (multi-runtime)** | CLI wrapper manages multiple runtimes | One container per runtime | Not yet needed | Still headless |
+| **Phase 3 (taint tracking)** | CLI + L1 infrastructure | Subagent containers with eBPF observation | Interceptor can query taint table | L1 infrastructure available |
+| **Phase 4 (messaging)** | **Orchestrator agent** (LLM-powered, with messaging tools) | Task subagents (workspace tools only) | **Required** — scans all subagent→orchestrator IPC | Full privilege separation model activates |
 
-**In Phase 1, no IPC scanning infrastructure is needed at all.** The control plane carries no user-generated content, and there are no messaging bridges. This defers IPC scanning complexity to Phase 4, where it's absorbed by the existing gateway architecture — no new scanning code.
+Phase 1-3 don't need the full privilege separation model because there are no messaging bridges — the user talks to the agent directly. The interceptor becomes necessary in Phase 4 when the orchestrator gains the ability to send messages to external channels.
 
-#### Why not adopt NanoClaw's IPC model
-
-NanoClaw's filesystem IPC for `send_message` exists because NanoClaw was designed before Tidegate. The agent needed a way to send messages to WhatsApp, and filesystem IPC was the simplest mechanism. There was no scanning requirement.
-
-Tideclaw is designed around enforcement seams. Adopting NanoClaw's IPC pattern — an MCP server inside the agent container that writes to a shared filesystem — would create a data channel that intentionally bypasses the gateway seam. We would then need to build parallel scanning infrastructure (Options A or B) to cover the gap we created.
-
-**Option D avoids creating the gap in the first place.** The NanoClaw `ipc-mcp-stdio.ts` pattern is not adopted. Messaging bridges are MCP servers on `mcp-net`, routed through the gateway. The IPC bypass doesn't exist because the IPC data path doesn't exist — it's MCP.
+However, the **tool separation** principle should be established from Phase 1: even in headless mode, the agent container should not have messaging tools in its MCP server list. When messaging bridges are added in Phase 4, they're added to the orchestrator's tool set, not the subagents'.
 
 ---
 
 ## Impact on ADR-004
 
-This spike's findings support ADR-004 (IPC Orchestrator Scanning as Enforcement Seam) with a specific recommendation:
+1. **The IPC enforcement seam is the interceptor**, not a scanner sidecar or gateway extension. The interceptor sits at the privilege boundary between orchestrator and subagents.
 
-1. **IPC scanning is a fifth enforcement seam** — confirmed. The gap is real: any data channel between the agent container and external services that bypasses the gateway is an exfiltration path.
+2. **Scanning is necessary but not sufficient.** The interceptor adds two capabilities the gateway lacks: surgical sanitization (redact and forward) and termination with retry (kill tainted subagent, orchestrator spawns fresh one).
 
-2. **The recommended implementation eliminates the seam rather than scanning it.** Option D routes data-plane IPC through the existing MCP gateway seam. There is no separate "IPC scanning" layer — it's the same L2 scanning that covers all MCP tool calls. The fifth seam collapses into the second.
+3. **The PID 1 problem is structurally resolved.** No process needs both workspace access and external network access. The taint boundary is the subagent, not PID 1.
 
-3. **ADR-004's phased recommendation should be updated**: MVP (Phase 1) needs no IPC scanning at all (control plane only). Phase 4 needs messaging bridges implemented as MCP servers. No inline-scanning-at-orchestrator fallback is needed if bridges are MCP servers from the start.
-
-4. **The pivot (constrain IPC to control signals only) is the recommendation.** The spike's pivot-if-gate-fails scenario — "remove user-generated content from IPC and route through MCP" — turned out to be the best architecture regardless of gate outcome.
+4. **Phase 1-3 don't need IPC scanning.** The interceptor activates in Phase 4 (messaging bridges). But tool separation should be established early.
 
 ## Expected Outputs
 
-- [x] Recommendation for IPC model (Q1): MCP over HTTP for data plane, filesystem signals for control plane
-- [x] Scanning injection point (Q3): tg-gateway (existing pipeline, zero new code)
-- [ ] Latency benchmarks for IPC scanning (Q4): Estimated ~6-13ms via gateway; empirical benchmarks deferred to implementation
-- [x] Design for taint tracking interaction (Q6): Same model as all MCP calls — PID 1 outside taint scope, L2/L3 pattern scanning is the defense
-- [x] Input to ADR-004: Option D recommended; update ADR-004 phased recommendation
+- [x] Recommendation for IPC model (Q1): Transport is an implementation detail; privilege separation is the architecture
+- [x] Scanning injection point (Q3): Interceptor at subagent/orchestrator privilege boundary
+- [x] Scanner design (Q5): Same L1/L2/L3 pipeline; L1/L2 → sanitize, L3 → terminate
+- [ ] Latency benchmarks (Q4): Estimated ~10-30ms double scan (interceptor + gateway); empirical benchmarks deferred
+- [x] Taint tracking interaction (Q6): Per-subagent taint, not per-PID; eliminates PID 1 problem
+- [x] Input to ADR-004: Privilege separation model; interceptor with sanitize/terminate semantics
