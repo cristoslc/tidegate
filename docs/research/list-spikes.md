@@ -19,6 +19,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 |----|-------|------|--------|-------|
 | SPIKE-012 | [ClaudeClaw vs NanoClaw Comparison](./Active/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison.md) | 2026-02-25 | 0ec6eb8 | Evaluating ClaudeClaw as alternative to NanoClaw |
 | SPIKE-013 | [Tideclaw Architecture](./Active/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-02-25 | 0ec6eb8 | Security-first orchestrator design |
+| SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Active/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-02-28 | bb16b22 | Privilege separation: orchestrator/subagent/interceptor model |
 
 ## Complete
 
