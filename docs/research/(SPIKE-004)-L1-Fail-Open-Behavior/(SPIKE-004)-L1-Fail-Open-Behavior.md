@@ -1,11 +1,20 @@
+---
+title: "SPIKE-004: L1 Fail-Open Behavior"
+status: Planned
+author: cristos
+created: 2026-02-23
+last_updated: 2026-02-23
+question: "What happens when tg-scanner crashes — does L1 fail open, and how do we mitigate?"
+parent: VISION-001
+---
+
 # L1 Fail-Open Behavior
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
-| updated | — | 2026-02-23 | Reframed for journal-based taint architecture (ADR-002 supersedes ADR-001) |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review; reframed for journal-based taint architecture (ADR-002) |
 
 ## Source
 

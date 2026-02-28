@@ -1,10 +1,20 @@
+---
+title: "SPIKE-012: ClaudeClaw vs NanoClaw Comparison"
+status: Active
+author: cristos
+created: 2026-02-25
+last_updated: 2026-02-25
+question: "Is ClaudeClaw a viable alternative or complement to NanoClaw for Tidegate's agent runtime?"
+parent: VISION-001
+---
+
 # ClaudeClaw vs NanoClaw — Agent-Container Runtime Comparison
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
-|---|---|---|---|
-| active | — | 2026-02-25 | Spike started; claudeclaw source pulled at 198 commits / 162 stars |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Active | 2026-02-25 | — | Spike started; claudeclaw source pulled at 198 commits / 162 stars |
 
 ## Purpose
 

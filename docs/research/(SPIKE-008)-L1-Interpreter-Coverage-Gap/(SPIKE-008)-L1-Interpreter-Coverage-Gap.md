@@ -1,12 +1,22 @@
+---
+title: "SPIKE-008: L1 Interpreter Coverage Gap"
+status: Complete
+author: cristos
+created: 2026-02-23
+last_updated: 2026-02-23
+question: "Does seccomp-notify on execve miss in-process interpreter execution, and what complements it?"
+parent: VISION-001
+---
+
 # L1 Coverage Gap — In-Process Interpreter Execution
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
-|---|---|---|---|
-| planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
-| active | `138d920` | 2026-02-23 | Execution model audit + Falco/eBPF research |
-| completed | — | 2026-02-23 | seccomp-notify validated as correct L1 mechanism; eBPF complements as L1+; findings absorbed into ADR-002 (taint-and-verify) |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
+| Active | 2026-02-23 | 138d920 | Execution model audit + Falco/eBPF research |
+| Complete | 2026-02-23 | — | seccomp-notify validated as correct L1 mechanism; eBPF complements as L1+; findings absorbed into ADR-002 (taint-and-verify) |
 
 ## Source
 

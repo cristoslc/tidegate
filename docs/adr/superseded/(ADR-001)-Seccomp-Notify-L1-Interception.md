@@ -1,12 +1,23 @@
+---
+title: "ADR-001: OCI Runtime Wrapper + seccomp-notify for L1 Command Interception"
+status: Superseded
+author: cristos
+created: 2026-02-22
+last_updated: 2026-02-23
+affected_artifacts:
+  - VISION-001
+superseded_by: ADR-002
+---
+
 # ADR-001: OCI Runtime Wrapper + seccomp-notify for L1 Command Interception
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| proposed | `138d920` | 2026-02-22 | Evaluated shell wrapper, eBPF LSM, Tetragon, fanotify |
-| accepted | `138d920` | 2026-02-22 | Adopted seccomp-notify + OCI runtime wrapper |
-| superseded | — | 2026-02-23 | By ADR-002. execve interception and command evaluator dropped. seccomp-notify mechanism retained for `connect()` enforcement in journal-based taint architecture. |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Proposed | 2026-02-22 | 138d920 | Evaluated shell wrapper, eBPF LSM, Tetragon, fanotify |
+| Adopted | 2026-02-22 | 138d920 | Adopted seccomp-notify + OCI runtime wrapper |
+| Superseded | 2026-02-23 | 94efd00 | By ADR-002. execve interception and command evaluator dropped. seccomp-notify mechanism retained for `connect()` enforcement in journal-based taint architecture. |
 
 > **This ADR is superseded.** The seccomp-notify mechanism survived but the application changed fundamentally: `connect()` interception with journal-based taint tracking replaces `execve` interception with command evaluation. See [ADR-002](../proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) for the current L1 design.
 >
