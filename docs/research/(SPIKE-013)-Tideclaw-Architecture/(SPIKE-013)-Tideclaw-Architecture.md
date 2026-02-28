@@ -1,11 +1,21 @@
+---
+title: "SPIKE-013: Tideclaw Architecture"
+status: Active
+author: cristos
+created: 2026-02-25
+last_updated: 2026-02-27
+question: "What should a security-first orchestrator for AI coding tools look like?"
+parent: VISION-001
+---
+
 # Tideclaw — Architecture Spike: Security-First Orchestrator for AI Coding Tools
 
 ## Lifecycle
 
-| Stage | Commit | Date | Notes |
-|---|---|---|---|
-| active | — | 2026-02-25 | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
-| active | — | 2026-02-27 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Active | 2026-02-25 | — | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
+| Active | 2026-02-27 | — | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
 
 ## Purpose
 

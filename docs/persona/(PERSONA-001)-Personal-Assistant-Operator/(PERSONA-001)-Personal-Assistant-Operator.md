@@ -15,7 +15,7 @@ related_stories: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-02-21 | db146de | Initial persona definition |
-| Active | 2026-02-26 | — | Migrated to spec-management format |
+| Active | 2026-02-26 | 35f707d | Migrated to spec-management format |
 
 **The primary persona.**
 

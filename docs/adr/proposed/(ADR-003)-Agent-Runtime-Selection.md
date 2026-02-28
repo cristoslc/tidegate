@@ -1,10 +1,20 @@
+---
+title: "ADR-003: Agent Runtime Selection — NanoClaw over OpenClaw"
+status: Proposed
+author: cristos
+created: 2026-02-24
+last_updated: 2026-02-24
+affected_artifacts:
+  - VISION-001
+---
+
 # ADR-003: Agent Runtime Selection — NanoClaw over OpenClaw
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| proposed | — | 2026-02-24 | From agent-selection research spike comparing NanoClaw and OpenClaw |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Proposed | 2026-02-24 | cfcc86a | From agent-selection research spike comparing NanoClaw and OpenClaw |
 
 ## Context
 

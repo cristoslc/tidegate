@@ -1,10 +1,20 @@
+---
+title: "SPIKE-001: MCP Protocol Abuse Resistance"
+status: Planned
+author: cristos
+created: 2026-02-21
+last_updated: 2026-02-21
+question: "How should the gateway handle malformed, oversized, or adversarial MCP messages?"
+parent: VISION-001
+---
+
 # MCP Protocol Abuse Resistance
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| planning | `db146de` | 2026-02-21 | Initial commit; gateway had basic JSON-RPC parsing but no hardening |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Planned | 2026-02-21 | db146de | Initial commit; gateway had basic JSON-RPC parsing but no hardening |
 
 ## Question
 

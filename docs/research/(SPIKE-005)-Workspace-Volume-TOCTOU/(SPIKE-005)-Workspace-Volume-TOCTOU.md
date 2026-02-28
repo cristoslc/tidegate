@@ -1,11 +1,20 @@
+---
+title: "SPIKE-005: Workspace Volume TOCTOU"
+status: Planned
+author: cristos
+created: 2026-02-23
+last_updated: 2026-02-23
+question: "Can a TOCTOU race between file open observation and scanner read allow taint evasion?"
+parent: VISION-001
+---
+
 # Workspace Volume TOCTOU
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
-| updated | — | 2026-02-23 | Reframed for journal-based taint architecture (ADR-002 supersedes ADR-001) |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review; reframed for journal-based taint architecture (ADR-002) |
 
 ## Source
 

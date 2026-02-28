@@ -1,10 +1,20 @@
+---
+title: "SPIKE-002: Luhn False Positive Rate"
+status: Planned
+author: cristos
+created: 2026-02-23
+last_updated: 2026-02-23
+question: "What is the empirical false positive rate of Luhn-based credit card detection in agent traffic?"
+parent: VISION-001
+---
+
 # Luhn False Positive Rate
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| planning | `138d920` | 2026-02-23 | Identified by adversarial threat model review |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
 
 ## Source
 

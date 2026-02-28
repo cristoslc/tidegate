@@ -1,10 +1,21 @@
+---
+title: "ADR-002: Taint-and-Verify Data Flow Model"
+status: Proposed
+author: cristos
+created: 2026-02-23
+last_updated: 2026-02-23
+affected_artifacts:
+  - VISION-001
+supersedes: ADR-001
+---
+
 # ADR-002: Taint-and-Verify Data Flow Model
 
 ## Lifecycle
 
-| Phase | Commit | Date | Notes |
-|---|---|---|---|
-| proposed | — | 2026-02-23 | From L1 coverage gap spike + data flow taint model spike + journal architecture investigation |
+| Phase | Date | Commit | Notes |
+|-------|------|--------|-------|
+| Proposed | 2026-02-23 | 94efd00 | From L1 coverage gap spike + data flow taint model spike + journal architecture investigation |
 
 ## Context
 

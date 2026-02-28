@@ -1,3 +1,13 @@
+---
+title: "SPIKE-010: Shell Wrapper Command Interception"
+status: Superseded
+author: cristos
+created: 2026-02-22
+last_updated: 2026-02-23
+question: "Can a shell wrapper binary intercept every command to prevent encryption-before-exfiltration?"
+parent: VISION-001
+---
+
 # Shell Wrapper Command Interception
 
 ## Lifecycle
