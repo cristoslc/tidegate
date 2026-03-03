@@ -79,6 +79,32 @@ journey
 
 In this example, "Configure credentials" (2) and "Invite team member" (1) surface as pain points — the narrative must describe the corresponding friction and opportunities.
 
+## Pain point IDs
+
+Every pain point in a journey MUST be assigned a stable, unique ID using the format **`JOURNEY-NNN.PP-NN`** — a compound ID scoped to the parent journey.
+
+- IDs are sequential within each journey: PP-01, PP-02, PP-03, ...
+- IDs are **stable** — when a pain point is removed, its number is never reused.
+- The compound form (`JOURNEY-001.PP-03`) is globally unique across the project and grep-friendly.
+
+**Pain Points Summary table** — every journey MUST include this table in the `## Pain Points` section. The table is the authoritative registry of pain point IDs for the journey.
+
+| ID | Pain Point | Score | Stage | Root Cause | Opportunity |
+|----|------------|-------|-------|------------|-------------|
+
+- The `ID` column contains the short form (`PP-01`) within the journey document. The fully qualified form (`JOURNEY-NNN.PP-NN`) is used when referencing pain points from other artifacts.
+- Each pain point with a score ≤ 2 in the Mermaid diagram MUST have a row in this table.
+
+**Inline callouts** — in the Steps / Stages narrative, pain points are called out using:
+
+```markdown
+> **PP-01:** Description of the friction...
+```
+
+The `PP-NN` label in the callout MUST match a row in the Pain Points Summary table.
+
+**Downstream traceability** — Epics, Stories, and Agent Specs can reference journey pain points via `addresses:` in their frontmatter (list of `JOURNEY-NNN.PP-NN` IDs). This is an informational traceability link, not a blocking dependency.
+
 **Workflow integration:**
 
 - When creating a journey, draft the narrative first, then build the diagram from it. The diagram is a *derived visualization*, not the source of truth — the narrative is.

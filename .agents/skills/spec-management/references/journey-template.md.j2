@@ -39,7 +39,13 @@ journey
 
 ## Pain Points
 
-{{ pain_points | default("Friction points identified in the journey (each must correspond to a score <= 2 in the diagram).") }}
+{{ pain_points | default("Friction points identified in the journey (each must correspond to a score <= 2 in the diagram). Use `> **PP-NN:** Description...` callouts in Steps / Stages to mark pain points inline.") }}
+
+### Pain Points Summary
+
+| ID | Pain Point | Score | Stage | Root Cause | Opportunity |
+|----|------------|-------|-------|------------|-------------|
+| JOURNEY-{{ number }}.PP-01 | {{ pp_01_description | default("First pain point") }} | {{ pp_01_score | default(2) }} | {{ pp_01_stage | default("Stage") }} | {{ pp_01_root_cause | default("Root cause") }} | {{ pp_01_opportunity | default("Opportunity") }} |
 
 ## Opportunities
 
