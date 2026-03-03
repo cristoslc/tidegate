@@ -127,6 +127,3 @@ If `bd` cannot be installed or is unavailable:
 3. Use the same status model (`open`, `in_progress`, `blocked`, `closed`) and keep updates externally visible.
 4. Mark that this fallback should be replaced once a preferred CLI is selected by SPIKE-001.
 
-## Pending decision
-
-The default CLI may change after `SPIKE-001 External Task CLI Evaluation`. Update this skill when the spike completes.
