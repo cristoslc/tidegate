@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source-yml-v1",
+  "title": ".source.yml",
+  "description": "Remote skill provenance manifest per ADR-002-Remote-Skills-Reference-Pattern",
+  "type": "object",
+  "required": ["source", "skill", "fetched", "integrity"],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "object",
+      "description": "Remote repository coordinates",
+      "required": ["repository", "ref", "commit", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Git remote URL (HTTPS or SSH)",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "description": "Branch, tag, or commit ref used at fetch time",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "description": "Full 40-character SHA of the resolved commit",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative path from repo root to the skill directory",
+          "minLength": 1
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "description": "Skill identity metadata",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Skill directory name — must match the containing directory",
+          "minLength": 1
+        }
+      }
+    },
+    "fetched": {
+      "type": "object",
+      "description": "Fetch operation metadata",
+      "required": ["at", "by"],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "string",
+          "description": "ISO 8601 UTC timestamp of the fetch operation",
+          "format": "date-time"
+        },
+        "by": {
+          "type": "string",
+          "description": "Identifier of the tool or agent that performed the fetch",
+          "minLength": 1
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "description": "Content integrity verification",
+      "required": ["algorithm", "digest"],
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "description": "Hash algorithm used for the digest",
+          "const": "sha256"
+        },
+        "digest": {
+          "type": "string",
+          "description": "Hex-encoded hash of the tar archive of fetched skill files (excluding .source.yml)",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}
