@@ -1,0 +1,7 @@
+---
+interface:
+  display_name: "Execution Tracking"
+  short_description: "Bootstrap and operate external task tracking"
+  default_prompt: >-
+    Use $execution-tracking to bootstrap external task tracking and keep
+    state in the configured backend.
