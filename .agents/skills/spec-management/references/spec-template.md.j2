@@ -18,6 +18,10 @@ depends-on:
 {%- for dep in depends_on | default([]) %}
   - {{ dep }}
 {%- endfor %}
+addresses:
+{%- for pp in addresses | default([]) %}
+  - {{ pp }}
+{%- endfor %}
 ---
 
 # {{ title }}
