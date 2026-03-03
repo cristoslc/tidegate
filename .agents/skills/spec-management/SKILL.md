@@ -163,6 +163,8 @@ Commit hashes reference the repo state at the time of the transition, not the co
 
 Every doc-type directory keeps a single lifecycle index (`list-<type>.md`). **Refreshing the index is the final step of every artifact operation** — creation, content edits, phase transitions, and abandonment. No artifact change is complete until the index reflects it.
 
+Use sub-agents to parallelize this work: Agent 1 should audit all lifecycle tables across docs/ for correctness. Agent 2 should check all cross-references between specs resolve to valid files. Agent 3 should verify naming conventions match our standards.
+
 ### What "refresh" means
 
 1. Read (or create) `docs/<type>/list-<type>.md`.
