@@ -1,6 +1,6 @@
 ---
 name: spec-management
-description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, PRD, Spike, ADR, Persona) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a PRD, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
+description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, Agent Spec, Spike, ADR, Persona) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a spec, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. When a SPEC transitions to implementation, always chain into the execution-tracking skill to create a tracked plan before any code is written. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
@@ -12,6 +12,79 @@ metadata:
 # Spec Management
 
 Create, transition, and validate documentation artifacts defined in AGENTS.md. The authoritative list of artifact types, phases, and hierarchy lives in AGENTS.md — this skill provides the operational procedures.
+
+## Stale reference watcher
+
+The `specwatch.sh` script monitors `docs/` for file moves, renames, and deletes, and flags stale markdown link references with suggested fixes.
+
+**Script location:** `scripts/specwatch.sh` (relative to this skill)
+
+**Subcommands:**
+
+| Command | What it does |
+|---------|-------------|
+| `scan` | Run a full stale-reference scan (no watcher needed) |
+| `watch` | Start background filesystem watcher (requires `fswatch`) |
+| `stop` | Stop a running watcher |
+| `status` | Show watcher status and log summary |
+| `touch` | Refresh the sentinel keepalive timer |
+
+**Log format:** When stale references are found, they are written to `.agents/specwatch.log` (gitignored) in a structured format:
+```
+STALE <source-file>:<line>
+  broken: <relative-path-as-written>
+  found: <suggested-new-path>
+  artifact: <TYPE-NNN>
+```
+
+### Specwatch check (MANDATORY pre-step)
+
+**Before every artifact operation** (create, edit, transition, audit), check for stale references:
+
+1. If `.agents/specwatch.log` exists and is non-empty, read its contents and surface the stale references as warnings.
+2. Present each entry: source file, line number, broken path, and suggested fix.
+3. Fix stale references before proceeding with the operation (or acknowledge them if they are false positives).
+4. After addressing, delete the log file to clear the warnings.
+
+### Sentinel keepalive
+
+**After every artifact operation** (create, edit, transition, audit), refresh the specwatch sentinel:
+
+```bash
+scripts/specwatch.sh touch
+```
+
+This keeps the background watcher alive. If no spec-management operation runs for the timeout period (default 1 hour), the watcher self-terminates.
+
+## Dependency graph
+
+The `specgraph.sh` script builds and queries the artifact dependency graph from frontmatter. It caches a JSON graph in `/tmp/` and auto-rebuilds when any `docs/*.md` file changes.
+
+**Script location:** `scripts/specgraph.sh` (relative to this skill)
+
+**Subcommands:**
+
+| Command | What it does |
+|---------|-------------|
+| `build` | Force-rebuild graph from frontmatter |
+| `blocks <ID>` | What does this artifact depend on? (direct dependencies) |
+| `blocked-by <ID>` | What depends on this artifact? (inverse lookup) |
+| `tree <ID>` | Transitive dependency tree (all ancestors) |
+| `ready` | Active/Planned artifacts with all deps resolved |
+| `next` | What to work on next (ready items + what they unblock, blocked items + what they need) |
+| `mermaid` | Mermaid diagram to stdout |
+| `status` | Summary table by type and phase |
+
+**When to use:**
+- Before transitioning an artifact to a new phase, run `blocks <ID>` to verify dependencies are resolved.
+- To find unblocked work, run `ready` — it lists active/planned artifacts whose dependencies are all in resolved statuses.
+- To understand the full dependency chain, run `tree <ID>` for transitive closure.
+- To generate a visual overview, pipe `mermaid` output into a `.md` file or render it directly.
+
+**Edge types:**
+- `depends-on` — explicit blocking dependency (from `depends-on:` frontmatter)
+- `parent-vision` — hierarchy edge (from `parent-vision:` frontmatter)
+- `parent-epic` — hierarchy edge (from `parent-epic:` frontmatter)
 
 ## Lifecycle table format
 
@@ -26,7 +99,54 @@ Every artifact embeds a lifecycle table tracking phase transitions:
 | Active  | 2026-02-25 | def5678 | Dependency X satisfied |
 ```
 
-Commit hashes reference the repo state at the time of the transition, not the commit that writes the hash stamp itself. Commit first, then stamp the hash and amend — the pre-amend hash is the correct value.
+Commit hashes reference the repo state at the time of the transition, not the commit that writes the hash stamp itself. Commit the transition first, then stamp the resulting hash into the lifecycle table and index in a second commit. This keeps the stamped hash reachable in git history.
+
+## Index maintenance
+
+Every doc-type directory keeps a single lifecycle index (`list-<type>.md`). **Refreshing the index is the final step of every artifact operation** — creation, content edits, phase transitions, and abandonment. No artifact change is complete until the index reflects it.
+
+### What "refresh" means
+
+1. Read (or create) `docs/<type>/list-<type>.md`.
+2. Ensure one table per active lifecycle phase, plus a table for each end-of-life phase that has entries.
+3. For the affected artifact, update its row: title, current phase, last-updated date, and commit hash of the change.
+4. If the artifact moved phases, remove it from the old phase table and add it to the new one.
+5. Sort rows within each table by artifact number.
+
+### When to refresh
+
+| Operation | Trigger |
+|-----------|---------|
+| Create artifact | New row in the appropriate phase table |
+| Edit artifact content or frontmatter | Update last-updated date and commit hash |
+| Transition phase | Move row between phase tables |
+| Abandon / end-of-life | Move row to the end-of-life table |
+
+This rule is referenced as the **index refresh step** in the workflows below. Do not skip it.
+
+## Auditing Artifacts
+
+Use an agent to audit all spec artifacts in docs/ for lifecycle compliance — check each has valid status, hash stamps, and matching index entries — then report gaps as a structured table with file paths and missing fields.
+
+Always include a 1-2 sentence summary of an artifact, not just its title, in tables.
+
+## Status overview
+
+Run `specgraph.sh status` for a project-wide progress snapshot — one table per artifact type, listing every artifact with its ID, current phase, and title.
+
+Run `specgraph.sh next` for a quick "what should I work on?" view — shows ready items (unblocked, in-progress or not-yet-started) with what completing each would unblock, plus any blocked items and what they're waiting on.
+
+Both are read-only operations. They do not modify any files.
+
+### Combined "what's next?" flow
+
+When asked "what's next?" or "what should I work on?", combine **both** layers:
+
+1. **Spec layer** — run `specgraph.sh next` to find which artifacts are ready at the planning level (all dependencies resolved).
+2. **Task layer** — invoke the **execution-tracking** skill and run `bd ready --json` to find concrete unblocked tasks in the execution backend.
+3. **Present both together:** spec-level ready items (with what they'd unblock) and task-level ready items (claimable work). If bd is not initialized or has no tasks, note that and show only the spec layer.
+
+This ensures "what's next?" answers both "which specs can move forward?" and "which concrete tasks can I pick up right now?"
 
 ## Creating artifacts
 
@@ -34,155 +154,26 @@ Commit hashes reference the repo state at the time of the transition, not the co
 
 1. Scan `docs/<type>/` to determine the next available number for the prefix.
 2. Create the artifact using the appropriate format (see AGENTS.md artifact types table).
-3. Populate frontmatter with the required fields for the type (see sections below).
-4. Initialize the lifecycle table with the appropriate phase and current date. This is usually the first phase (Draft, Planned, etc.), but an artifact may be created directly in a later phase if it was fully developed during the conversation (see [Phase skipping](#phase-skipping)).
-5. Update or create the `list-<type>.md` index in the type's directory.
-6. Validate parent references exist (e.g., the Epic referenced by a new PRD must already exist).
+3. Read the artifact's definition file and template from the lookup table below.
+4. Populate frontmatter with the required fields for the type (see the template).
+5. Initialize the lifecycle table with the appropriate phase and current date. This is usually the first phase (Draft, Planned, etc.), but an artifact may be created directly in a later phase if it was fully developed during the conversation (see [Phase skipping](#phase-skipping)).
+6. Validate parent references exist (e.g., the Epic referenced by a new Agent Spec must already exist).
+7. **Index refresh step** — update `list-<type>.md` (see [Index maintenance](#index-maintenance)).
 
-### Product Vision (VISION-NNN)
+### Artifact type definitions
 
-The highest-level specification artifact. Defines *what the product is* and *why it exists*. Typically one per product or major product area. Uses folder format to accommodate supporting documents.
+Each artifact type has a definition file (lifecycle phases, conventions, folder structure) and a template (frontmatter fields, document skeleton). **Read the definition for the artifact type you are creating or transitioning.**
 
-- **Folder structure:** `docs/vision/(VISION-NNN)-<Title>/`
-  - Primary file: `(VISION-NNN)-<Title>.md` — the vision document itself.
-  - Supporting docs live alongside it in the same folder. These are NOT numbered artifacts — they are informal reference material owned by the Vision.
-  - Typical supporting docs: competitive analysis, market research, positioning docs, persona summaries, **architecture overview**.
-- **Architecture overview vs. ADRs:** An `architecture-overview.md` in the Vision folder describes *how the system works holistically* — a living description of the system shape. It is descriptive, not decisional. Individual architectural *decisions* ("we chose X over Y because Z") belong in ADRs. When extracting architecture content from a Vision document, split it: the holistic description stays as a Vision supporting doc; discrete decisions with alternatives considered become ADRs.
-- Frontmatter must include: title, status, author, created date, last updated date.
-- Must define: target audience, value proposition, success metrics, non-goals.
-- Should be stable — update infrequently. If a Vision needs frequent revision, it is likely scoped too narrowly (should be an Epic) or too early (needs a Spike first).
-- Vision documents do NOT contain implementation details, timelines, or task breakdowns.
-
-### User Journey (JOURNEY-NNN)
-
-Maps an end-to-end user experience across features and touchpoints. Journeys describe *how a user accomplishes a goal* and surface pain points and opportunities that inform which Epics to create.
-
-- **Folder structure:** `docs/journey/(JOURNEY-NNN)-<Title>/`
-  - Primary file: `(JOURNEY-NNN)-<Title>.md` — the journey narrative.
-  - Supporting docs: flow charts, interview notes, extended research.
-- Frontmatter must include: title, status, author, created date, last updated date, parent Vision, and linked Persona(s).
-- Must define: persona (who — reference a PERSONA-NNN artifact), goal (what they're trying to accomplish), steps/stages (the flow), pain points (friction), and opportunities (where the product can improve).
-- A Journey is "Validated" when its steps and pain points have been confirmed through user research, stakeholder review, or prototype testing.
-- Journeys are *discovery artifacts* — they inform Epic and PRD creation but are not directly implemented. They do NOT contain acceptance criteria or task breakdowns.
-
-#### Mermaid journey diagram
-
-Every journey MUST include a Mermaid `journey` diagram embedded in the primary file. The diagram is a structured visualization of the narrative — it encodes stages, actions, satisfaction levels, and actors in a single view. Place the diagram immediately after the **Steps / Stages** section.
-
-**Syntax:**
-
-~~~markdown
-```mermaid
-journey
-    title <Journey Title>
-    section <Stage Name>
-      <Action>: <score>: <Actor>
-```
-~~~
-
-**Mapping conventions:**
-
-| Journey element | Mermaid element | Rule |
-|-----------------|-----------------|------|
-| Steps / stages | `section` blocks | One section per stage, in narrative order |
-| Actions within a stage | Task lines | Concise verb phrases (3-6 words) |
-| Persona | Actor name | Use the persona's archetype label from its PERSONA-NNN, not the artifact ID |
-| System / other actors | Additional actors | Add when a handoff or interaction with another party occurs |
-
-**Satisfaction scores** (1–5 scale):
-
-| Score | Sentiment | Signals |
-|-------|-----------|---------|
-| 5 | Delighted | Moment of delight, exceeds expectations |
-| 4 | Satisfied | Works well, minor friction at most |
-| 3 | Neutral | Functional but unremarkable |
-| 2 | Frustrated | Noticeable friction — flags a **pain point** |
-| 1 | Blocked | Severe friction or failure — flags a critical **pain point** |
-
-Every pain point identified in the narrative MUST appear as a score ≤ 2 task in the diagram, and every score ≤ 2 task MUST have a corresponding pain point in the narrative. This keeps the diagram and narrative in sync.
-
-**Example:**
-
-~~~markdown
-```mermaid
-journey
-    title First-Time Project Setup
-    section Discovery
-      Find product landing page: 4: Developer
-      Read getting-started guide: 3: Developer
-    section Installation
-      Install CLI tool: 5: Developer
-      Run init command: 4: Developer
-      Configure credentials: 2: Developer
-    section First Use
-      Create first project: 4: Developer
-      Invite team member: 1: Developer, Admin
-      Run first build: 5: Developer
-```
-~~~
-
-In this example, "Configure credentials" (2) and "Invite team member" (1) surface as pain points — the narrative must describe the corresponding friction and opportunities.
-
-**Workflow integration:**
-
-- When creating a journey, draft the narrative first, then build the diagram from it. The diagram is a *derived visualization*, not the source of truth — the narrative is.
-- When updating a journey (adding stages, revising pain points), update **both** the narrative and the diagram in the same commit.
-- When transitioning a journey to Validated, confirm that satisfaction scores reflect validated research findings, not initial assumptions. Adjust scores as user feedback dictates.
-
-### Epics (EPIC-NNN)
-
-A strategic initiative that decomposes into multiple PRDs, Spikes, and ADRs. The **coordination layer** between product vision and feature-level work.
-
-- Frontmatter must include: title, status, author, created date, last updated date, parent Vision, success criteria.
-- Must define: goal/objective, scope boundaries, child PRD list (updated as PRDs are created), and key dependencies on other Epics.
-- An Epic is "Complete" when all child PRDs reach "Implemented" and success criteria are met.
-- An Epic is "Archived" after completion, when it no longer requires active reference.
-
-### User Story (STORY-NNN)
-
-The atomic unit of user-facing requirements. Captures a single capability from the user's perspective with clear acceptance criteria. Decomposes an Epic into verifiable, implementable increments.
-
-- **Format:** Single markdown file at `docs/story/(STORY-NNN)-<Title>.md`.
-- Frontmatter must include: title, status, author, created date, last updated date, parent Epic, and optionally linked Journey(s).
-- Must follow the canonical format:
-  - **As a** [role/persona], **I want** [capability], **so that** [benefit/outcome].
-  - **Acceptance criteria:** Numbered list of testable conditions that must be true for the story to be complete.
-- Stories should be small enough to implement and verify independently. If a story requires multiple PRDs, it is likely scoped too broadly (should be an Epic).
-- A Story is "Ready" when acceptance criteria are defined and agreed upon. A Story is "Implemented" when all acceptance criteria pass.
-- Stories can link to Journeys via `related` frontmatter to show which user experience they improve.
-
-### PRDs (PRD-NNN)
-
-- Frontmatter must include: title, status, author, created date, last updated date, parent Epic, and linked research artifacts and/or ADRs.
-- Should be scoped to something a team (or agent) can ship and validate independently.
-
-### Research Spikes (SPIKE-NNN)
-
-- Number in intended execution order — sequence communicates priority.
-- Frontmatter must state: question, gate (e.g., Pre-MVP), risks addressed, dependencies, and what it blocks.
-- Gating spikes must define go/no-go criteria with measurable thresholds (not just "investigate X").
-- Gating spikes must recommend a specific pivot if the gate fails (not just "reconsider approach").
-- Spikes can belong to any artifact type (Vision, Epic, PRD, ADR, Persona). The owning artifact controls all spike tables: questions, risks, gate criteria, dependency graph, execution order, phase mappings, and risk coverage. There is no separate research roadmap document.
-
-### Personas (PERSONA-NNN)
-
-A user archetype that represents a distinct segment of the product's audience. Personas are cross-cutting — they are referenced by Journeys, Stories, Visions, and other artifacts but are not owned by any single one.
-
-- **Folder structure:** `docs/persona/(PERSONA-NNN)-<Title>/`
-  - Primary file: `(PERSONA-NNN)-<Title>.md` — the persona definition.
-  - Supporting docs: interview notes, survey data, behavioral research, demographic analysis.
-- Frontmatter must include: title, status, author, created date, last updated date, and links to all Journeys and Stories that reference this persona.
-- Must define: name/archetype label, demographic summary, goals and motivations, frustrations and pain points, behavioral patterns, and context of use (when/where/how they interact with the product).
-- A Persona is "Validated" when its attributes have been confirmed through user research, interviews, or data analysis — not just assumed.
-- Personas are *reference artifacts* — they inform Journey, Story, and PRD creation but are not directly implemented. They do NOT contain acceptance criteria, task breakdowns, or feature specifications.
-
-### ADRs (ADR-NNN)
-
-- Frontmatter must include: title, status, author, created date, last updated date, and links to all affected Epics/PRDs.
-- ADRs are cross-cutting: they link to all affected artifacts but are not owned by any single one.
-- ADRs record **decisions**: a specific choice between alternatives, with rationale and consequences. They require status, alternatives considered, and a decision outcome.
-- ADRs are NOT for descriptive or explanatory architecture content. If the content describes "how the system works" without presenting a decision between alternatives, it belongs as an architecture overview supporting doc in the Vision folder — not as an ADR.
-- Use the Draft phase while investigation (Spikes) is still in progress. Move to Proposed when the recommendation is formed and ready for review.
+| Type | Definition | Template |
+|------|-----------|----------|
+| Product Vision (VISION-NNN) | [references/vision-definition.md](references/vision-definition.md) | [references/vision-template.md.j2](references/vision-template.md.j2) |
+| User Journey (JOURNEY-NNN) | [references/journey-definition.md](references/journey-definition.md) | [references/journey-template.md.j2](references/journey-template.md.j2) |
+| Epic (EPIC-NNN) | [references/epic-definition.md](references/epic-definition.md) | [references/epic-template.md.j2](references/epic-template.md.j2) |
+| User Story (STORY-NNN) | [references/story-definition.md](references/story-definition.md) | [references/story-template.md.j2](references/story-template.md.j2) |
+| Agent Spec (SPEC-NNN) | [references/spec-definition.md](references/spec-definition.md) | [references/spec-template.md.j2](references/spec-template.md.j2) |
+| Research Spike (SPIKE-NNN) | [references/spike-definition.md](references/spike-definition.md) | [references/spike-template.md.j2](references/spike-template.md.j2) |
+| Persona (PERSONA-NNN) | [references/persona-definition.md](references/persona-definition.md) | [references/persona-template.md.j2](references/persona-template.md.j2) |
+| ADR (ADR-NNN) | [references/adr-definition.md](references/adr-definition.md) | [references/adr-template.md.j2](references/adr-template.md.j2) |
 
 ## Phase transitions
 
@@ -202,53 +193,44 @@ Phases listed in AGENTS.md are available waypoints, not mandatory gates. An arti
 3. Commit the change.
 4. Append a row to the artifact's lifecycle table with the commit hash from step 3.
 5. Amend the commit to include the hash stamp.
-6. Update `list-<type>.md` to reflect the new phase.
+6. **Index refresh step** — move the artifact's row to the new phase table (see [Index maintenance](#index-maintenance)).
 
 ### Completion rules
 
-- An Epic is "Complete" only when all child PRDs are "Implemented" and success criteria are met.
-- A PRD is "Implemented" only when its bd implementation plan epic is closed (or all tasks are done in fallback mode).
+- An Epic is "Complete" only when all child Agent Specs are "Implemented" and success criteria are met.
+- An Agent Spec is "Implemented" only when its implementation plan is closed (or all tasks are done in fallback mode).
 - An ADR is "Superseded" only when the superseding ADR is "Adopted" and links back.
 
-## Implementation plans (bd execution bridge)
+## Implementation plans
 
-Implementation Plans are not a doc-type artifact. They bridge declarative specs (`docs/`) and execution tracking (`bd`). Plans are materialized as live `bd` epics with dependency-ordered child tasks.
+Implementation plans are not a doc-type artifact. They bridge declarative specs (`docs/`) and execution tracking. All concrete CLI operations are handled by the **execution-tracking** skill — this skill describes *what* to do, not *how*.
+
+### Prerequisites
+
+Before creating or modifying implementation plans, invoke the **execution-tracking** skill to bootstrap the task backend (availability check, installation if missing, initialization). That skill owns the install, recovery, and CLI command layer.
 
 ### Seeding a plan from a spec
 
-1. A PRD (or Epic) may include an "Implementation Approach" section sketching the high-level plan. This seeds the `bd` plan but is not the plan of record.
-2. When work begins, create a `bd` epic from that outline:
-   ```
-   bd create "Implement PRD-003 CSV Export" --type=epic --external-ref PRD-003
-   ```
-3. Create child tasks under the epic with dependencies:
-   ```
-   bd create "Add export endpoint" --parent <epic-id> --labels spec:PRD-003
-   bd create "Write serializer" --parent <epic-id> --deps <endpoint-id> --labels spec:PRD-003
-   ```
+1. An Agent Spec (or Epic) may include an "Implementation Approach" section sketching the high-level plan. This seeds the implementation plan but is not the plan of record.
+2. When work begins, create an **implementation plan** for the spec artifact, linked via an **origin ref** (e.g., `SPEC-003`).
+3. Create **tasks** under the implementation plan with dependencies between them. Tag each task with a **spec tag** for the originating spec.
 
 ### Lineage and cross-spec impact
 
-- **`--external-ref`** records which spec *seeded* the plan (immutable origin).
-- **`spec:<ID>` labels** record which specs a task *currently affects* (mutable, may grow).
-- When a task impacts additional specs:
-  ```
-  bd label add <task-id> spec:PRD-007
-  bd dep relate <task-id> <other-spec-task-id>
-  ```
-- Use `bd dep add --type=discovered-from` for provenance when tasks spawn from existing ones.
-- Query all work for a spec: `bd list --label spec:PRD-003`.
+- Every implementation plan has an **origin ref** — an immutable link to the spec that seeded it.
+- Every task carries one or more **spec tags** — mutable labels recording which specs it currently affects.
+- When a task impacts additional specs, add spec tags for the new specs and create **dependencies** linking related tasks across plans.
+- Track provenance when tasks spawn from existing ones.
 
 ### Parallel coordination
 
-- `bd swarm create <epic-id>` sets up a swarm — agents use `bd ready` to pick up unblocked work.
-- For repeatable workflows, define a formula in `.beads/formulas/` and instantiate with `bd mol pour`.
+- Use the execution-tracking skill's parallel coordination features (swarms, formulas) when multiple agents need to pick up **ready work** from the same implementation plan.
 
 ### Closing the loop
 
-- Progress is tracked in `bd`, not in the spec doc. The PRD's lifecycle table records the transition to "Implemented" once the `bd` epic completes.
-- Cross-spec tasks should be noted in each affected artifact's lifecycle table entry (e.g., "Implemented — shared serializer also covers PRD-007").
+- Progress is tracked in the execution backend, not in the spec doc. The Agent Spec's lifecycle table records the transition to "Implemented" once the implementation plan completes.
+- Cross-spec tasks should be noted in each affected artifact's lifecycle table entry (e.g., "Implemented — shared serializer also covers SPEC-007").
 
 ### Fallback
 
-If `bd` is unavailable, use the agent's built-in todo system with canonical states (`todo`, `in_progress`, `blocked`, `done`) per the external-task-management skill. The plan structure (ordered steps, dependencies, completion tracking) remains the same — only the backend changes. Lineage is maintained by including artifact IDs in task titles or notes (e.g., `[PRD-003] Add export endpoint`).
+If the **execution-tracking** skill is not available in the current agent environment, fall back to the agent's built-in todo system with canonical states (`todo`, `in_progress`, `blocked`, `done`). The plan structure (ordered steps, dependencies, completion tracking) remains the same — only the backend changes. Lineage is maintained by including artifact IDs in task titles or notes (e.g., `[SPEC-003] Add export endpoint`).
