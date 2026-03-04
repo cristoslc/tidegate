@@ -335,16 +335,13 @@ do_status() {
   ' "$CACHE_FILE" | column -t -s $'\t'
 }
 
-# overview — combined hierarchy tree with status indicators and dependency info
+# overview — combined hierarchy tree with status indicators, dependency info, and executive summary
 do_overview() {
   ensure_cache
 
-  # Status indicators
-  local CHECK="✓" ARROW="→" BLOCK="✗"
-
-  jq -r --arg check "$CHECK" --arg arrow "$ARROW" --arg block "$BLOCK" '
+  jq -r '
     def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
-    def status_icon: if is_resolved then $check else $arrow end;
+    def status_icon: if is_resolved then "[x]" else "[ ]" end;
 
     .nodes as $nodes |
     .edges as $edges |
@@ -373,64 +370,135 @@ do_overview() {
       [$edges[] | select(.from == $id and .type == "depends-on") | .to] |
       map(select(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | is_resolved | not)));
 
-    # Print a node line
+    # Helper: all depends-on for a node (all, not just unresolved)
+    def all_deps($id):
+      [$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique;
+
+    # Print a node line with icon, id, title, status, and blocked-by info
     def node_line($id; $node; $prefix; $connector):
       ($node.status | status_icon) as $icon |
       (unresolved_deps($id)) as $udeps |
-      "\($prefix)\($connector) \($icon) \($id): \($node.title) [\($node.status)]" +
+      (if ($udeps | length) > 0 then "[!]" else $icon end) as $final_icon |
+      "\($prefix)\($connector)\($final_icon) \($id): \($node.title // "(untitled)") [\($node.status // "Unknown")]" +
       if ($udeps | length) > 0 then
-        "\n\($prefix)\(if $connector == "└── " then "    " else "│   " end)  ↳ blocked by: \($udeps | join(", "))"
+        if ($udeps | length) <= 3 then
+          "  <- blocked by: \($udeps | join(", "))"
+        else
+          "\n\($prefix)\(if $connector == "└── " then "    " else "│   " end)    <- blocked by: \($udeps | join(", "))"
+        end
       else "" end;
 
     # Cross-cutting artifacts (ADR, PERSONA, RUNBOOK, BUG, SPIKE without parent)
     def is_cross_cutting: .type | test("ADR|PERSONA|RUNBOOK|BUG|SPIKE");
 
+    # ── Hierarchy Tree ──
+    "── Hierarchy ──",
+    "",
+
     # Render tree for each Vision
     ($visions | to_entries[] |
       .value as $v |
-      "  \($v.key | status_icon) \($v.key): \($v.value.title) [\($v.value.status)]",
+      ($v.value.status | status_icon) as $vicon |
+      "\($vicon) \($v.key): \($v.value.title // "(untitled)") [\($v.value.status // "Unknown")]",
 
       # Children of this Vision (Epics, Journeys)
       (children_of($v.key) | to_entries[] |
         (if .key == (length - 1) then "└── " else "├── " end) as $conn |
         (if .key == (length - 1) then "    " else "│   " end) as $next_prefix |
         .value as $child |
-        node_line($child.id; $child.node; "  "; $conn),
+        node_line($child.id; $child.node; ""; $conn),
 
         # Children of this child (Specs, Stories under Epics)
         (children_of($child.id) | to_entries[] |
           (if .key == (length - 1) then "└── " else "├── " end) as $conn2 |
           .value as $grandchild |
-          node_line($grandchild.id; $grandchild.node; "  \($next_prefix)"; $conn2)
+          node_line($grandchild.id; $grandchild.node; $next_prefix; $conn2)
         )
       ),
       ""
     ),
 
-    # Cross-cutting artifacts
-    (if ($orphans | map(select(.value.type | is_cross_cutting)) | length) > 0 then
+    # Cross-cutting artifacts section
+    (($orphans | map(select(.value | is_cross_cutting))) as $cc |
+    if ($cc | length) > 0 then
       "── Cross-cutting ──",
-      ($orphans | map(select(.value.type | is_cross_cutting)) | to_entries[] |
-        (if .key == (length - 1) then "└── " else "├── " end) as $conn |
-        .value as $o |
-        node_line($o.key; $o.value; "  "; $conn)
+      # Group cross-cutting by type for readability
+      ($cc | group_by(.value.type) | .[] |
+        "  \(.[0].value.type):",
+        (. | sort_by(.key) | to_entries[] |
+          (if .key == (length - 1) then "  └── " else "  ├── " end) as $conn |
+          .value as $o |
+          (unresolved_deps($o.key)) as $udeps |
+          ($o.value.status | status_icon) as $icon |
+          (if ($udeps | length) > 0 then "[!]" else $icon end) as $final_icon |
+          "\($conn)\($final_icon) \($o.key): \($o.value.title // "(untitled)") [\($o.value.status // "Unknown")]" +
+          if ($udeps | length) > 0 then "  <- blocked by: \($udeps | join(", "))" else "" end
+        )
       ),
       ""
     else empty end),
 
     # Truly orphaned (non-cross-cutting without parents)
-    (if ($orphans | map(select(.value.type | is_cross_cutting | not)) | length) > 0 then
+    (($orphans | map(select(.value | is_cross_cutting | not))) as $unp |
+    if ($unp | length) > 0 then
       "── Unparented ──",
-      ($orphans | map(select(.value.type | is_cross_cutting | not)) | to_entries[] |
+      ($unp | to_entries[] |
         (if .key == (length - 1) then "└── " else "├── " end) as $conn |
         .value as $o |
-        node_line($o.key; $o.value; "  "; $conn)
+        node_line($o.key; $o.value; ""; $conn)
       ),
       ""
-    else empty end)
+    else empty end),
+
+    # ── Executive Summary ──
+    # Compute ready and blocked lists
+    (
+      # All unresolved artifacts
+      [$nodes | to_entries[] | select(.value.status | is_resolved | not)] as $unresolved |
+
+      # Ready: unresolved with no unresolved deps
+      ([$unresolved[] |
+        .key as $id |
+        (all_deps($id)) as $deps |
+        select(
+          ($deps | length == 0) or
+          ($deps | all(. as $dep | $nodes[$dep] == null or ($nodes[$dep].status | is_resolved)))
+        ) |
+        {id: .key, status: .value.status, title: (.value.title // "(untitled)")}
+      ] | sort_by(.id)) as $ready |
+
+      # Blocked: unresolved with at least one unresolved dep
+      ([$unresolved[] |
+        .key as $id |
+        (all_deps($id)) as $deps |
+        ($deps | map(select(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | is_resolved | not)))) as $waiting |
+        select(($waiting | length) > 0) |
+        {id: .key, status: .value.status, title: (.value.title // "(untitled)"), waiting: $waiting}
+      ] | sort_by(.id)) as $blocked |
+
+      # Resolved count
+      ([$nodes | to_entries[] | select(.value.status | is_resolved)] | length) as $resolved_count |
+      ([$nodes | to_entries[]] | length) as $total_count |
+
+      "── Summary ──",
+      "  Ready (unblocked, actionable):",
+      if ($ready | length) > 0 then
+        ($ready[] | "    \(.id): \(.title) [\(.status)]")
+      else
+        "    (none)"
+      end,
+      "  Blocked:",
+      if ($blocked | length) > 0 then
+        ($blocked[] | "    \(.id): \(.title) [\(.status)]  <- waiting on: \(.waiting | join(", "))")
+      else
+        "    (none)"
+      end,
+      "  Counts: \($total_count) total -- \($resolved_count) resolved, \($ready | length) ready, \($blocked | length) blocked"
+    )
   ' "$CACHE_FILE"
 
   # Execution tracking integration
+  echo ""
   echo "── Execution Tracking ──"
   if command -v bd >/dev/null 2>&1; then
     local bd_status
