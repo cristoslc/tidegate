@@ -269,6 +269,7 @@ Implementation plans bridge declarative specs (`docs/`) and execution tracking. 
 
 - Progress lives in the execution backend, not the spec doc. Transition the spec to "Implemented" once the plan completes.
 - Note cross-spec tasks in each affected artifact's lifecycle entry (e.g., "Implemented — shared serializer also covers SPEC-007").
+- If execution reveals the spec is unworkable, the execution-tracking skill's escalation protocol flows control back to this skill for spec updates before re-planning.
 
 ### Fallback
 
