@@ -5,7 +5,7 @@ license: UNLICENSED
 allowed-tools: Bash, Read, Grep, Glob
 metadata:
   short-description: Update agents scaffolding from upstream
-  version: 1.1.0
+  version: 1.2.0
   author: cristos
 ---
 
@@ -18,6 +18,10 @@ Pull the latest agents-core scaffolding from the upstream repository into the cu
 - The working tree must be clean before starting.
 - `npx` is the preferred update path for skills. If unavailable, the skill falls back to pure git.
 - The `agents-upstream` git remote is required for updating `AGENTS.md` and other non-skill scaffolding. If it is missing, the skill will prompt the user to add it.
+
+## Quick check mode
+
+If the user just wants to know whether updates are available (without applying them), run steps 1–3c of the workflow below and stop after reporting the diff. Tell the user what changed and how to run the full update when ready.
 
 ## Workflow
 
@@ -63,10 +67,10 @@ Then ask them to re-invoke the skill after adding it.
 
 #### 3b. Fetch latest
 
-Use a shallow fetch — only the tip commit is needed because the merge always squashes (no merge base is recorded between the two histories):
+Fetch the upstream branch. A regular fetch (not shallow) is needed so git can compute a proper merge base for incremental merges:
 
 ```bash
-git fetch --depth=1 agents-upstream l3-agents-core
+git fetch agents-upstream l3-agents-core
 ```
 
 #### 3c. Check for changes
@@ -81,7 +85,7 @@ The diff scope depends on whether npx already updated the skills:
   ```
 - **If npx failed or was unavailable** — full scope:
   ```bash
-  git diff HEAD..agents-upstream/l3-agents-core --stat -- .agents/ AGENTS.md
+  git diff HEAD..agents-upstream/l3-agents-core --stat -- .agents/ AGENTS.md import-agents-standalone.sh
   ```
 
 If the diff is empty, tell the user they are already up to date and stop.
@@ -89,14 +93,28 @@ If the diff is empty, tell the user they are already up to date and stop.
 #### 3d. Merge
 
 ```bash
-git merge agents-upstream/l3-agents-core --allow-unrelated-histories --squash
+git merge agents-upstream/l3-agents-core --allow-unrelated-histories --no-edit
 ```
 
-The `--allow-unrelated-histories` flag is always required because the initial import used `--squash`, which does not record a merge base.
+**Why `--allow-unrelated-histories`**: The initial import into most projects used `--squash`, which did not record a merge base. The flag is harmless on subsequent merges where a base already exists — git ignores it when histories are already related.
 
-#### 3e. Resolve conflicts
+**Why no `--squash`**: A real merge commit records the merge base. This means future updates only diff the delta since the last update — not the entire upstream history. This is what makes subsequent merges fast and keeps conflicts scoped to what actually changed.
 
-After the squash merge, two categories of files need different treatment:
+> **Migration note**: Projects that previously used the squash-based v1.1 workflow will experience one last full-scope merge on their first v1.2 update (because no merge base exists yet). Every update after that will be incremental.
+
+#### 3e. Abort if needed
+
+If the merge goes badly and you want to start over:
+
+```bash
+git merge --abort
+```
+
+This restores the working tree to the pre-merge state. Safe to run at any point before committing.
+
+#### 3f. Resolve conflicts
+
+After the merge, two categories of files need different treatment:
 
 **Skills and scaffolding — remote wins**
 
@@ -136,7 +154,9 @@ Walk through the changes briefly so the user understands what upstream updated.
 
 ### 5. Commit
 
-Ask the user to confirm, then commit:
+If the merge completed without conflicts, git already created the merge commit automatically (via `--no-edit`). Skip this step.
+
+If there were conflicts that required manual resolution, the merge commit is still pending. After resolving and staging all conflicts, ask the user to confirm, then commit:
 
 ```bash
 git commit -m 'chore: update agents-core scaffolding from upstream'
