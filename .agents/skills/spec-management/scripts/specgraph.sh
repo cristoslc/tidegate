@@ -16,7 +16,7 @@ REPO_HASH=$(printf '%s' "$REPO_ROOT" | shasum -a 256 | cut -c1-12)
 CACHE_FILE="/tmp/agents-specgraph-${REPO_HASH}.json"
 
 # --- Resolved statuses (for ready command) ---
-RESOLVED_RE="Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated"
+RESOLVED_RE="Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined"
 
 # --- Helpers ---
 
@@ -211,13 +211,13 @@ do_ready() {
     .edges as $edges |
     [.nodes | to_entries[] |
       select(
-        (.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated") | not)
+        (.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined") | not)
       ) |
       .key as $id |
       ([$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique) as $deps |
       select(
         ($deps | length == 0) or
-        ($deps | all(. as $dep | $nodes[$dep].status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated")))
+        ($deps | all(. as $dep | $nodes[$dep].status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined")))
       ) |
       "\(.key)\t\(.value.status)\t\(.value.title)"
     ] | .[]
@@ -233,7 +233,7 @@ do_next() {
     .nodes as $nodes |
     .edges as $edges |
     # Resolved status regex
-    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated");
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
 
     # Find ready (unresolved, all deps satisfied)
     [.nodes | to_entries[] |
@@ -267,7 +267,7 @@ do_next() {
   blocked_output=$(jq -r '
     .nodes as $nodes |
     .edges as $edges |
-    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated");
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
 
     [.nodes | to_entries[] |
       select(.value.status | is_resolved | not) |
@@ -314,7 +314,7 @@ do_mermaid() {
   # Style resolved nodes
   jq -r '
     .nodes | to_entries[] |
-    select(.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated")) |
+    select(.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined")) |
     "    style \(.key) fill:#90EE90"
   ' "$CACHE_FILE"
 }

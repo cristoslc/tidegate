@@ -1,6 +1,6 @@
 ---
 name: spec-management
-description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, Agent Spec, Spike, ADR, Persona, Runbook) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a spec, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, create a runbook, define a validation procedure, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. When a SPEC transitions to implementation, always chain into the execution-tracking skill to create a tracked plan before any code is written. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
+description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, Agent Spec, Spike, ADR, Persona, Runbook, Bug) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a spec, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, create a runbook, define a validation procedure, file a bug, report a defect, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. When a SPEC transitions to implementation, always chain into the execution-tracking skill to create a tracked plan before any code is written. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
@@ -33,6 +33,12 @@ erDiagram
     SPEC ||--o| IMPL_PLAN : "seeds"
     RUNBOOK }o--o{ EPIC : "validates"
     RUNBOOK }o--o{ SPEC : "validates"
+    BUG }o--o{ SPEC : "affected-artifacts"
+    BUG }o--o{ EPIC : "affected-artifacts"
+    BUG ||--o| IMPL_PLAN : "fix-ref"
+    SPIKE }o--o{ ADR : "linked-research"
+    SPIKE }o--o{ EPIC : "linked-research"
+    SPIKE }o--o{ BUG : "linked-research"
 
     EPIC {
         string parent_vision FK
@@ -66,6 +72,12 @@ erDiagram
         string parent_epic "optional"
         string mode "agentic or manual"
         string trigger "required"
+    }
+    BUG {
+        string severity "critical/high/medium/low"
+        list affected_artifacts "optional"
+        string discovered_in "required"
+        string fix_ref "optional"
     }
     SPIKE {
         string question "required"
@@ -215,6 +227,7 @@ Each artifact type has a definition file (lifecycle phases, conventions, folder 
 | Persona (PERSONA-NNN) | [references/persona-definition.md](references/persona-definition.md) | [references/persona-template.md.j2](references/persona-template.md.j2) |
 | ADR (ADR-NNN) | [references/adr-definition.md](references/adr-definition.md) | [references/adr-template.md.j2](references/adr-template.md.j2) |
 | Runbook (RUNBOOK-NNN) | [references/runbook-definition.md](references/runbook-definition.md) | [references/runbook-template.md.j2](references/runbook-template.md.j2) |
+| Bug (BUG-NNN) | [references/bug-definition.md](references/bug-definition.md) | [references/bug-template.md.j2](references/bug-template.md.j2) |
 
 ## Phase transitions
 
