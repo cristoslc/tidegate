@@ -96,7 +96,7 @@ The `specwatch.sh` script monitors `docs/` for file moves, renames, and deletes,
 | `status` | Show watcher status and log summary |
 | `touch` | Refresh the sentinel keepalive timer |
 
-**Log format:** When stale references are found, they are written to `.agents/specwatch.log` (gitignored) in a structured format:
+**Log format:** When stale references are found, they are written to `.agents/specwatch.log` in a structured format. This file is a runtime artifact — add `specwatch.log` to your `.gitignore` if it isn't already.
 ```
 STALE <source-file>:<line>
   broken: <relative-path-as-written>
