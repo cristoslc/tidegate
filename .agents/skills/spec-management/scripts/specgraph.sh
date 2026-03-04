@@ -218,7 +218,7 @@ do_ready() {
       ([$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique) as $deps |
       select(
         ($deps | length == 0) or
-        ($deps | all(. as $dep | $nodes[$dep].status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined")))
+        ($deps | all(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined"))))
       ) |
       "\(.key)\t\(.value.status)\t\(.value.title)"
     ] | .[]
@@ -243,13 +243,13 @@ do_next() {
       ([$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique) as $deps |
       select(
         ($deps | length == 0) or
-        ($deps | all(. as $dep | $nodes[$dep].status | is_resolved))
+        ($deps | all(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | is_resolved)))
       ) |
       # What would completing this unblock?
       ([$edges[] | select(.to == $id and .type == "depends-on") | .from] |
         map(select(. as $blocked |
           [$edges[] | select(.from == $blocked and .type == "depends-on") | .to] |
-          all(. as $dep | if $dep == $id then true else ($nodes[$dep].status | is_resolved) end)
+          all(. as $dep | if $dep == $id then true elif $nodes[$dep] == null then false else ($nodes[$dep].status | is_resolved) end)
         ))
       ) as $would_unblock |
       {id: $id, status: .value.status, title: .value.title, unblocks: $would_unblock}
@@ -274,7 +274,7 @@ do_next() {
       select(.value.status | is_resolved | not) |
       .key as $id |
       ([$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique) as $deps |
-      ($deps | map(select(. as $dep | $nodes[$dep].status | is_resolved | not))) as $unresolved |
+      ($deps | map(select(. as $dep | $nodes[$dep] == null or ($nodes[$dep].status | is_resolved | not)))) as $unresolved |
       select(($unresolved | length) > 0) |
       {id: $id, status: .value.status, title: .value.title, waiting: $unresolved}
     ] |
@@ -368,10 +368,10 @@ do_overview() {
       map(. as $id | {id: $id, node: $nodes[$id]}) |
       map(select(.node != null));
 
-    # Helper: get depends-on for a node (unresolved only)
+    # Helper: get depends-on for a node (unresolved only, skips missing refs)
     def unresolved_deps($id):
       [$edges[] | select(.from == $id and .type == "depends-on") | .to] |
-      map(select(. as $dep | $nodes[$dep].status | is_resolved | not));
+      map(select(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | is_resolved | not)));
 
     # Print a node line
     def node_line($id; $node; $prefix; $connector):

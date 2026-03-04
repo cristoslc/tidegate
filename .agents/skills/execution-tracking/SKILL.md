@@ -5,7 +5,7 @@ license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Bootstrap and operate external task tracking
-  version: 2.1.0
+  version: 2.2.0
   author: cristos
 ---
 
@@ -32,18 +32,52 @@ Other skills use these abstract terms. This skill maps them to the current backe
 | **abandon** | Close a task that will not be completed | `bd close <id> --reason "Abandoned: <why>" --json` |
 | **escalate** | Abandon + invoke spec-management to update upstream artifacts | Abandon, then invoke spec-management skill |
 
+## Configuration
+
+The skill stores persistent project-level configuration in `.agents/execution-tracking.vars.json`. This file is created on first run and checked on every subsequent invocation.
+
+### First-run setup
+
+If `.agents/execution-tracking.vars.json` does not exist, create it by asking the user the questions below (use sensible defaults if the user says "just use defaults"):
+
+| Key | Type | Default | Question |
+|-----|------|---------|----------|
+| `use_dolt` | boolean | `false` | "Should bd use Dolt for remote sync? (Requires a running Dolt server)" |
+| `auto_prime` | boolean | `true` | "Run `bd prime` automatically on bootstrap to load workflow context?" |
+| `fallback_format` | `"jsonl"` \| `"markdown"` | `"jsonl"` | "If bd is unavailable, use JSONL or Markdown for the fallback ledger?" |
+
+Write the file as pretty-printed JSON:
+
+```json
+{
+  "use_dolt": false,
+  "auto_prime": true,
+  "fallback_format": "jsonl"
+}
+```
+
+On subsequent runs, read the file and apply its values — don't re-ask.
+
+### Applying config
+
+- **`use_dolt`**: When `false`, skip all `bd dolt *` commands (start, stop, push, pull). When `true`, run `bd dolt start` during bootstrap and `bd dolt push` at session end.
+- **`auto_prime`**: When `true`, run `bd prime` at bootstrap step 7. When `false`, skip it.
+- **`fallback_format`**: Controls the format used by the [Fallback](#fallback) section.
+
 ## Bootstrap workflow
 
-1. **Check availability:** `command -v bd`
-2. **If missing, install:**
+1. **Load config:** Read `.agents/execution-tracking.vars.json`. If missing, run [first-run setup](#first-run-setup) above.
+2. **Check availability:** `command -v bd`
+3. **If missing, install:**
    - macOS: `brew install beads`
    - Linux: `cargo install beads`
    - If install fails, go to [Fallback](#fallback).
-3. **Check for existing database:** look for `.beads/` directory.
-4. **If no `.beads/`, initialize:** `bd init`.
-5. **Validate:** `bd doctor --json`. If errors, try `bd doctor --fix`.
-6. **If `git status` shows modified `.beads/dolt-*.pid` or `.beads/dolt-server.activity`:** these are ephemeral runtime files that were tracked by mistake. See `.beads/README.md` § "Remediation: Untrack Ephemeral Runtime Files" for the fix.
-7. **Load context:** `bd prime` for dynamic workflow context.
+4. **Check for existing database:** look for `.beads/` directory.
+5. **If no `.beads/`, initialize:** `bd init`.
+6. **Validate:** `bd doctor --json`. If errors, try `bd doctor --fix`.
+7. **If `use_dolt` is `true`:** start the Dolt server with `bd dolt start`.
+8. **If `git status` shows modified `.beads/dolt-*.pid` or `.beads/dolt-server.activity`:** these are ephemeral runtime files that were tracked by mistake. See `.beads/README.md` § "Remediation: Untrack Ephemeral Runtime Files" for the fix.
+9. **If `auto_prime` is `true`:** `bd prime` for dynamic workflow context.
 
 ## Statuses
 

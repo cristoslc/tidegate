@@ -6,7 +6,9 @@ Quick reference for agents using `bd` (beads) — a git-backed issue tracker wit
 
 ## Prerequisites
 
-bd requires a running **Dolt SQL server** (port 3307, fallback 3306). If commands fail with connection errors, check the server:
+bd works with SQLite by default. It can optionally use a **Dolt SQL server** (port 3307, fallback 3306) for remote sync — this is controlled by the `use_dolt` setting in `.agents/execution-tracking.vars.json`.
+
+**If `use_dolt` is `true`** and commands fail with connection errors, check the server:
 
 ```bash
 bd dolt start          # Start the server
@@ -14,6 +16,8 @@ bd dolt stop           # Stop the server
 bd doctor              # Diagnose issues
 bd doctor --fix        # Auto-repair
 ```
+
+**If `use_dolt` is `false`** (default), skip all `bd dolt *` commands — bd uses SQLite and needs no server.
 
 ## ID format
 
