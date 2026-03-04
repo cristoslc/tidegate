@@ -13,6 +13,73 @@ metadata:
 
 Create, transition, and validate documentation artifacts defined in AGENTS.md. The authoritative list of artifact types, phases, and hierarchy lives in AGENTS.md — this skill provides the operational procedures.
 
+## Artifact relationship model
+
+```mermaid
+erDiagram
+    VISION ||--o{ EPIC : "parent-vision"
+    VISION ||--o{ JOURNEY : "parent-vision"
+    EPIC ||--o{ SPEC : "parent-epic"
+    EPIC ||--o{ STORY : "parent-epic"
+    JOURNEY ||--|{ PAIN_POINT : "PP-NN"
+    PAIN_POINT }o--o{ EPIC : "addresses"
+    PAIN_POINT }o--o{ SPEC : "addresses"
+    PAIN_POINT }o--o{ STORY : "addresses"
+    PERSONA }o--o{ JOURNEY : "linked-personas"
+    PERSONA }o--o{ STORY : "linked-stories"
+    ADR }o--o{ SPEC : "linked-adrs"
+    ADR }o--o{ EPIC : "linked-epics"
+    SPEC }o--o{ SPIKE : "linked-research"
+    SPEC ||--o| IMPL_PLAN : "seeds"
+    RUNBOOK }o--o{ EPIC : "validates"
+    RUNBOOK }o--o{ SPEC : "validates"
+
+    EPIC {
+        string parent_vision FK
+        list success_criteria "required"
+        list depends_on "optional"
+    }
+    JOURNEY {
+        string parent_vision FK
+        list linked_personas "optional"
+    }
+    SPEC {
+        string parent_epic FK
+        list linked_research "optional"
+        list linked_adrs "optional"
+        list addresses "optional"
+    }
+    STORY {
+        string parent_epic FK
+        list addresses "optional"
+    }
+    ADR {
+        list linked_epics "optional"
+        list linked_specs "optional"
+    }
+    PERSONA {
+        list linked_journeys "optional"
+        list linked_stories "optional"
+    }
+    RUNBOOK {
+        list validates "required"
+        string parent_epic "optional"
+        string mode "agentic or manual"
+        string trigger "required"
+    }
+    SPIKE {
+        string question "required"
+        string gate "required"
+        list depends_on "optional"
+    }
+    IMPL_PLAN {
+        string origin_ref "SPEC-NNN"
+        list spec_tags "mutable"
+    }
+```
+
+**Key:** Solid lines (`||--o{`) = mandatory hierarchy. Diamond lines (`}o--o{`) = informational cross-references. SPIKE can attach to any artifact type, not just SPEC. Any artifact can declare `depends-on:` blocking dependencies on any other artifact.
+
 ## Stale reference watcher
 
 The `specwatch.sh` script monitors `docs/` for file moves, renames, and deletes, and flags stale markdown link references with suggested fixes.
@@ -37,24 +104,11 @@ STALE <source-file>:<line>
   artifact: <TYPE-NNN>
 ```
 
-### Specwatch check (MANDATORY pre-step)
+### Mandatory bookends for every artifact operation
 
-**Before every artifact operation** (create, edit, transition, audit), check for stale references:
+**Before:** If `.agents/specwatch.log` exists and is non-empty, read it, surface stale references as warnings, and fix them (or acknowledge false positives) before proceeding. Delete the log when clear.
 
-1. If `.agents/specwatch.log` exists and is non-empty, read its contents and surface the stale references as warnings.
-2. Present each entry: source file, line number, broken path, and suggested fix.
-3. Fix stale references before proceeding with the operation (or acknowledge them if they are false positives).
-4. After addressing, delete the log file to clear the warnings.
-
-### Sentinel keepalive
-
-**After every artifact operation** (create, edit, transition, audit), refresh the specwatch sentinel:
-
-```bash
-scripts/specwatch.sh touch
-```
-
-This keeps the background watcher alive. If no spec-management operation runs for the timeout period (default 1 hour), the watcher self-terminates.
+**After:** Run `scripts/specwatch.sh touch` to keep the background watcher alive (self-terminates after 1 hour of inactivity).
 
 ## Dependency graph
 
@@ -75,16 +129,7 @@ The `specgraph.sh` script builds and queries the artifact dependency graph from 
 | `mermaid` | Mermaid diagram to stdout |
 | `status` | Summary table by type and phase |
 
-**When to use:**
-- Before transitioning an artifact to a new phase, run `blocks <ID>` to verify dependencies are resolved.
-- To find unblocked work, run `ready` — it lists active/planned artifacts whose dependencies are all in resolved statuses.
-- To understand the full dependency chain, run `tree <ID>` for transitive closure.
-- To generate a visual overview, pipe `mermaid` output into a `.md` file or render it directly.
-
-**Edge types:**
-- `depends-on` — explicit blocking dependency (from `depends-on:` frontmatter)
-- `parent-vision` — hierarchy edge (from `parent-vision:` frontmatter)
-- `parent-epic` — hierarchy edge (from `parent-epic:` frontmatter)
+Run `blocks <ID>` before phase transitions to verify dependencies are resolved. Run `ready` to find unblocked work. Run `tree <ID>` for transitive dependency chains.
 
 ## Lifecycle table format
 
@@ -134,21 +179,14 @@ Always include a 1-2 sentence summary of an artifact, not just its title, in tab
 
 ## Status overview
 
-Run `specgraph.sh status` for a project-wide progress snapshot — one table per artifact type, listing every artifact with its ID, current phase, and title.
+- `specgraph.sh status` — project-wide progress snapshot (one table per artifact type).
+- `specgraph.sh next` — ready items (unblocked) + what they'd unblock, plus blocked items + what they need.
 
-Run `specgraph.sh next` for a quick "what should I work on?" view — shows ready items (unblocked, in-progress or not-yet-started) with what completing each would unblock, plus any blocked items and what they're waiting on.
-
-Both are read-only operations. They do not modify any files.
+Both are read-only.
 
 ### Combined "what's next?" flow
 
-When asked "what's next?" or "what should I work on?", combine **both** layers:
-
-1. **Spec layer** — run `specgraph.sh next` to find which artifacts are ready at the planning level (all dependencies resolved).
-2. **Task layer** — invoke the **execution-tracking** skill and run `bd ready --json` to find concrete unblocked tasks in the execution backend.
-3. **Present both together:** spec-level ready items (with what they'd unblock) and task-level ready items (claimable work). If bd is not initialized or has no tasks, note that and show only the spec layer.
-
-This ensures "what's next?" answers both "which specs can move forward?" and "which concrete tasks can I pick up right now?"
+When asked "what's next?", combine both layers: (1) **Spec layer** via `specgraph.sh next` for unblocked artifacts, and (2) **Task layer** via the execution-tracking skill (`bd ready --json`) for claimable work items. Present both together. If bd has no tasks, show only the spec layer.
 
 ## Creating artifacts
 
@@ -176,6 +214,7 @@ Each artifact type has a definition file (lifecycle phases, conventions, folder 
 | Research Spike (SPIKE-NNN) | [references/spike-definition.md](references/spike-definition.md) | [references/spike-template.md.j2](references/spike-template.md.j2) |
 | Persona (PERSONA-NNN) | [references/persona-definition.md](references/persona-definition.md) | [references/persona-template.md.j2](references/persona-template.md.j2) |
 | ADR (ADR-NNN) | [references/adr-definition.md](references/adr-definition.md) | [references/adr-template.md.j2](references/adr-template.md.j2) |
+| Runbook (RUNBOOK-NNN) | [references/runbook-definition.md](references/runbook-definition.md) | [references/runbook-template.md.j2](references/runbook-template.md.j2) |
 
 ## Phase transitions
 
@@ -205,34 +244,19 @@ Phases listed in AGENTS.md are available waypoints, not mandatory gates. An arti
 
 ## Implementation plans
 
-Implementation plans are not a doc-type artifact. They bridge declarative specs (`docs/`) and execution tracking. All concrete CLI operations are handled by the **execution-tracking** skill — this skill describes *what* to do, not *how*.
+Implementation plans bridge declarative specs (`docs/`) and execution tracking. They are not doc-type artifacts. All CLI operations are handled by the **execution-tracking** skill — invoke it to bootstrap the task backend before creating plans.
 
-### Prerequisites
+### Workflow
 
-Before creating or modifying implementation plans, invoke the **execution-tracking** skill to bootstrap the task backend (availability check, installation if missing, initialization). That skill owns the install, recovery, and CLI command layer.
-
-### Seeding a plan from a spec
-
-1. An Agent Spec (or Epic) may include an "Implementation Approach" section sketching the high-level plan. This seeds the implementation plan but is not the plan of record.
-2. When work begins, create an **implementation plan** for the spec artifact, linked via an **origin ref** (e.g., `SPEC-003`).
-3. Create **tasks** under the implementation plan with dependencies between them. Tag each task with a **spec tag** for the originating spec.
-
-### Lineage and cross-spec impact
-
-- Every implementation plan has an **origin ref** — an immutable link to the spec that seeded it.
-- Every task carries one or more **spec tags** — mutable labels recording which specs it currently affects.
-- When a task impacts additional specs, add spec tags for the new specs and create **dependencies** linking related tasks across plans.
-- Track provenance when tasks spawn from existing ones.
-
-### Parallel coordination
-
-- Use the execution-tracking skill's parallel coordination features (swarms, formulas) when multiple agents need to pick up **ready work** from the same implementation plan.
+1. A Spec/Epic's "Implementation Approach" section seeds the plan but is not the plan of record.
+2. Create an implementation plan linked via an **origin ref** (e.g., `SPEC-003`). Create tasks with dependencies, each tagged with **spec tags** for originating specs.
+3. When a task impacts additional specs, add spec tags and cross-plan dependencies.
 
 ### Closing the loop
 
-- Progress is tracked in the execution backend, not in the spec doc. The Agent Spec's lifecycle table records the transition to "Implemented" once the implementation plan completes.
-- Cross-spec tasks should be noted in each affected artifact's lifecycle table entry (e.g., "Implemented — shared serializer also covers SPEC-007").
+- Progress lives in the execution backend, not the spec doc. Transition the spec to "Implemented" once the plan completes.
+- Note cross-spec tasks in each affected artifact's lifecycle entry (e.g., "Implemented — shared serializer also covers SPEC-007").
 
 ### Fallback
 
-If the **execution-tracking** skill is not available in the current agent environment, fall back to the agent's built-in todo system with canonical states (`todo`, `in_progress`, `blocked`, `done`). The plan structure (ordered steps, dependencies, completion tracking) remains the same — only the backend changes. Lineage is maintained by including artifact IDs in task titles or notes (e.g., `[SPEC-003] Add export endpoint`).
+If execution-tracking is unavailable, fall back to the agent's built-in todo system (`todo`, `in_progress`, `blocked`, `done`). Maintain lineage by including artifact IDs in task titles (e.g., `[SPEC-003] Add export endpoint`).
