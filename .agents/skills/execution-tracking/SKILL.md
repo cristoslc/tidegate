@@ -1,11 +1,11 @@
 ---
 name: execution-tracking
-description: Bootstrap, install, and operate an external task-management CLI as the source of truth for agent execution tracking (instead of built-in todos). Provides the abstraction layer between spec-management intent (implementation plans and tasks) and concrete CLI commands. MUST be invoked before beginning implementation of any SPEC artifact (Epic, Story, Agent Spec, Spike) — create a tracked implementation plan and task breakdown before writing code. Also use for standalone tasks that require backend portability, persistent progress across agent runtimes, or external supervision.
+description: Bootstrap, install, and operate an external task-management CLI as the source of truth for agent execution tracking (instead of built-in todos). Provides the abstraction layer between spec-management intent (implementation plans and tasks) and concrete CLI commands. MUST be invoked before beginning implementation of any SPEC artifact (Epic, Story, Agent Spec, Spike) — create a tracked implementation plan and task breakdown before writing code. Also use for standalone tasks that require backend portability, persistent progress across agent runtimes, or external supervision. Use this skill whenever the user asks to track tasks, create an implementation plan, check what to work on next, see task status, manage dependencies between work items, or close/abandon tasks — even if they don't mention "execution tracking" explicitly.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Bootstrap and operate external task tracking
-  version: 2.0.0
+  version: 2.1.0
   author: cristos
 ---
 
@@ -47,29 +47,20 @@ Other skills use these abstract terms. This skill maps them to the current backe
 
 ## Statuses
 
-bd uses these status values — pass them exactly:
-
-| Status | Meaning |
-|--------|---------|
-| `open` | Identified, not started |
-| `in_progress` | Actively being worked |
-| `blocked` | Cannot proceed (set automatically by dep chains, or manually) |
-| `closed` | Completed |
-
-Do NOT use `todo`, `done`, or other aliases — bd will reject them.
+bd accepts exactly four status values: `open`, `in_progress`, `blocked`, `closed`. It rejects aliases like `todo` or `done`. See the cheatsheet for the full status table and valid values.
 
 To express abandonment, use `bd close <id> --reason "Abandoned: ..."` — see [Escalation](#escalation).
 
 ## Operating rules
 
-1. **Always use `--json`** on create/update/close for structured output. Capture issue IDs from the response.
-2. **Always include `--description`** when creating issues. Context prevents rework.
-3. Create/update tasks at the start of work, after each major milestone, and before final response.
-4. Keep task titles short and action-oriented.
-5. Store handoff notes in task notes (`--notes` or `--append-notes`) rather than ephemeral chat context.
-6. Include references to related artifact IDs in labels. Valid prefixes: `VISION-NNN`, `EPIC-NNN`, `SPEC-NNN`, `SPIKE-NNN`, `ADR-NNN`, `STORY-NNN`.
+1. **Always use `--json`** on create/update/close — bd's human-readable output varies between versions, but JSON is stable and machine-parseable. Capture issue IDs from the JSON response so subsequent commands can reference them reliably.
+2. **Always include `--description`** when creating issues — a title alone loses the "why" behind a task. Future agents (or your future self) picking up this work need enough context to act without re-researching.
+3. Create/update tasks at the start of work, after each major milestone, and before final response — this keeps the external tracker useful as a live dashboard rather than a post-hoc record.
+4. Keep task titles short and action-oriented — they appear in `bd ready` output, tree views, and notifications where space is limited.
+5. Store handoff notes in task notes (`--notes` or `--append-notes`) rather than ephemeral chat context — chat history is lost between sessions, but task notes persist and are visible to any agent or observer.
+6. Include references to related artifact IDs in labels (e.g., `spec:SPEC-003`) — this makes it possible to query all work touching a given spec with `bd list -l spec:SPEC-003`.
 7. **Never use `bd edit`** — it opens `$EDITOR` (vim/nano) which blocks agents. Use `bd update` with inline flags instead.
-8. **Prefix abandonment reasons with `Abandoned:`** when closing tasks that were not completed. This makes abandoned work queryable: `bd search "Abandoned:"`.
+8. **Prefix abandonment reasons with `Abandoned:`** when closing incomplete tasks — this convention makes abandoned work queryable (`bd search "Abandoned:"`) so nothing silently disappears.
 
 ## Spec lineage tagging
 
@@ -155,11 +146,6 @@ When abandoned tasks carry multiple `spec:` labels, each referenced spec may nee
 bd show <id> --json | jq -r '.labels[]' | grep '^spec:'
 ```
 
-## Parallel coordination
-
-- `bd swarm create <epic-id>` — agents use `bd ready` to pick up unblocked work.
-- For repeatable workflows, define a formula in `.beads/formulas/` and instantiate with `bd mol pour`.
-
 ## "What's next?" flow
 
 When asked what to work on next, show ready work from the execution backend:
@@ -192,5 +178,4 @@ If `bd` cannot be installed or is unavailable:
 1. Log the failure reason.
 2. Fall back to a neutral text task ledger (JSONL or Markdown checklist) in the working directory.
 3. Use the same status model (`open`, `in_progress`, `blocked`, `closed`) and keep updates externally visible.
-4. Mark that this fallback should be replaced once a preferred CLI is selected by SPIKE-001.
 
