@@ -1,6 +1,6 @@
 # User Story (STORY-NNN)
 
-**Template:** [story-template.md.j2](story-template.md.j2)
+**Template:** [story-template.md.template](story-template.md.template)
 
 ```mermaid
 stateDiagram-v2

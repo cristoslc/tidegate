@@ -1,6 +1,6 @@
 # Personas (PERSONA-NNN)
 
-**Template:** [persona-template.md.j2](persona-template.md.j2)
+**Template:** [persona-template.md.template](persona-template.md.template)
 
 ```mermaid
 stateDiagram-v2

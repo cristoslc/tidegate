@@ -1,6 +1,6 @@
 # Runbooks (RUNBOOK-NNN)
 
-**Template:** [runbook-template.md.j2](runbook-template.md.j2)
+**Template:** [runbook-template.md.template](runbook-template.md.template)
 
 ```mermaid
 stateDiagram-v2

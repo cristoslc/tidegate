@@ -1,6 +1,6 @@
 # Research Spikes (SPIKE-NNN)
 
-**Template:** [spike-template.md.j2](spike-template.md.j2)
+**Template:** [spike-template.md.template](spike-template.md.template)
 
 ```mermaid
 stateDiagram-v2

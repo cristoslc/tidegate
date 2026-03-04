@@ -1,6 +1,6 @@
 # Agent Specs (SPEC-NNN)
 
-**Template:** [spec-template.md.j2](spec-template.md.j2)
+**Template:** [spec-template.md.template](spec-template.md.template)
 
 ```mermaid
 stateDiagram-v2

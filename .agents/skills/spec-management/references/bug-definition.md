@@ -1,6 +1,6 @@
 # Bug (BUG-NNN)
 
-**Template:** [bug-template.md.j2](bug-template.md.j2)
+**Template:** [bug-template.md.template](bug-template.md.template)
 
 ```mermaid
 stateDiagram-v2

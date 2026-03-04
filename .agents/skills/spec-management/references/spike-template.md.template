@@ -1,3 +1,4 @@
+<!-- Jinja2 structural template — uses {{ variable }} placeholders. Read as a structural reference; no rendering pipeline needed. -->
 ---
 title: "{{ title }}"
 artifact: SPIKE-{{ number }}

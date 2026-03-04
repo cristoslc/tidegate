@@ -1,6 +1,6 @@
 # Product Vision (VISION-NNN)
 
-**Template:** [vision-template.md.j2](vision-template.md.j2)
+**Template:** [vision-template.md.template](vision-template.md.template)
 
 ```mermaid
 stateDiagram-v2

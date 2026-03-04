@@ -1,6 +1,6 @@
 # User Journey (JOURNEY-NNN)
 
-**Template:** [journey-template.md.j2](journey-template.md.j2)
+**Template:** [journey-template.md.template](journey-template.md.template)
 
 ```mermaid
 stateDiagram-v2

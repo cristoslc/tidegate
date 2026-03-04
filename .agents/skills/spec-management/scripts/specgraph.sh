@@ -33,6 +33,7 @@ Commands:
   next               What to work on next (ready items + what they unblock)
   mermaid            Mermaid diagram to stdout
   status             Summary table by type and phase
+  overview           Hierarchy tree with status + execution tracking
 USAGE
   exit 1
 }
@@ -334,6 +335,116 @@ do_status() {
   ' "$CACHE_FILE" | column -t -s $'\t'
 }
 
+# overview — combined hierarchy tree with status indicators and dependency info
+do_overview() {
+  ensure_cache
+
+  # Status indicators
+  local CHECK="✓" ARROW="→" BLOCK="✗"
+
+  jq -r --arg check "$CHECK" --arg arrow "$ARROW" --arg block "$BLOCK" '
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    def status_icon: if is_resolved then $check else $arrow end;
+
+    .nodes as $nodes |
+    .edges as $edges |
+
+    # Find all Vision nodes (top-level)
+    ($nodes | to_entries | map(select(.value.type == "VISION")) | sort_by(.key)) as $visions |
+
+    # Find orphans (no parent-vision or parent-epic edge)
+    ([$nodes | to_entries[] |
+      .key as $id |
+      select(
+        .value.type != "VISION" and
+        ([$edges[] | select(.from == $id and (.type == "parent-vision" or .type == "parent-epic"))] | length == 0)
+      )
+    ] | sort_by(.key)) as $orphans |
+
+    # Helper: get children of a node by parent edge type
+    def children_of($parent_id):
+      [$edges[] | select(.to == $parent_id and (.type == "parent-vision" or .type == "parent-epic")) | .from] |
+      unique | sort |
+      map(. as $id | {id: $id, node: $nodes[$id]}) |
+      map(select(.node != null));
+
+    # Helper: get depends-on for a node (unresolved only)
+    def unresolved_deps($id):
+      [$edges[] | select(.from == $id and .type == "depends-on") | .to] |
+      map(select(. as $dep | $nodes[$dep].status | is_resolved | not));
+
+    # Print a node line
+    def node_line($id; $node; $prefix; $connector):
+      ($node.status | status_icon) as $icon |
+      (unresolved_deps($id)) as $udeps |
+      "\($prefix)\($connector) \($icon) \($id): \($node.title) [\($node.status)]" +
+      if ($udeps | length) > 0 then
+        "\n\($prefix)\(if $connector == "└── " then "    " else "│   " end)  ↳ blocked by: \($udeps | join(", "))"
+      else "" end;
+
+    # Cross-cutting artifacts (ADR, PERSONA, RUNBOOK, BUG, SPIKE without parent)
+    def is_cross_cutting: .type | test("ADR|PERSONA|RUNBOOK|BUG|SPIKE");
+
+    # Render tree for each Vision
+    ($visions | to_entries[] |
+      .value as $v |
+      "  \($v.key | status_icon) \($v.key): \($v.value.title) [\($v.value.status)]",
+
+      # Children of this Vision (Epics, Journeys)
+      (children_of($v.key) | to_entries[] |
+        (if .key == (length - 1) then "└── " else "├── " end) as $conn |
+        (if .key == (length - 1) then "    " else "│   " end) as $next_prefix |
+        .value as $child |
+        node_line($child.id; $child.node; "  "; $conn),
+
+        # Children of this child (Specs, Stories under Epics)
+        (children_of($child.id) | to_entries[] |
+          (if .key == (length - 1) then "└── " else "├── " end) as $conn2 |
+          .value as $grandchild |
+          node_line($grandchild.id; $grandchild.node; "  \($next_prefix)"; $conn2)
+        )
+      ),
+      ""
+    ),
+
+    # Cross-cutting artifacts
+    (if ($orphans | map(select(.value.type | is_cross_cutting)) | length) > 0 then
+      "── Cross-cutting ──",
+      ($orphans | map(select(.value.type | is_cross_cutting)) | to_entries[] |
+        (if .key == (length - 1) then "└── " else "├── " end) as $conn |
+        .value as $o |
+        node_line($o.key; $o.value; "  "; $conn)
+      ),
+      ""
+    else empty end),
+
+    # Truly orphaned (non-cross-cutting without parents)
+    (if ($orphans | map(select(.value.type | is_cross_cutting | not)) | length) > 0 then
+      "── Unparented ──",
+      ($orphans | map(select(.value.type | is_cross_cutting | not)) | to_entries[] |
+        (if .key == (length - 1) then "└── " else "├── " end) as $conn |
+        .value as $o |
+        node_line($o.key; $o.value; "  "; $conn)
+      ),
+      ""
+    else empty end)
+  ' "$CACHE_FILE"
+
+  # Execution tracking integration
+  echo "── Execution Tracking ──"
+  if command -v bd >/dev/null 2>&1; then
+    local bd_status
+    bd_status=$(bd status 2>/dev/null) || true
+    if [ -n "$bd_status" ]; then
+      echo "$bd_status" | sed 's/^/  /'
+    else
+      echo "  (no active plans)"
+    fi
+  else
+    echo "  (bd not installed — use execution-tracking skill to bootstrap)"
+  fi
+}
+
 # --- Main ---
 [ $# -lt 1 ] && usage
 
@@ -364,6 +475,9 @@ case "$1" in
     ;;
   status)
     do_status
+    ;;
+  overview)
+    do_overview
     ;;
   *)
     echo "Unknown command: $1"

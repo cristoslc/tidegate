@@ -1,6 +1,6 @@
 # ADRs (ADR-NNN)
 
-**Template:** [adr-template.md.j2](adr-template.md.j2)
+**Template:** [adr-template.md.template](adr-template.md.template)
 
 ```mermaid
 stateDiagram-v2

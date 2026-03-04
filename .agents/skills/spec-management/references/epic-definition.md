@@ -1,6 +1,6 @@
 # Epics (EPIC-NNN)
 
-**Template:** [epic-template.md.j2](epic-template.md.j2)
+**Template:** [epic-template.md.template](epic-template.md.template)
 
 ```mermaid
 stateDiagram-v2
