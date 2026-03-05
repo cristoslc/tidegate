@@ -30,8 +30,7 @@ Usage: specwatch.sh <command> [args]
 Commands:
   watch              Start background filesystem watcher (default)
   scan               Run a full stale-reference scan (no watcher)
-  phase-check        Check that artifact phase directories match frontmatter status
-  phase-fix          Same as phase-check but auto-moves mismatched artifacts (git mv)
+  phase-fix          Move artifacts whose phase directory doesn't match frontmatter status
   stop               Stop a running watcher
   status             Show watcher status (running/stopped, log summary)
   touch              Refresh the sentinel keepalive timer
@@ -358,11 +357,9 @@ _cleanup() {
 # This command checks that the frontmatter status: matches the phase subdirectory
 # and moves mismatched artifacts with git mv.
 
-phase_check() {
-  local dry_run="${1:-false}"
-
+phase_fix() {
   if [ ! -d "$DOCS_DIR" ]; then
-    echo "specwatch phase-check: no docs/ directory found."
+    echo "specwatch phase-fix: no docs/ directory found."
     return 0
   fi
 
@@ -458,7 +455,7 @@ PYEOF
   ) || true
 
   if [ -z "$results" ]; then
-    echo "specwatch phase-check: all artifacts in correct phase directories."
+    echo "specwatch phase-fix: all artifacts in correct phase directories."
     return 0
   fi
 
@@ -503,36 +500,28 @@ PYEOF
     local target_dir="$DOCS_DIR/$type_dir/$expected_phase"
     local target_path="$target_dir/$item_name"
 
-    if [ "$dry_run" = "true" ]; then
-      echo "  WOULD MOVE: $type_dir/${actual_phase}/$item_name -> $type_dir/${expected_phase}/$item_name"
-    else
-      # Create target phase directory if needed
-      mkdir -p "$target_dir"
-      if [ -e "$artifact_item" ]; then
-        git -C "$REPO_ROOT" mv "$artifact_item" "$target_path" 2>/dev/null
-        if [ $? -eq 0 ]; then
-          echo "  MOVED: $type_dir/${actual_phase}/$item_name -> $type_dir/${expected_phase}/$item_name"
-          fixed=$(( fixed + 1 ))
-        else
-          echo "  FAILED: $type_dir/${actual_phase}/$item_name (git mv error)"
-        fi
+    # Create target phase directory if needed
+    mkdir -p "$target_dir"
+    if [ -e "$artifact_item" ]; then
+      git -C "$REPO_ROOT" mv "$artifact_item" "$target_path" 2>/dev/null
+      if [ $? -eq 0 ]; then
+        echo "  MOVED: $type_dir/${actual_phase}/$item_name -> $type_dir/${expected_phase}/$item_name"
+        fixed=$(( fixed + 1 ))
       else
-        echo "  SKIP: $artifact_item does not exist"
+        echo "  FAILED: $type_dir/${actual_phase}/$item_name (git mv error)"
       fi
+    else
+      echo "  SKIP: $artifact_item does not exist"
     fi
   done
 
   local total
   total=$(echo "$results" | grep -c '^MISMATCH' || echo 0)
-  if [ "$dry_run" = "true" ]; then
-    echo "specwatch phase-check: $total mismatch(es) found (dry run, nothing moved)."
-  else
-    echo "specwatch phase-check: $total mismatch(es) found, moved artifacts to correct phase directories."
-    echo "  Run 'git status' to review staged moves, then commit."
-    echo ""
-    echo "Scanning for stale references caused by moves..."
-    scan_stale_refs "full" || true
-  fi
+  echo "specwatch phase-fix: $total mismatch(es) found, moved artifacts to correct phase directories."
+  echo "  Run 'git status' to review staged moves, then commit."
+  echo ""
+  echo "Scanning for stale references caused by moves..."
+  scan_stale_refs "full" || true
 }
 
 # --- Main dispatch ---
@@ -555,11 +544,8 @@ case "$cmd" in
   scan)
     scan_stale_refs "full"
     ;;
-  phase-check)
-    phase_check "true"
-    ;;
   phase-fix)
-    phase_check "false"
+    phase_fix
     ;;
   stop)
     stop_watcher
