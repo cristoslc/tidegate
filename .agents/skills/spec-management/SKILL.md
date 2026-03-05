@@ -11,7 +11,7 @@ metadata:
 
 # Spec Management
 
-Create, transition, and validate documentation artifacts. This skill defines the canonical artifact types, phases, and hierarchy — the ER diagram below is the summary; detailed definitions live in `references/`. If the host repo has an AGENTS.md, keep its artifact sections in sync with the skill's reference data.
+This skill defines the canonical artifact types, phases, and hierarchy. The ER diagram below is the relationship summary; detailed definitions and templates live in `references/`. If the host repo has an AGENTS.md, keep its artifact sections in sync with the skill's reference data.
 
 ## Artifact relationship model
 
@@ -116,11 +116,9 @@ STALE <source-file>:<line>
   artifact: <TYPE-NNN>
 ```
 
-### Bookends for every artifact operation
+### Post-operation scan
 
-**Before:** Run `scripts/specwatch.sh scan`. If `.agents/specwatch.log` is produced, surface stale references as warnings and fix them (or acknowledge false positives) before proceeding. Delete the log when clear. The scan has no external dependencies — it uses only Python 3 and the filesystem.
-
-**After:** Run `scripts/specwatch.sh scan` again to catch any stale references introduced by the operation itself.
+After every artifact operation (create, edit, transition, audit), run `scripts/specwatch.sh scan` to catch any stale references introduced by the changes. If `.agents/specwatch.log` reports stale references, surface them as warnings and fix them before committing. The scan has no external dependencies — it uses only Python 3 and the filesystem.
 
 The background `watch` mode (requires `fswatch`) is available for long-running sessions but is not part of the default workflow.
 
@@ -186,7 +184,7 @@ This rule is referenced as the **index refresh step** in the workflows below. Do
 
 ## Auditing artifacts
 
-Audits touch every artifact, so **always parallelize with sub-agents** — serial auditing is too slow and misses the cross-cutting checks that only make sense when run together. Spawn three agents in a single turn:
+Audits touch every artifact, so **always parallelize with sub-agents** — serial auditing is too slow and misses the cross-cutting checks that only make sense when run together. Spawn four agents in a single turn:
 
 | Agent | Responsibility |
 |-------|---------------|
@@ -196,6 +194,8 @@ Audits touch every artifact, so **always parallelize with sub-agents** — seria
 | **Phase/folder alignment** | Run `specwatch.sh phase-fix` to detect and move artifacts whose frontmatter `status:` doesn't match their phase subdirectory. Review the staged `git mv` renames and commit. |
 
 Each agent reports gaps as a structured table with file path, issue type, and missing/invalid field. Merge the three tables into a single audit report. Always include a 1-2 sentence summary of each artifact (not just its title) in result tables.
+
+**Enforce definitions, not current layout.** The artifact definition files (in `references/`) are the source of truth for folder structure. If the repo's current layout diverges from the definitions (e.g., epics in a flat directory instead of phase subdirectories), the audit should flag misplaced files and propose `git mv` commands to bring them into compliance. Do not silently adopt a non-standard layout just because it already exists.
 
 ## Status overview
 
@@ -244,7 +244,7 @@ When an operation fails (missing parent, number collision, script error, etc.), 
 
 1. Scan `docs/<type>/` (recursively, across all phase subdirectories) to determine the next available number for the prefix.
 2. Read the artifact's definition file and template from the lookup table below.
-3. Create the artifact in the correct phase subdirectory (usually the first phase — e.g., `docs/epic/Proposed/`, `docs/spec/Draft/`). See the definition file for the exact directory structure.
+3. Create the artifact in the correct phase subdirectory (usually the first phase — e.g., `docs/epic/Proposed/`, `docs/spec/Draft/`). Create the phase directory with `mkdir -p` if it doesn't exist yet. See the definition file for the exact directory structure.
 4. Populate frontmatter with the required fields for the type (see the template).
 5. Initialize the lifecycle table with the appropriate phase and current date. This is usually the first phase (Draft, Planned, etc.), but an artifact may be created directly in a later phase if it was fully developed during the conversation (see [Phase skipping](#phase-skipping)).
 6. Validate parent references exist (e.g., the Epic referenced by a new Agent Spec must already exist).

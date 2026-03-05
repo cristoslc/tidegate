@@ -182,8 +182,7 @@ PYEOF
   rm -f "$links_tmp"
 
   if [ "$found_stale" -eq 0 ]; then
-    # Clear the log if nothing is stale
-    rm -f "$LOG_FILE"
+    # Log header with no findings — other processes may check this file
     echo "specwatch: no stale references found."
   else
     local count
