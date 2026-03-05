@@ -224,6 +224,8 @@ Renders a hierarchy tree in the terminal showing every artifact with its status,
 
 **Status indicators:** `✓` = resolved (Complete/Implemented/Adopted/etc.), `→` = active/in-progress. Blocked dependencies show inline with `↳ blocked by:`. Cross-cutting artifacts (ADR, Persona, Runbook, Bug, Spike) appear in their own section. The execution-tracking tail calls `bd status` automatically.
 
+**Display rule:** Present the `specgraph.sh overview` output verbatim — do not summarize, paraphrase, or reformat the tree. The script's output is already designed for human consumption. You may add a brief note after the output only if the user asked a specific question (e.g., "what should I work on next?").
+
 ### Other read-only commands
 
 | Command | When to use |
