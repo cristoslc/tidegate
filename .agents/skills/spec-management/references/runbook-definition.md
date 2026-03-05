@@ -25,7 +25,9 @@ Trigger types:
 - `on-change` — Run when a specific file, config, or artifact changes.
 - `scheduled` — Run on a recurring cadence (e.g., weekly recovery drill).
 
-- **Folder structure:** `docs/runbook/(RUNBOOK-NNN)-<Title>/`
+- **Folder structure:** `docs/runbook/<Phase>/(RUNBOOK-NNN)-<Title>/` — the Runbook folder lives inside a subdirectory matching its current lifecycle phase. Phase subdirectories: `Draft/`, `Active/`, `Archived/`.
+  - Example: `docs/runbook/Active/(RUNBOOK-001)-Smoke-Test-Suite/`
+  - When transitioning phases, **move the folder** to the new phase directory (e.g., `git mv docs/runbook/Draft/(RUNBOOK-001)-Foo/ docs/runbook/Active/(RUNBOOK-001)-Foo/`).
   - Primary file: `(RUNBOOK-NNN)-<Title>.md` — the runbook definition.
   - Supporting files: fixtures, expected screenshots, seed data, helper scripts.
 - Each step has a numbered **Action** and **Expected Outcome**. Agentic runbooks may include tool hints (e.g., `[playwright]`, `[bash]`).

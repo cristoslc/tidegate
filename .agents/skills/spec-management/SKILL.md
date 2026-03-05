@@ -239,9 +239,9 @@ When an operation fails (missing parent, number collision, script error, etc.), 
 
 ### Workflow
 
-1. Scan `docs/<type>/` to determine the next available number for the prefix.
-2. Create the artifact using the appropriate format (see AGENTS.md artifact types table).
-3. Read the artifact's definition file and template from the lookup table below.
+1. Scan `docs/<type>/` (recursively, across all phase subdirectories) to determine the next available number for the prefix.
+2. Read the artifact's definition file and template from the lookup table below.
+3. Create the artifact in the correct phase subdirectory (usually the first phase — e.g., `docs/epic/Proposed/`, `docs/spec/Draft/`). See the definition file for the exact directory structure.
 4. Populate frontmatter with the required fields for the type (see the template).
 5. Initialize the lifecycle table with the appropriate phase and current date. This is usually the first phase (Draft, Planned, etc.), but an artifact may be created directly in a later phase if it was fully developed during the conversation (see [Phase skipping](#phase-skipping)).
 6. Validate parent references exist (e.g., the Epic referenced by a new Agent Spec must already exist).
@@ -268,7 +268,7 @@ Each artifact type has a definition file (lifecycle phases, conventions, folder 
 
 ### Phase skipping
 
-Phases listed in AGENTS.md are available waypoints, not mandatory gates. An artifact may skip intermediate phases and land directly on a later phase in the sequence. This is normal in single-user workflows where drafting and review happen conversationally in the same session.
+Phases listed in the artifact definition files are available waypoints, not mandatory gates. An artifact may skip intermediate phases and land directly on a later phase in the sequence. This is normal in single-user workflows where drafting and review happen conversationally in the same session.
 
 - The lifecycle table records only the phases the artifact actually occupied — one row per state it landed on, not rows for states it skipped past.
 - Skipping is forward-only: an artifact cannot skip backward in its phase sequence.
@@ -278,11 +278,12 @@ Phases listed in AGENTS.md are available waypoints, not mandatory gates. An arti
 ### Workflow
 
 1. Validate the target phase is reachable from the current phase (same or later in the sequence; intermediate phases may be skipped).
-2. Update the artifact's status field in frontmatter.
-3. Commit the transition change.
-4. Append a row to the artifact's lifecycle table with the commit hash from step 3.
-5. Commit the hash stamp as a **separate commit** — never amend. Two distinct commits keeps the stamped hash reachable in git history and avoids interactive-rebase pitfalls.
-6. **Index refresh step** — move the artifact's row to the new phase table (see [Index maintenance](#index-maintenance)).
+2. **Move the artifact** to the new phase subdirectory using `git mv` (e.g., `git mv docs/epic/Proposed/(EPIC-001)-Foo/ docs/epic/Active/(EPIC-001)-Foo/`). Every artifact type uses phase subdirectories — see the artifact's definition file for the exact directory names.
+3. Update the artifact's status field in frontmatter to match the new phase.
+4. Commit the transition change (move + status update).
+5. Append a row to the artifact's lifecycle table with the commit hash from step 4.
+6. Commit the hash stamp as a **separate commit** — never amend. Two distinct commits keeps the stamped hash reachable in git history and avoids interactive-rebase pitfalls.
+7. **Index refresh step** — move the artifact's row to the new phase table (see [Index maintenance](#index-maintenance)).
 
 ### Completion rules
 

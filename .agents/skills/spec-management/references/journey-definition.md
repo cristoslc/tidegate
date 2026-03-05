@@ -15,7 +15,9 @@ stateDiagram-v2
 
 Maps an end-to-end user experience across features and touchpoints. Journeys describe *how a user accomplishes a goal* and surface pain points and opportunities that inform which Epics to create.
 
-- **Folder structure:** `docs/journey/(JOURNEY-NNN)-<Title>/`
+- **Folder structure:** `docs/journey/<Phase>/(JOURNEY-NNN)-<Title>/` — the Journey folder lives inside a subdirectory matching its current lifecycle phase. Phase subdirectories: `Draft/`, `Validated/`, `Archived/`.
+  - Example: `docs/journey/Draft/(JOURNEY-001)-First-Time-Setup/`
+  - When transitioning phases, **move the folder** to the new phase directory (e.g., `git mv docs/journey/Draft/(JOURNEY-001)-Foo/ docs/journey/Validated/(JOURNEY-001)-Foo/`).
   - Primary file: `(JOURNEY-NNN)-<Title>.md` — the journey narrative.
   - Supporting docs: flow charts, interview notes, extended research.
 - A Journey is "Validated" when its steps and pain points have been confirmed through user research, stakeholder review, or prototype testing.
