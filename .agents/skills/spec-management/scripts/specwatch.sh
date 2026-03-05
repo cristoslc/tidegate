@@ -529,6 +529,9 @@ PYEOF
   else
     echo "specwatch phase-check: $total mismatch(es) found, moved artifacts to correct phase directories."
     echo "  Run 'git status' to review staged moves, then commit."
+    echo ""
+    echo "Scanning for stale references caused by moves..."
+    scan_stale_refs "full" || true
   fi
 }
 
