@@ -30,6 +30,8 @@ Usage: specwatch.sh <command> [args]
 Commands:
   watch              Start background filesystem watcher (default)
   scan               Run a full stale-reference scan (no watcher)
+  phase-check        Check that artifact phase directories match frontmatter status
+  phase-fix          Same as phase-check but auto-moves mismatched artifacts (git mv)
   stop               Stop a running watcher
   status             Show watcher status (running/stopped, log summary)
   touch              Refresh the sentinel keepalive timer
@@ -351,6 +353,185 @@ _cleanup() {
   jobs -p 2>/dev/null | xargs -r kill 2>/dev/null || true
 }
 
+# --- Phase/folder mismatch checker ---
+# Every artifact lives in docs/<type>/<Phase>/<artifact>.
+# This command checks that the frontmatter status: matches the phase subdirectory
+# and moves mismatched artifacts with git mv.
+
+phase_check() {
+  local dry_run="${1:-false}"
+
+  if [ ! -d "$DOCS_DIR" ]; then
+    echo "specwatch phase-check: no docs/ directory found."
+    return 0
+  fi
+
+  local mismatches=0
+  local fixed=0
+
+  # Use Python to scan all markdown files, extract frontmatter status and artifact ID,
+  # and compare against the directory structure.
+  # Output format: action\tartifact_path\texpected_phase\tactual_phase\tstatus
+  local results
+  results=$(python3 - "$DOCS_DIR" <<'PYEOF'
+import os, re, sys
+
+docs_dir = sys.argv[1]
+
+# Known type directories and whether artifacts are folders or files
+# (folder-based have a primary .md inside; file-based are the .md directly)
+TYPE_DIRS = {
+    'vision', 'journey', 'epic', 'story', 'spec',
+    'research', 'adr', 'persona', 'runbook', 'bug'
+}
+
+def extract_frontmatter(filepath):
+    """Extract status and artifact fields from YAML frontmatter."""
+    status = None
+    artifact = None
+    try:
+        with open(filepath) as f:
+            lines = f.readlines()
+    except (OSError, UnicodeDecodeError):
+        return None, None
+
+    if not lines or lines[0].strip() != '---':
+        return None, None
+
+    for line in lines[1:]:
+        if line.strip() == '---':
+            break
+        m = re.match(r'^status:\s*(.+)', line)
+        if m:
+            status = m.group(1).strip().strip('"').strip("'")
+        m = re.match(r'^artifact:\s*(.+)', line)
+        if m:
+            artifact = m.group(1).strip().strip('"').strip("'")
+
+    return status, artifact
+
+for root, dirs, files in os.walk(docs_dir):
+    for fname in files:
+        if not fname.endswith('.md'):
+            continue
+        # Skip index files and READMEs
+        if fname.startswith('list-') or fname == 'README.md':
+            continue
+
+        filepath = os.path.join(root, fname)
+        status, artifact_id = extract_frontmatter(filepath)
+
+        if not status or not artifact_id:
+            continue
+
+        # Determine the path components relative to docs/
+        rel = os.path.relpath(filepath, docs_dir)
+        parts = rel.split(os.sep)
+
+        # Expected structure: <type_dir>/<phase_dir>/<artifact...>
+        # Need at least: type_dir/phase_dir/something
+        if len(parts) < 3:
+            # File is directly in type_dir (no phase subdir) — that's a mismatch
+            if len(parts) == 2 and parts[0] in TYPE_DIRS:
+                type_dir = parts[0]
+                actual_phase = "(none)"
+                # The artifact is at docs/<type>/<file>.md — needs to be in docs/<type>/<status>/
+                artifact_path = filepath
+                # For folder-based: check if this .md is inside an artifact folder
+                # that's directly in the type dir (no phase subdir)
+                print(f"MISMATCH\t{os.path.relpath(filepath, docs_dir)}\t{status}\t{actual_phase}")
+            continue
+
+        type_dir = parts[0]
+        if type_dir not in TYPE_DIRS:
+            continue
+
+        phase_dir = parts[1]
+
+        # Check if the phase directory matches the status
+        if phase_dir == status:
+            continue  # match — all good
+
+        # It's a mismatch
+        print(f"MISMATCH\t{os.path.relpath(filepath, docs_dir)}\t{status}\t{phase_dir}")
+PYEOF
+  ) || true
+
+  if [ -z "$results" ]; then
+    echo "specwatch phase-check: all artifacts in correct phase directories."
+    return 0
+  fi
+
+  echo "$results" | while IFS=$'\t' read -r action rel_path expected_phase actual_phase; do
+    [ "$action" = "MISMATCH" ] || continue
+    mismatches=$(( mismatches + 1 ))
+
+    local full_path="$DOCS_DIR/$rel_path"
+    local type_dir
+    type_dir=$(echo "$rel_path" | cut -d/ -f1)
+
+    # Determine what to move: the artifact folder or the file itself.
+    # For folder-based artifacts, the .md is inside (TYPE-NNN)-Title/,
+    # so we move the parent directory. For file-based (story, bug, adr),
+    # the .md IS the artifact.
+    local artifact_item=""
+    local item_name=""
+    local parts
+    IFS='/' read -ra parts <<< "$rel_path"
+
+    if [ "${#parts[@]}" -ge 4 ]; then
+      # e.g., epic/Proposed/(EPIC-001)-Foo/(EPIC-001)-Foo.md — move the folder
+      artifact_item="$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]}"
+      item_name="${parts[2]}"
+    elif [ "${#parts[@]}" -eq 3 ]; then
+      # e.g., story/Draft/(STORY-001)-Foo.md — move the file
+      #    or adr/Draft/(ADR-001)-Foo.md
+      if [ -d "$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]%%.*}" ] 2>/dev/null; then
+        # Actually a folder artifact where the .md name matches the folder
+        artifact_item="$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]%%.*}"
+        item_name="${parts[2]%%.*}"
+      else
+        artifact_item="$full_path"
+        item_name="${parts[2]}"
+      fi
+    else
+      # Unexpected structure — skip
+      echo "  SKIP: $rel_path (unexpected path depth)"
+      continue
+    fi
+
+    local target_dir="$DOCS_DIR/$type_dir/$expected_phase"
+    local target_path="$target_dir/$item_name"
+
+    if [ "$dry_run" = "true" ]; then
+      echo "  WOULD MOVE: $type_dir/${actual_phase}/$item_name -> $type_dir/${expected_phase}/$item_name"
+    else
+      # Create target phase directory if needed
+      mkdir -p "$target_dir"
+      if [ -e "$artifact_item" ]; then
+        git -C "$REPO_ROOT" mv "$artifact_item" "$target_path" 2>/dev/null
+        if [ $? -eq 0 ]; then
+          echo "  MOVED: $type_dir/${actual_phase}/$item_name -> $type_dir/${expected_phase}/$item_name"
+          fixed=$(( fixed + 1 ))
+        else
+          echo "  FAILED: $type_dir/${actual_phase}/$item_name (git mv error)"
+        fi
+      else
+        echo "  SKIP: $artifact_item does not exist"
+      fi
+    fi
+  done
+
+  local total
+  total=$(echo "$results" | grep -c '^MISMATCH' || echo 0)
+  if [ "$dry_run" = "true" ]; then
+    echo "specwatch phase-check: $total mismatch(es) found (dry run, nothing moved)."
+  else
+    echo "specwatch phase-check: $total mismatch(es) found, moved artifacts to correct phase directories."
+    echo "  Run 'git status' to review staged moves, then commit."
+  fi
+}
+
 # --- Main dispatch ---
 
 cmd="${1:-watch}"
@@ -370,6 +551,12 @@ case "$cmd" in
     ;;
   scan)
     scan_stale_refs "full"
+    ;;
+  phase-check)
+    phase_check "true"
+    ;;
+  phase-fix)
+    phase_check "false"
     ;;
   stop)
     stop_watcher
