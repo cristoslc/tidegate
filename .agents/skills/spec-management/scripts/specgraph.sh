@@ -100,6 +100,8 @@ do_build() {
 
     local title status file_rel
     title=$(get_field "$file" "title")
+    # Strip leading "TYPE-NNN: " prefix from title if present (avoid duplicate IDs in display)
+    title="${title#"$artifact: "}"
     status=$(get_field "$file" "status")
     file_rel="${file#"$REPO_ROOT/"}"
 
@@ -345,6 +347,7 @@ do_overview() {
   jq -r '
     def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
     def status_icon: if is_resolved then "[x]" else "[ ]" end;
+    # Note: titles are already cleaned of ID prefixes during cache build
 
     .nodes as $nodes |
     .edges as $edges |
