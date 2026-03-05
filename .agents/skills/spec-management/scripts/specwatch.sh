@@ -6,8 +6,12 @@
 set -euo pipefail
 
 # --- Resolve repo root ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# Use the caller's working directory to find the repo root via git,
+# not the script's install location (which may be in a different repo).
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+  echo "Error: not inside a git repository" >&2
+  exit 1
+}
 DOCS_DIR="$REPO_ROOT/docs"
 LOG_FILE="$REPO_ROOT/.agents/specwatch.log"
 
