@@ -335,13 +335,45 @@ When execution-tracking is requested on an EPIC, VISION, or JOURNEY:
 
 Under the same parent Epic, Stories define user-facing requirements and Specs define technical implementations. They connect through shared `addresses` pain-point references and their common parent Epic. When creating execution-tracking plans, tag tasks with both `spec:SPEC-NNN` and `story:STORY-NNN` labels when a task satisfies both artifacts.
 
+### Superpowers integration
+
+When superpowers (obra/superpowers) is installed, route implementation through its brainstorming → writing-plans pipeline to produce higher-quality plans before handing off to execution-tracking.
+
+**Detection:** Check whether the `brainstorming` and `writing-plans` skills exist:
+
+```bash
+ls .claude/skills/brainstorming/SKILL.md .claude/skills/writing-plans/SKILL.md 2>/dev/null
+```
+
+If both exist, superpowers is available. If either is missing, use the current direct-to-execution-tracking flow.
+
+**Routing when superpowers IS present:**
+
+1. Invoke the `brainstorming` skill with the artifact's context — pass the problem statement, acceptance criteria, and scope from the artifact's frontmatter and body.
+2. Brainstorming produces a design and invokes `writing-plans` automatically.
+3. `writing-plans` saves a plan file to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
+4. After the plan file is saved, invoke execution-tracking's plan ingestion:
+   ```bash
+   python3 .claude/skills/execution-tracking/scripts/ingest-plan.py \
+     docs/plans/<plan-file>.md <ARTIFACT-ID>
+   ```
+5. This creates a bd epic with child tasks, sequential dependencies, and spec lineage tags.
+
+**Routing when superpowers is NOT present:**
+
+Use the current flow — invoke execution-tracking directly for ad-hoc task breakdown.
+
+**If the user rejects the brainstorming design:** Stop cleanly. No plan file is produced, no bd tasks are created. The user can either retry brainstorming or fall back to the direct flow.
+
+**Superpowers is a recommended companion, not a hard dependency.** Never install it automatically or block implementation if it's missing.
+
 ## Implementation plans
 
 Implementation plans bridge declarative specs (`docs/`) and execution tracking. They are not doc-type artifacts. All CLI operations are handled by the **execution-tracking** skill — invoke it to bootstrap the task backend before creating plans.
 
 ### Workflow
 
-1. A Spec/Epic's "Implementation Approach" section seeds the plan but is not the plan of record.
+1. If superpowers is present, use the [superpowers integration](#superpowers-integration) flow to author the plan. Otherwise, seed manually from the spec's "Implementation Approach" section.
 2. Create an implementation plan linked via an **origin ref** (e.g., `SPEC-003`). Create tasks with dependencies, each tagged with **spec tags** for originating specs.
 3. When a task impacts additional specs, add spec tags and cross-plan dependencies.
 
