@@ -21,7 +21,7 @@ depends-on: []
 | Planned | 2026-02-22 | 138d920 | Research brief drafted |
 | Active | 2026-02-22 | 138d920 | Full research across 6 question areas |
 | Complete | 2026-02-22 | 138d920 | Findings documented |
-| Abandoned | 2026-03-06 | _pending_ | Shell wrapper approach dropped; seccomp-notify (ADR-001) and journal-based taint tracking (ADR-002) superseded this approach |
+| Abandoned | 2026-03-06 | 8575371 | Shell wrapper approach dropped; seccomp-notify (ADR-001) and journal-based taint tracking (ADR-002) superseded this approach |
 
 ## Question
 

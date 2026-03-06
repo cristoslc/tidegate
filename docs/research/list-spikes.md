@@ -35,4 +35,4 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-010 | [Shell Wrapper Command Interception](./Abandoned/(SPIKE-010)-Shell-Wrapper-Command-Interception/(SPIKE-010)-Shell-Wrapper-Command-Interception.md) | 2026-03-06 | _pending_ | Shell wrapper approach dropped in favor of seccomp-notify and journal-based taint tracking |
+| SPIKE-010 | [Shell Wrapper Command Interception](./Abandoned/(SPIKE-010)-Shell-Wrapper-Command-Interception/(SPIKE-010)-Shell-Wrapper-Command-Interception.md) | 2026-03-06 | 8575371 | Shell wrapper approach dropped in favor of seccomp-notify and journal-based taint tracking |
