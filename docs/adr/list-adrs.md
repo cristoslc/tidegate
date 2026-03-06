@@ -8,6 +8,7 @@ Dashboard mirroring lifecycle data from individual ADR artifacts. Source of trut
 |----|-------|-------|------|--------|
 | ADR-002 | [Taint-and-Verify Data Flow Model](./proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | Proposed | 2026-02-23 | 94efd00 |
 | ADR-003 | [Agent Runtime Selection](./proposed/(ADR-003)-Agent-Runtime-Selection.md) | Proposed | 2026-02-24 | cfcc86a |
+| ADR-005 | [Composable VM Isolation](./proposed/(ADR-005)-Composable-VM-Isolation.md) | Proposed | 2026-03-06 | b7482a6 |
 
 ## Draft
 

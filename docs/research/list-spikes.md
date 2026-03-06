@@ -12,6 +12,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-004 | [L1 Fail-Open Behavior](./Planned/(SPIKE-004)-L1-Fail-Open-Behavior/(SPIKE-004)-L1-Fail-Open-Behavior.md) | 2026-02-23 | 138d920 |
 | SPIKE-005 | [Workspace Volume TOCTOU](./Planned/(SPIKE-005)-Workspace-Volume-TOCTOU/(SPIKE-005)-Workspace-Volume-TOCTOU.md) | 2026-02-23 | 138d920 |
 | SPIKE-006 | [Agent Memory Exfiltration](./Planned/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) | 2026-02-23 | 138d920 |
+| SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Planned/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-06 | b7482a6 |
 
 ## Active
 
