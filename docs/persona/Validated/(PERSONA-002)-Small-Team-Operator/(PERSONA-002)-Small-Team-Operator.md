@@ -1,6 +1,6 @@
 ---
 title: "PERSONA-002: Small Team Operator"
-status: Active
+status: Validated
 author: cristos
 created: 2026-02-21
 last_updated: 2026-02-26
@@ -15,7 +15,7 @@ related_stories: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-02-21 | db146de | Initial persona definition |
-| Active | 2026-02-26 | 35f707d | Migrated to spec-management format |
+| Validated | 2026-02-26 | 35f707d | Migrated to spec-management format |
 
 ## Archetype
 
@@ -23,7 +23,7 @@ Runs an AI agent for a team — shared Slack workspace, GitHub org, internal too
 
 ## Goals and motivations
 
-The same personal assistant capabilities as [PERSONA-001](../\(PERSONA-001\)-Personal-Assistant-Operator/\(PERSONA-001\)-Personal-Assistant-Operator.md), but with team-scoped credentials and audit trails. Needs to demonstrate to the team that the agent won't leak internal data.
+The same personal assistant capabilities as [PERSONA-001](../(PERSONA-001)-Personal-Assistant-Operator/(PERSONA-001)-Personal-Assistant-Operator.md), but with team-scoped credentials and audit trails. Needs to demonstrate to the team that the agent won't leak internal data.
 
 ## Frustrations and pain points
 
@@ -49,5 +49,5 @@ Moderate. Willing to edit YAML configs and manage Docker. Needs clear documentat
 
 ## Related
 
-- [VISION-001](../../vision/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
-- [PERSONA-001](../\(PERSONA-001\)-Personal-Assistant-Operator/\(PERSONA-001\)-Personal-Assistant-Operator.md)
+- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [PERSONA-001](../(PERSONA-001)-Personal-Assistant-Operator/(PERSONA-001)-Personal-Assistant-Operator.md)

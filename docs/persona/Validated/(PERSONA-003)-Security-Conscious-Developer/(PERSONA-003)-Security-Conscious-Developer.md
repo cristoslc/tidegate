@@ -1,6 +1,6 @@
 ---
 title: "PERSONA-003: Security-Conscious Developer"
-status: Active
+status: Validated
 author: cristos
 created: 2026-02-21
 last_updated: 2026-02-26
@@ -15,7 +15,7 @@ related_stories: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-02-21 | db146de | Initial persona definition |
-| Active | 2026-02-26 | 35f707d | Migrated to spec-management format |
+| Validated | 2026-02-26 | 35f707d | Migrated to spec-management format |
 
 ## Archetype
 
@@ -49,5 +49,5 @@ High. Happy to read ADRs and inspect Dockerfiles. Will file issues for gaps they
 
 ## Related
 
-- [VISION-001](../../vision/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
-- [Threat model](../../threat-model/README.md)
+- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [Threat model](../../../threat-model/README.md)

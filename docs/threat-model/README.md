@@ -29,4 +29,4 @@ The key insight is **circular data flow**: the agent calls a Gmail tool, gets em
 | [threat-personas.md](threat-personas.md) | Adversary profiles and what blocks each |
 | [scorecard.md](scorecard.md) | Attack surface map, ClawHavoc walkthrough, residual risks |
 
-See also: [personas.md](../personas.md) for product user personas (who uses Tidegate, not who attacks it).
+See also: [personas.md](../persona/list-personas.md) for product user personas (who uses Tidegate, not who attacks it).

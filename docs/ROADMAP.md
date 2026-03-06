@@ -2,7 +2,7 @@
 
 From current state to `./setup.sh` on Mac, then hardening.
 
-See [architecture overview](vision/(VISION-001)-Secure-AI-Agent-Deployment/architecture-overview.md) for what exists today and [target state](vision/(VISION-001)-Secure-AI-Agent-Deployment/target-state.md) for the end goal.
+See [architecture overview](vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/architecture-overview.md) for what exists today and [target state](vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/target-state.md) for the end goal.
 
 ---
 

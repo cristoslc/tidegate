@@ -14,7 +14,7 @@ parent: VISION-001
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-02-25 | — | Spike started; claudeclaw source pulled at 198 commits / 162 stars |
+| Active | 2026-02-25 | 0ec6eb8 | Spike started; claudeclaw source pulled at 198 commits / 162 stars |
 
 ## Purpose
 
