@@ -40,6 +40,9 @@ build/
 test/**/certs/
 test/**/volumes/
 
+# Specwatch runtime log
+.agents/specwatch.log
+
 # Agent selection research — keep markdown only, ignore source code
 docs/research/completed/agent-selection/nanoclaw-main/**
 !docs/research/completed/agent-selection/nanoclaw-main/**/

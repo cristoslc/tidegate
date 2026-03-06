@@ -8,4 +8,4 @@ See [list-visions.md](list-visions.md) for lifecycle tracking.
 
 | ID | Title | Status |
 |----|-------|--------|
-| VISION-001 | [Secure AI Agent Deployment](./(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) | Active |
+| VISION-001 | [Secure AI Agent Deployment](./Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) | Active |

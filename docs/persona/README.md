@@ -8,7 +8,7 @@ See [list-personas.md](list-personas.md) for lifecycle tracking.
 
 | ID | Title | Status |
 |----|-------|--------|
-| PERSONA-001 | [Personal Assistant Operator](./(PERSONA-001)-Personal-Assistant-Operator/(PERSONA-001)-Personal-Assistant-Operator.md) | Active |
-| PERSONA-002 | [Small Team Operator](./(PERSONA-002)-Small-Team-Operator/(PERSONA-002)-Small-Team-Operator.md) | Active |
-| PERSONA-003 | [Security-Conscious Developer](./(PERSONA-003)-Security-Conscious-Developer/(PERSONA-003)-Security-Conscious-Developer.md) | Active |
-| PERSONA-004 | [Contributor](./(PERSONA-004)-Contributor/(PERSONA-004)-Contributor.md) | Active |
+| PERSONA-001 | [Personal Assistant Operator](./Active/(PERSONA-001)-Personal-Assistant-Operator/(PERSONA-001)-Personal-Assistant-Operator.md) | Active |
+| PERSONA-002 | [Small Team Operator](./Active/(PERSONA-002)-Small-Team-Operator/(PERSONA-002)-Small-Team-Operator.md) | Active |
+| PERSONA-003 | [Security-Conscious Developer](./Active/(PERSONA-003)-Security-Conscious-Developer/(PERSONA-003)-Security-Conscious-Developer.md) | Active |
+| PERSONA-004 | [Contributor](./Active/(PERSONA-004)-Contributor/(PERSONA-004)-Contributor.md) | Active |
