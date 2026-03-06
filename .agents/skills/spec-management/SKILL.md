@@ -1,11 +1,11 @@
 ---
 name: spec-management
-description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, Agent Spec, Spike, ADR, Persona, Runbook, Bug) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a spec, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, create a runbook, define a validation procedure, file a bug, report a defect, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, or validate cross-references between artifacts. When a SPEC transitions to implementation, always chain into the execution-tracking skill to create a tracked plan before any code is written. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
+description: Create, validate, and transition documentation artifacts (Vision, Journey, Epic, Story, Agent Spec, Spike, ADR, Persona, Runbook, Bug) and their supporting docs (architecture overviews, journey maps, competitive analyses) through their lifecycle phases. Use when the user wants to write a spec, plan a feature, create an epic, add a user story, draft an ADR, start a research spike, define a persona, create a user persona, create a runbook, define a validation procedure, file a bug, report a defect, update the architecture overview, document the system architecture, move an artifact to a new phase, seed an implementation plan, implement a spec, fix a bug, work on a story, or validate cross-references between artifacts. When a SPEC, STORY, or BUG comes up for implementation, always chain into the execution-tracking skill to create a tracked plan before any code is written. When execution-tracking is requested on an EPIC, VISION, or JOURNEY, decompose into implementable children first — execution-tracking runs on the children, not the container. Covers any request to create, update, review, or transition spec artifacts and supporting docs.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Manage spec artifact creation and lifecycle
-  version: 1.1.0
+  version: 1.2.0
   author: cristos
 ---
 
@@ -295,6 +295,47 @@ Phases listed in the artifact definition files are available waypoints, not mand
 - An Epic is "Complete" only when all child Agent Specs are "Implemented" and success criteria are met.
 - An Agent Spec is "Implemented" only when its implementation plan is closed (or all tasks are done in fallback mode).
 - An ADR is "Superseded" only when the superseding ADR is "Adopted" and links back.
+
+## Execution tracking handoff
+
+Artifact types fall into four tracking tiers based on their relationship to implementation work:
+
+| Tier | Artifacts | Rule |
+|------|-----------|------|
+| **Implementation** | SPEC, STORY, BUG | Execution-tracking **must** be invoked when the artifact comes up for implementation — create a tracked plan before writing code |
+| **Coordination** | EPIC, VISION, JOURNEY | Spec-management decomposes into implementable children first; execution-tracking runs on the children, not the container |
+| **Research** | SPIKE | Execution-tracking is optional but recommended for complex spikes with multiple investigation threads |
+| **Reference** | ADR, PERSONA, RUNBOOK | No execution tracking expected |
+
+### The `execution-tracking` frontmatter field
+
+Artifacts that need execution-tracking carry `execution-tracking: required` in their frontmatter. This field is:
+- **Always present** on SPEC, STORY, and BUG artifacts (injected by their templates)
+- **Added per-instance** on SPIKE artifacts when spec-management assesses the spike is complex enough to warrant tracked research
+- **Never present** on EPIC, VISION, JOURNEY, ADR, PERSONA, or RUNBOOK artifacts — orchestration for those types lives in the skill, not the artifact
+
+When an agent reads an artifact with `execution-tracking: required`, it should invoke the execution-tracking skill before beginning implementation work.
+
+### What "comes up for implementation" means
+
+The trigger is intent, not phase transition alone. An artifact comes up for implementation when the user or workflow indicates they want to start building — not merely when its status changes.
+
+- "Let's implement SPEC-003" → invoke execution-tracking
+- "Move SPEC-003 to Approved" → phase transition only, no tracking yet
+- "Fix BUG-001" → invoke execution-tracking
+- "Let's work on EPIC-008" → decompose into SPECs/STORYs first, then track the children
+
+### Coordination artifact decomposition
+
+When execution-tracking is requested on an EPIC, VISION, or JOURNEY:
+
+1. **Spec-management leads.** Decompose the artifact into implementable children (SPECs, STORYs) if they don't already exist.
+2. **Execution-tracking follows.** Create tracked plans for the child artifacts, not the container.
+3. **Spec-management monitors.** The container transitions (e.g., EPIC → Complete) based on child completion per the existing completion rules.
+
+### STORY and SPEC coordination
+
+Under the same parent Epic, Stories define user-facing requirements and Specs define technical implementations. They connect through shared `addresses` pain-point references and their common parent Epic. When creating execution-tracking plans, tag tasks with both `spec:SPEC-NNN` and `story:STORY-NNN` labels when a task satisfies both artifacts.
 
 ## Implementation plans
 

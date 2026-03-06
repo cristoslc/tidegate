@@ -24,6 +24,6 @@ A structured defect report that exists outside the Epic hierarchy. Bugs capture 
   - Example: `docs/bug/Reported/(BUG-001)-Null-Ref-On-Missing-Title.md`
   - When transitioning phases, **move the file** to the new phase directory (e.g., `git mv docs/bug/Reported/(BUG-001)-Foo.md docs/bug/Active/(BUG-001)-Foo.md`).
 - **Triage at creation:** Severity, affected artifacts, and priority are frontmatter fields set at creation time, not a separate phase.
-- **Handoff to execution-tracking:** Occurs at the Reported → Active transition. The Bug's `fix-ref` field records the execution-tracking plan or task ID.
+- **Tracking requirement:** All Bugs carry `execution-tracking: required` in frontmatter. When a Bug comes up for implementation (typically at Reported → Active), invoke the execution-tracking skill to create a tracked plan before writing the fix. The Bug's `fix-ref` field records the execution-tracking plan or task ID (see SKILL.md § Execution tracking handoff).
 - A Bug is "Verified" when the fix has been confirmed working (terminal success). "Declined" for intentional non-action (wontfix / by-design). "Abandoned" for issues that are no longer relevant.
 - Bugs are independent: they reference affected artifacts via `affected-artifacts` but sit outside the hierarchy.

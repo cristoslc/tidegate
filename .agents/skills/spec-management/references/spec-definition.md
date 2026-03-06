@@ -27,3 +27,4 @@ Follow **spec-driven development** principles: an Agent Spec is a behavior contr
   - Primary file: `(SPEC-NNN)-<Title>.md` — the spec document itself.
   - Supporting docs live alongside it in the same folder.
 - Should be scoped to something a team (or agent) can ship and validate independently.
+- **Tracking requirement:** All Specs carry `execution-tracking: required` in frontmatter. When a Spec comes up for implementation, invoke the execution-tracking skill to create a tracked plan before writing code (see SKILL.md § Execution tracking handoff).

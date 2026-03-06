@@ -1,11 +1,11 @@
 ---
 name: execution-tracking
-description: Bootstrap, install, and operate an external task-management CLI as the source of truth for agent execution tracking (instead of built-in todos). Provides the abstraction layer between spec-management intent (implementation plans and tasks) and concrete CLI commands. MUST be invoked before beginning implementation of any SPEC artifact (Epic, Story, Agent Spec, Spike) — create a tracked implementation plan and task breakdown before writing code. Also use for standalone tasks that require backend portability, persistent progress across agent runtimes, or external supervision. Use this skill whenever the user asks to track tasks, create an implementation plan, check what to work on next, see task status, manage dependencies between work items, or close/abandon tasks — even if they don't mention "execution tracking" explicitly.
+description: Bootstrap, install, and operate an external task-management CLI as the source of truth for agent execution tracking (instead of built-in todos). Provides the abstraction layer between spec-management intent (implementation plans and tasks) and concrete CLI commands. MUST be invoked when any implementation-tier artifact (SPEC, STORY, BUG) comes up for implementation — create a tracked plan before writing code. Optional but recommended for complex SPIKEs. For coordination-tier artifacts (EPIC, VISION, JOURNEY), spec-management must decompose into implementable children first — this skill tracks the children, not the container. Also use for standalone tasks that require backend portability, persistent progress across agent runtimes, or external supervision. Use this skill whenever the user asks to track tasks, create an implementation plan, check what to work on next, see task status, manage dependencies between work items, or close/abandon tasks — even if they don't mention "execution tracking" explicitly.
 license: UNLICENSED
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Bootstrap and operate external task tracking
-  version: 2.2.0
+  version: 2.3.0
   author: cristos
 ---
 
@@ -14,6 +14,19 @@ metadata:
 Abstraction layer for agent execution tracking. Other skills (e.g., spec-management) express intent using abstract terms; this skill translates that intent into concrete CLI commands.
 
 **Before first use:** Read [references/bd-cheatsheet.md](references/bd-cheatsheet.md) for complete command syntax, flags, ID formats, and anti-patterns.
+
+## Artifact handoff protocol
+
+This skill receives handoffs from spec-management based on a four-tier tracking model:
+
+| Tier | Artifacts | This skill's role |
+|------|-----------|-------------------|
+| **Implementation** | SPEC, STORY, BUG | Create a tracked implementation plan and task breakdown before any code is written |
+| **Coordination** | EPIC, VISION, JOURNEY | Do not track directly — spec-management decomposes these into children first, then hands off the children |
+| **Research** | SPIKE | Create a tracked plan when the research is complex enough to benefit from task breakdown |
+| **Reference** | ADR, PERSONA, RUNBOOK | No tracking expected |
+
+If invoked directly on a coordination-tier artifact (EPIC, VISION, JOURNEY) without prior decomposition, defer to spec-management to create child SPECs or STORYs first, then create plans for those children.
 
 ## Term mapping
 
