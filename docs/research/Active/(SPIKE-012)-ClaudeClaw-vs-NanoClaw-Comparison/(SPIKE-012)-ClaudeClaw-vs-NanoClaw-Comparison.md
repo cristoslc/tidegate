@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-012: ClaudeClaw vs NanoClaw Comparison"
+artifact: SPIKE-012
+title: "ClaudeClaw vs NanoClaw Comparison"
 status: Active
 author: cristos
 created: 2026-02-25
-last_updated: 2026-02-25
+last-updated: 2026-02-25
 question: "Is ClaudeClaw a viable alternative or complement to NanoClaw for Tidegate's agent runtime?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # ClaudeClaw vs NanoClaw — Agent-Container Runtime Comparison

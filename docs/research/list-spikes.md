@@ -31,8 +31,8 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-009 | [Data Flow Taint Model](./Complete/(SPIKE-009)-Data-Flow-Taint-Model/(SPIKE-009)-Data-Flow-Taint-Model.md) | 2026-02-23 | 138d920 | Became ADR-002 |
 | SPIKE-011 | [NanoClaw Tidegate Design](./Complete/(SPIKE-011)-NanoClaw-Tidegate-Design/(SPIKE-011)-NanoClaw-Tidegate-Design.md) | 2026-02-24 | 6749250 | Informed ADR-003 |
 
-## Superseded
+## Abandoned
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-010 | [Shell Wrapper Command Interception](./Superseded/(SPIKE-010)-Shell-Wrapper-Command-Interception/(SPIKE-010)-Shell-Wrapper-Command-Interception.md) | 2026-02-22 | 138d920 | ADR-001 adopted seccomp-notify; journal-based taint (ADR-002) replaced shell interception |
+| SPIKE-010 | [Shell Wrapper Command Interception](./Abandoned/(SPIKE-010)-Shell-Wrapper-Command-Interception/(SPIKE-010)-Shell-Wrapper-Command-Interception.md) | 2026-03-06 | _pending_ | Shell wrapper approach dropped in favor of seccomp-notify and journal-based taint tracking |

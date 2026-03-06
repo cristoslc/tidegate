@@ -1,9 +1,11 @@
 ---
-title: "VISION-001: Secure AI Agent Deployment Platform"
+title: "Secure AI Agent Deployment Platform"
+artifact: VISION-001
 status: Active
 author: cristos
 created: 2026-02-21
-last_updated: 2026-02-26
+last-updated: 2026-02-26
+depends-on: []
 ---
 
 # VISION-001: Secure AI Agent Deployment Platform

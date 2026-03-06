@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-009: Data Flow Taint Model"
+artifact: SPIKE-009
+title: "Data Flow Taint Model"
 status: Complete
 author: cristos
 created: 2026-02-23
-last_updated: 2026-02-23
+last-updated: 2026-02-23
 question: "How does sensitive data move through the system, and do we need an explicit taint model?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Data Flow Taint Model
@@ -15,8 +19,8 @@ parent: VISION-001
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Input/output channels first enumerated during L1 coverage gap spike |
-| Active | 2026-02-23 | — | Promoted from L1 spike; recognized as foundational to entire architecture |
-| Complete | 2026-02-23 | — | Findings formalized as ADR-002 (taint-and-verify data flow model) |
+| Active | 2026-02-23 | abbffa1 | Promoted from L1 spike; recognized as foundational to entire architecture |
+| Complete | 2026-02-23 | abbffa1 | Findings formalized as ADR-002 (taint-and-verify data flow model) |
 
 ## Source
 

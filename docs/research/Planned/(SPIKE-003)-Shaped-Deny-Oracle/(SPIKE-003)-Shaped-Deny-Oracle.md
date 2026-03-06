@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-003: Shaped Deny as Adversarial Oracle"
+artifact: SPIKE-003
+title: "Shaped Deny as Adversarial Oracle"
 status: Planned
 author: cristos
 created: 2026-02-23
-last_updated: 2026-02-23
+last-updated: 2026-02-23
 question: "Can shaped deny responses be exploited as an oracle for iterative evasion?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Shaped Deny as Adversarial Oracle

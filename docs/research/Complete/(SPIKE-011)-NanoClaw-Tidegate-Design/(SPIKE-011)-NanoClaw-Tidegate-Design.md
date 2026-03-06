@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-011: NanoClaw × Tidegate Integration"
+artifact: SPIKE-011
+title: "NanoClaw × Tidegate Integration"
 status: Complete
 author: cristos
 created: 2026-02-24
-last_updated: 2026-02-24
+last-updated: 2026-02-24
 question: "How should Tidegate integrate with NanoClaw as the agent runtime?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # NanoClaw × Tidegate Integration — Design Spike

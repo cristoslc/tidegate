@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-002: Luhn False Positive Rate"
+artifact: SPIKE-002
+title: "Luhn False Positive Rate"
 status: Planned
 author: cristos
 created: 2026-02-23
-last_updated: 2026-02-23
+last-updated: 2026-02-23
 question: "What is the empirical false positive rate of Luhn-based credit card detection in agent traffic?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Luhn False Positive Rate

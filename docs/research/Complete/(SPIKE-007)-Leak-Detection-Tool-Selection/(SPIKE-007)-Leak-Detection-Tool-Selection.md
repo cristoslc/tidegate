@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-007: Leak Detection Tool Selection"
+artifact: SPIKE-007
+title: "Leak Detection Tool Selection"
 status: Complete
 author: cristos
 created: 2026-02-21
-last_updated: 2026-02-21
+last-updated: 2026-02-21
 question: "Which tools should the gateway use to detect leaked secrets and PII in agent traffic?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Leak Detection Tool Selection

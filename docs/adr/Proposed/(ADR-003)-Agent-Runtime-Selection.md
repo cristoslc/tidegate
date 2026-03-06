@@ -1,11 +1,15 @@
 ---
-title: "ADR-003: Agent Runtime Selection — NanoClaw over OpenClaw"
+artifact: ADR-003
+title: "Agent Runtime Selection — NanoClaw over OpenClaw"
 status: Proposed
 author: cristos
 created: 2026-02-24
-last_updated: 2026-02-24
-affected_artifacts:
+last-updated: 2026-02-24
+affected-artifacts:
   - VISION-001
+linked-epics: []
+linked-specs: []
+depends-on: []
 ---
 
 # ADR-003: Agent Runtime Selection — NanoClaw over OpenClaw

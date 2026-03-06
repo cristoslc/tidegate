@@ -1,12 +1,15 @@
 ---
-title: "ADR-001: OCI Runtime Wrapper + seccomp-notify for L1 Command Interception"
+artifact: ADR-001
+title: "OCI Runtime Wrapper + seccomp-notify for L1 Command Interception"
 status: Superseded
 author: cristos
 created: 2026-02-22
-last_updated: 2026-02-23
-affected_artifacts:
+last-updated: 2026-02-23
+affected-artifacts:
   - VISION-001
-superseded_by: ADR-002
+linked-epics: []
+linked-specs: []
+depends-on: []
 ---
 
 # ADR-001: OCI Runtime Wrapper + seccomp-notify for L1 Command Interception

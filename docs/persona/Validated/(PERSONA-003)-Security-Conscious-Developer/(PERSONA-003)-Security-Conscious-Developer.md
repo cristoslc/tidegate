@@ -1,11 +1,13 @@
 ---
-title: "PERSONA-003: Security-Conscious Developer"
+artifact: PERSONA-003
+title: "Security-Conscious Developer"
 status: Validated
 author: cristos
 created: 2026-02-21
-last_updated: 2026-02-26
-related_journeys: []
-related_stories: []
+last-updated: 2026-02-26
+linked-journeys: []
+linked-stories: []
+depends-on: []
 ---
 
 # PERSONA-003: Security-Conscious Developer

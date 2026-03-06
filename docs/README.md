@@ -8,9 +8,8 @@ Specification artifacts and supporting documents for Tidegate. Each subdirectory
 |-----------|------|-------------|
 | [vision/](vision/) | Product Vision | High-level product direction and value proposition |
 | [journey/](journey/) | User Journey | End-to-end user experience maps with Mermaid diagrams |
-| [epic/](epic/) | Epic | Strategic initiatives decomposed into PRDs and Stories |
+| [epic/](epic/) | Epic | Strategic initiatives decomposed into Specs and Stories |
 | [story/](story/) | User Story | Atomic user-facing requirements with acceptance criteria |
-| [prd/](prd/) | PRD | Feature specifications scoped for independent delivery |
 | [research/](research/) | Research Spike | Investigations and exploratory analysis |
 | [adr/](adr/) | ADR | Architecture Decision Records with alternatives and rationale |
 | [persona/](persona/) | Persona | User archetypes informing design and prioritization |

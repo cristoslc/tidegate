@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-013: Tideclaw Architecture"
+artifact: SPIKE-013
+title: "Tideclaw Architecture"
 status: Active
 author: cristos
 created: 2026-02-25
-last_updated: 2026-02-27
+last-updated: 2026-02-27
 question: "What should a security-first orchestrator for AI coding tools look like?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Tideclaw — Architecture Spike: Security-First Orchestrator for AI Coding Tools

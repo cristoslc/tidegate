@@ -1,11 +1,15 @@
 ---
-title: "SPIKE-006: Agent Memory as Exfiltration Vector"
+artifact: SPIKE-006
+title: "Agent Memory as Exfiltration Vector"
 status: Planned
 author: cristos
 created: 2026-02-23
-last_updated: 2026-02-23
+last-updated: 2026-02-23
 question: "Can persistent agent memory be poisoned to create a durable cross-session exfiltration channel?"
-parent: VISION-001
+parent-vision: VISION-001
+gate: Pre-MVP
+risks-addressed: []
+depends-on: []
 ---
 
 # Agent Memory as Exfiltration Vector

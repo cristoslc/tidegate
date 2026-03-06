@@ -1,11 +1,13 @@
 ---
-title: "PERSONA-001: Personal Assistant Operator"
+artifact: PERSONA-001
+title: "Personal Assistant Operator"
 status: Validated
 author: cristos
 created: 2026-02-21
-last_updated: 2026-02-26
-related_journeys: []
-related_stories: []
+last-updated: 2026-02-26
+linked-journeys: []
+linked-stories: []
+depends-on: []
 ---
 
 # PERSONA-001: Personal Assistant Operator

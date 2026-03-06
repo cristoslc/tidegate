@@ -1,12 +1,15 @@
 ---
-title: "ADR-002: Taint-and-Verify Data Flow Model"
+artifact: ADR-002
+title: "Taint-and-Verify Data Flow Model"
 status: Proposed
 author: cristos
 created: 2026-02-23
-last_updated: 2026-02-23
-affected_artifacts:
+last-updated: 2026-02-23
+affected-artifacts:
   - VISION-001
-supersedes: ADR-001
+linked-epics: []
+linked-specs: []
+depends-on: []
 ---
 
 # ADR-002: Taint-and-Verify Data Flow Model
