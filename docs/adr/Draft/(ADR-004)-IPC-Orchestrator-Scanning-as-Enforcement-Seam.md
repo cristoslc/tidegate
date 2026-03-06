@@ -1,9 +1,10 @@
 ---
+artifact: ADR-004
 title: "ADR-004: IPC Orchestrator Scanning as Enforcement Seam"
 status: Draft
 author: cristos
 created: 2026-02-28
-last_updated: 2026-02-28
+last-updated: 2026-02-28
 related: [SPIKE-014, SPIKE-013, SPIKE-011, ADR-003, ADR-002]
 affects: [SPIKE-013]
 ---

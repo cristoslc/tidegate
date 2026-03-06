@@ -1,13 +1,14 @@
 ---
+artifact: SPIKE-015
 title: "SPIKE-015: Evaluate VM Isolation for Agent Container"
 status: Planned
 author: cristos
 created: 2026-03-06
-last_updated: 2026-03-06
-parent: EPIC-001
+last-updated: 2026-03-06
+parent-epic: EPIC-001
 question: "Which VM technology best composes with Tidegate's Docker infrastructure for agent isolation?"
 gate: Post-M7 hardening
-risks_addressed:
+risks-addressed:
   - Kernel-level container escape bypasses all scanning and network isolation
   - Shared-kernel attacks (CVE-2024-21626, CVE-2022-0185) give agent full host access
 dependencies:

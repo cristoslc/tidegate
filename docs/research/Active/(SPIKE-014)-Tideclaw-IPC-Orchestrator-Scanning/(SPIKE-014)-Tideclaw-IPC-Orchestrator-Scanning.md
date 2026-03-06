@@ -1,14 +1,15 @@
 ---
+artifact: SPIKE-014
 title: "SPIKE-014: Tideclaw IPC Orchestrator Scanning"
 status: Active
 author: cristos
 created: 2026-02-28
-last_updated: 2026-02-28
+last-updated: 2026-02-28
 question: "How should Tideclaw scan IPC between agent sub-containers and the orchestrator to prevent data exfiltration through the orchestrator bridge?"
-parent: VISION-001
+parent-vision: VISION-001
 related: [SPIKE-013, SPIKE-011, ADR-003, ADR-002, ADR-004]
 gate: Pre-MVP (Tideclaw Phase 1)
-risks_addressed:
+risks-addressed:
   - Agent exfiltration via orchestrator IPC bypass
   - Unscanned data reaching external messaging channels
 blocks: [ADR-004]

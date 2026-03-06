@@ -1,10 +1,11 @@
 ---
+artifact: ADR-005
 title: "ADR-005: Composable VM Isolation"
 status: Proposed
 author: cristos
 created: 2026-03-06
-last_updated: 2026-03-06
-affected_artifacts:
+last-updated: 2026-03-06
+affected-artifacts:
   - VISION-001
   - EPIC-001
 ---

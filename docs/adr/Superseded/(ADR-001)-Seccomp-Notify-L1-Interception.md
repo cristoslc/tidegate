@@ -22,7 +22,7 @@ depends-on: []
 | Adopted | 2026-02-22 | 138d920 | Adopted seccomp-notify + OCI runtime wrapper |
 | Superseded | 2026-02-23 | 94efd00 | By ADR-002. execve interception and command evaluator dropped. seccomp-notify mechanism retained for `connect()` enforcement in journal-based taint architecture. |
 
-> **This ADR is superseded.** The seccomp-notify mechanism survived but the application changed fundamentally: `connect()` interception with journal-based taint tracking replaces `execve` interception with command evaluation. See [ADR-002](../proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) for the current L1 design.
+> **This ADR is superseded.** The seccomp-notify mechanism survived but the application changed fundamentally: `connect()` interception with journal-based taint tracking replaces `execve` interception with command evaluation. See [ADR-002](../Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) for the current L1 design.
 >
 > Key reasons for supersession:
 > - The command evaluator (script parsing, glob resolution, encoding pattern detection) was the most complex planned component — and its value depended on static analysis, which is weak when tg-scanner is OSS (detection vocabulary is public).

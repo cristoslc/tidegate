@@ -1,11 +1,12 @@
 ---
+artifact: EPIC-001
 title: "EPIC-001: VM-Isolated Agent Runtime"
 status: Proposed
 author: cristos
 created: 2026-03-06
-last_updated: 2026-03-06
-parent_vision: VISION-001
-success_criteria:
+last-updated: 2026-03-06
+parent-vision: VISION-001
+success-criteria:
   - Agent can run inside a VM (QEMU or Firecracker) with workspace mounted read-only
   - All MCP traffic routes from the VM through the Tidegate gateway on the host
   - All HTTP egress routes from the VM through the egress proxy on the host
@@ -63,7 +64,7 @@ VM isolation (QEMU, Firecracker) provides a separate kernel boundary. A compromi
 
 | Type | ID | Title | Status |
 |------|----|-------|--------|
-| Spike | SPIKE-015 | [Evaluate VM Isolation for Agent Container](../../research/Planned/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | Planned |
+| Spike | SPIKE-015 | [Evaluate VM Isolation for Agent Container](../../../research/Planned/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | Planned |
 
 ## Roadmap position
 

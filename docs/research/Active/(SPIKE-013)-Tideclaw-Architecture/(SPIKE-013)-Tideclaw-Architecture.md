@@ -19,7 +19,7 @@ depends-on: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Active | 2026-02-25 | 0ec6eb8 | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
-| Active | 2026-02-27 | 0ec6eb8 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
+| Active | 2026-02-27 | ded5e29 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
 
 ## Purpose
 

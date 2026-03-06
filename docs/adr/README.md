@@ -8,6 +8,6 @@ See [list-adrs.md](list-adrs.md) for lifecycle tracking.
 
 | ID | Title | Status | Location |
 |----|-------|--------|----------|
-| ADR-001 | [Seccomp-Notify L1 Interception](./superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) | Superseded | `superseded/` |
-| ADR-002 | [Taint-and-Verify Data Flow Model](./proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | Proposed | `proposed/` |
-| ADR-003 | [Agent Runtime Selection](./proposed/(ADR-003)-Agent-Runtime-Selection.md) | Proposed | `proposed/` |
+| ADR-001 | [Seccomp-Notify L1 Interception](./Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) | Superseded | `Superseded/` |
+| ADR-002 | [Taint-and-Verify Data Flow Model](./Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | Proposed | `Proposed/` |
+| ADR-003 | [Agent Runtime Selection](./Proposed/(ADR-003)-Agent-Runtime-Selection.md) | Proposed | `Proposed/` |

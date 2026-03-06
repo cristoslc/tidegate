@@ -49,8 +49,8 @@ Under ADR-002, tg-scanner has three components that can fail independently:
 
 ## Related
 
-- [ADR-002](../../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — the current L1 architecture
-- [ADR-001 (superseded)](../../../adr/superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) — original fail-open analysis still applies to seccomp-notify mechanism
+- [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — the current L1 architecture
+- [ADR-001 (superseded)](../../../adr/Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) — original fail-open analysis still applies to seccomp-notify mechanism
 
 ## Context at time of writing
 

@@ -53,11 +53,11 @@ See [architecture-overview.md](architecture-overview.md) for how the system work
 
 The security model has three enforcement layers:
 - **L2/L3 (MCP gateway)**: Scans all string values in tool call parameters and responses. Credential patterns, checksums, entropy analysis.
-- **L1 (kernel-level taint tracking)**: eBPF observes file access, scanner daemon tracks taint, seccomp-notify blocks tainted processes from network access. Not yet built — see [ADR-002](../../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md).
+- **L1 (kernel-level taint tracking)**: eBPF observes file access, scanner daemon tracks taint, seccomp-notify blocks tainted processes from network access. Not yet built — see [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md).
 - **Network isolation**: Three Docker networks. Agent can only reach gateway and egress proxy. MCP servers hold credentials on an internal network.
 
 ## Related
 
 - [ROADMAP.md](../../../ROADMAP.md) — milestone tracker (M1–M7)
-- [ADR-002](../../../adr/proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — L1 taint architecture
-- [ADR-003](../../../adr/proposed/(ADR-003)-Agent-Runtime-Selection.md) — agent runtime choice
+- [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — L1 taint architecture
+- [ADR-003](../../../adr/Proposed/(ADR-003)-Agent-Runtime-Selection.md) — agent runtime choice
