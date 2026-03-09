@@ -1,7 +1,7 @@
 ---
 title: "ROME Agentic Training Security Implications"
 artifact: SPIKE-016
-status: Active
+status: Complete
 author: cristos
 created: 2026-03-08
 last-updated: 2026-03-08
