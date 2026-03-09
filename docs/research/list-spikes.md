@@ -21,7 +21,6 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-012 | [ClaudeClaw vs NanoClaw Comparison](./Active/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison.md) | 2026-02-25 | 0ec6eb8 | Evaluating ClaudeClaw as alternative to NanoClaw |
 | SPIKE-013 | [Tideclaw Architecture](./Active/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-02-25 | 0ec6eb8 | Security-first orchestrator design |
 | SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Active/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-02-28 | bb16b22 | Privilege separation: orchestrator/subagent/interceptor model |
-| SPIKE-016 | [ROME Agentic Training Security Implications](./Active/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | fb5341c | Full paper research for threat model implications |
 
 ## Complete
 
@@ -31,6 +30,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-008 | [L1 Interpreter Coverage Gap](./Complete/(SPIKE-008)-L1-Interpreter-Coverage-Gap/(SPIKE-008)-L1-Interpreter-Coverage-Gap.md) | 2026-02-23 | 138d920 | Fed ADR-002 |
 | SPIKE-009 | [Data Flow Taint Model](./Complete/(SPIKE-009)-Data-Flow-Taint-Model/(SPIKE-009)-Data-Flow-Taint-Model.md) | 2026-02-23 | 138d920 | Became ADR-002 |
 | SPIKE-011 | [NanoClaw Tidegate Design](./Complete/(SPIKE-011)-NanoClaw-Tidegate-Design/(SPIKE-011)-NanoClaw-Tidegate-Design.md) | 2026-02-24 | 6749250 | Informed ADR-003 |
+| SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 
 ## Abandoned
 
