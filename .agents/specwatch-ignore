@@ -1,0 +1,17 @@
+# specwatch-ignore — patterns to suppress from stale-reference reports
+#
+# Format:
+#   - One pattern per line
+#   - Blank lines and lines starting with # are ignored
+#   - Patterns use .gitignore-style globs (*, **, ?)
+#   - Each pattern is matched against three fields for every stale reference:
+#       1. Source file path (repo-relative, e.g., docs/epic/Active/...)
+#       2. Broken link target (the raw href from the markdown link)
+#       3. Artifact ID (e.g., EPIC-001, ADR-003)
+#   - If ANY field matches ANY pattern, the stale reference is suppressed
+#
+# Examples:
+#   docs/archive/*          # ignore all files under docs/archive/
+#   LEGACY-*                # ignore any artifact ID starting with LEGACY-
+#   */scratch/*             # ignore links in or to scratch directories
+#   *.draft.md              # ignore draft markdown files
