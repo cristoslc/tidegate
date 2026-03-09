@@ -4,7 +4,7 @@ title: "ClaudeClaw vs NanoClaw Comparison"
 status: Complete
 author: cristos
 created: 2026-02-25
-last-updated: 2026-02-25
+last-updated: 2026-03-09
 question: "Is ClaudeClaw a viable alternative or complement to NanoClaw for Tidegate's agent runtime?"
 parent-vision: VISION-001
 gate: Pre-MVP
@@ -19,6 +19,7 @@ depends-on: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Active | 2026-02-25 | 0ec6eb8 | Spike started; claudeclaw source pulled at 198 commits / 162 stars |
+| Complete | 2026-03-09 | 1458121 | NanoClaw confirmed; ClaudeClaw rejected (no process boundary) |
 
 ## Purpose
 

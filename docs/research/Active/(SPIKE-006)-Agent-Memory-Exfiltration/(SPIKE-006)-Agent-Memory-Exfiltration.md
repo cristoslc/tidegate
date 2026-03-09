@@ -4,7 +4,7 @@ title: "Agent Memory as Exfiltration Vector"
 status: Active
 author: cristos
 created: 2026-02-23
-last-updated: 2026-02-23
+last-updated: 2026-03-09
 question: "Can persistent agent memory be poisoned to create a durable cross-session exfiltration channel?"
 parent-vision: VISION-001
 gate: Pre-MVP
@@ -19,6 +19,7 @@ depends-on: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
+| Active | 2026-03-09 | 1458121 | Elevated by SPIKE-016 findings — RL agents accumulate evasion knowledge |
 
 ## Source
 
