@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-012
 title: "ClaudeClaw vs NanoClaw Comparison"
-status: Active
+status: Complete
 author: cristos
 created: 2026-02-25
 last-updated: 2026-02-25

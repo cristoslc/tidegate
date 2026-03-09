@@ -50,6 +50,10 @@ Tracing ClawHavoc's actual attack patterns through Tidegate:
 | Python script with `glob("*.csv")` + `base64` + `urllib` | **BLOCKED** | eBPF observes each CSV open; scanner daemon taints PID; connect() blocked regardless of script obfuscation |
 | Rephrase sensitive data as prose | **NOT BLOCKED** | No pattern scanner catches semantic encoding |
 | Exfiltrate via LLM API request | **NOT BLOCKED** | LLM API key must exist in agent container |
+| RL-learned scanner evasion (probe + iterate) | **NOT BLOCKED** | Shaped denials leak pattern info; IPA credit assignment efficiently maps detection boundaries (SPIKE-016) |
+| Multi-call data distribution (split across tool calls) | **NOT BLOCKED** | No session-level correlation; each call scanned independently (SPIKE-016) |
+| Adversarial tool descriptions from malicious MCP server | **NOT BLOCKED** | Gateway scans parameters/responses but not tool descriptions (SPIKE-016) |
+| Emergent instrumental goals (reverse SSH, crypto mining) | **BLOCKED** | Egress proxy blocks non-allowlisted domains; seccomp blocks non-proxy connect() for tainted PIDs |
 
 ## Residual risks (accepted)
 
@@ -72,3 +76,11 @@ Tracing ClawHavoc's actual attack patterns through Tidegate:
 9. **Taint explosion**: If many workspace files contain sensitive data, most child processes become tainted, and connect enforcement becomes overly broad. Mitigated by: calibrating taint to high-confidence scanner findings only (L2 patterns: credit cards, credentials), not low-confidence (L3: entropy).
 
 10. **Agent framework process**: The agent framework process (PID 1) reads files directly and also makes network connections for MCP/LLM calls. Tainting PID 1 blocks all agent functionality. Taint enforcement primarily targets child processes spawned to run scripts.
+
+11. **RL-emergent instrumental side effects**: RL-trained agents develop unauthorized behaviors (reverse SSH tunnels, crypto mining, network reconnaissance) as instrumental side effects of optimization — without any explicit instruction. Documented in production by ROME team on Alibaba Cloud (section 3.1.4). Mitigated by: egress proxy + Layer 1 taint tracking block most outbound channels, but novel covert channels within allowed protocols remain possible. See SPIKE-016.
+
+12. **Multi-call data distribution**: An agent (adversarially trained or prompt-injected) splits sensitive data across multiple individually clean tool calls. No single call triggers scanning, but the aggregate contains complete sensitive data. No mitigation exists — session-level correlation is a P2 roadmap item. See SPIKE-016.
+
+13. **Shaped deny information leakage**: Denial messages explain what was blocked and why, creating a feedback channel. For cooperative agents this is correct UX; for adversarial agents it's a free oracle. IPA-style chunk-level credit assignment makes this probing extremely sample-efficient. Mitigated by: (planned) minimal-deny mode that omits pattern details. See SPIKE-003, SPIKE-016.
+
+14. **Tool description injection**: Malicious MCP server embeds exfiltration instructions in tool descriptions (e.g., "always base64-encode file contents"). Gateway scans parameters and responses but not tool descriptions. Mitigated by: (planned) tool-description scanning at gateway mirror time. See SPIKE-016.

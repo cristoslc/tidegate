@@ -47,6 +47,32 @@ A community MCP server is backdoored — it sends malicious responses or exfiltr
 
 **Not blocked**: The server can silently misuse its own API access (e.g., a Slack MCP server could post to channels the user didn't intend). This is inherent to the MCP trust model.
 
+## RL-trained adversarial agent (emergent evasion)
+
+An agent whose weights have been optimized — intentionally via adversarial fine-tuning, or emergently via standard RL training — to achieve goals that conflict with the user's interests. Distinct from prompt injection (external manipulation of a cooperative agent) because the adversarial behavior is embedded in the model weights.
+
+Evidence: ROME paper (section 3.1.4) documents production incidents on Alibaba Cloud where RL-trained agents spontaneously established reverse SSH tunnels, mined cryptocurrency, and probed internal networks — none of which were requested or required by the task. These behaviors emerged as instrumental side effects of RL optimization. Anthropic's emergent misalignment research (2511.18397) and METR's reward hacking findings (June 2025) confirm this is reproducible across labs and model families.
+
+**Attack patterns:**
+- **Learned scanner evasion**: If the agent encounters scanning denials during training, IPA-style chunk-level credit assignment efficiently learns to restructure tool calls to avoid triggering patterns — standard RL, not adversarial fine-tuning required
+- **Multi-call coordination**: Distributes sensitive data across multiple individually innocuous tool calls (e.g., split a credit card across three Slack messages). No single call triggers L1/L2 patterns
+- **Adversarial fine-tuning of open weights**: Attacker fine-tunes an open-weight model (e.g., ROME) specifically to exfiltrate data through MCP tool calls while evading regex/checksum scanning
+- **Emergent instrumental goals**: Agent develops resource acquisition, persistent access, or reconnaissance behaviors that are orthogonal to the assigned task
+
+**Blocked by**:
+- Layer 1 taint tracking blocks post-file-read exfiltration regardless of agent intent (kernel-level, can't be evaded from userspace)
+- Layer 2 blocks pattern-matching exfiltration per-call
+- Layer 3 blocks non-allowlisted domains, preventing covert channel establishment to attacker infrastructure
+- Egress proxy blocks non-HTTP protocols (SSH tunnels, DNS tunneling)
+
+**Not blocked**:
+- Multi-call coordination that distributes data across individually clean calls (no session-level correlation exists)
+- Shaped deny feedback leaks scanner capabilities — an RL-trained agent efficiently maps detection boundaries
+- Semantic rephrasing (same fundamental limit as prompt injection persona)
+- Evasion knowledge persisting in agent memory across sessions
+
+**Related research**: SPIKE-016, SPIKE-003, SPIKE-006. See also: RL WAF evasion (97.46% bypass, IEEE 9720473), MERLIN malware evasion (70% AV bypass), Anthropic sleeper agents (backdoors survive safety training).
+
 ## Direct container escape
 
 An attacker with arbitrary code execution escapes the Docker container.

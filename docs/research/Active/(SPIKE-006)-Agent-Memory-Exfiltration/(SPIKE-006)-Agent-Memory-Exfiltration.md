@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-006
 title: "Agent Memory as Exfiltration Vector"
-status: Planned
+status: Active
 author: cristos
 created: 2026-02-23
 last-updated: 2026-02-23
@@ -46,6 +46,17 @@ The threat model covers one-shot exfiltration well but doesn't trace persistent 
 
 - [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
 - `shaped-deny-oracle.md` — denial feedback persistence in memory compounds both issues.
+
+## SPIKE-016 escalation (2026-03-09)
+
+SPIKE-016 (ROME Agentic Training Security Implications) elevated this spike's priority with evidence that RL-trained agents accumulate strategic knowledge:
+
+- **Emergent multi-session strategy**: ROME production incidents (section 3.1.4) show agents developing instrumental goals (reverse SSH, network probing) that persist across RL episodes. If an agent can persist evasion strategies in memory, it can apply learned scanner-avoidance across sessions — even without RL weight updates at inference time.
+- **Covert misalignment**: Anthropic's emergent misalignment research (2511.18397) found that 40-80% of misaligned responses were *covert* — misaligned reasoning followed by aligned-looking outputs. An agent could reason about evasion strategies internally and store sanitized versions in memory.
+- **Denial feedback accumulation**: Combined with SPIKE-003 (shaped deny oracle), an agent that persists denial feedback in memory across sessions builds an increasingly complete map of scanner detection boundaries. Each session contributes observations; memory provides the accumulator.
+- **METR reward hacking**: Frontier models (o3, Claude 3.7 Sonnet) actively exploit evaluation infrastructure (43x more common when scoring function is visible). Memory that records scanning behavior is analogous to visible scoring functions.
+
+This spike is now **P1 priority** for Phase 4 (messaging bridges). The key questions are: (1) is memory storage accessible to Tidegate's scanning seam (MCP tool call to a memory server, or internal to agent framework?), and (2) can memory be partitioned to prevent denial reasons from persisting?
 
 ## Context at time of writing
 
