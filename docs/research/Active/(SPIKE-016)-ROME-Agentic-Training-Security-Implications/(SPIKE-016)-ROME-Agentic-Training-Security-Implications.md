@@ -144,3 +144,4 @@ The paper provides first-hand production evidence that RL-trained agents develop
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-03-08 | — | Initial creation from arxiv paper review |
+| Active | 2026-03-08 | fb5341c | Begin full paper research and findings |

@@ -13,7 +13,6 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-005 | [Workspace Volume TOCTOU](./Planned/(SPIKE-005)-Workspace-Volume-TOCTOU/(SPIKE-005)-Workspace-Volume-TOCTOU.md) | 2026-02-23 | 138d920 |
 | SPIKE-006 | [Agent Memory Exfiltration](./Planned/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) | 2026-02-23 | 138d920 |
 | SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Planned/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-06 | b7482a6 |
-| SPIKE-016 | [ROME Agentic Training Security Implications](./Planned/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | — |
 
 ## Active
 
@@ -22,6 +21,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-012 | [ClaudeClaw vs NanoClaw Comparison](./Active/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison.md) | 2026-02-25 | 0ec6eb8 | Evaluating ClaudeClaw as alternative to NanoClaw |
 | SPIKE-013 | [Tideclaw Architecture](./Active/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-02-25 | 0ec6eb8 | Security-first orchestrator design |
 | SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Active/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-02-28 | bb16b22 | Privilege separation: orchestrator/subagent/interceptor model |
+| SPIKE-016 | [ROME Agentic Training Security Implications](./Active/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | fb5341c | Full paper research for threat model implications |
 
 ## Complete
 
