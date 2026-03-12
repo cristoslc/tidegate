@@ -10,7 +10,9 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 ## Active
 
-_No active spikes._
+| ID | Title | Date | Commit | Notes |
+|----|-------|------|--------|-------|
+| SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Active/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | HASH | Re-opened from Planned for expanded microVM research |
 
 ## Complete
 
@@ -28,7 +30,6 @@ _No active spikes._
 | SPIKE-013 | [Tideclaw Architecture](./Complete/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-03-11 | 30fbbc9 | Findings formalized in ADR-004 and ADR-005 |
 | SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Complete/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-03-11 | 30fbbc9 | Gate: GO; findings in ADR-004; latency benchmarks deferred |
 | SPIKE-004 | [L1 Fail-Open Behavior](./Complete/(SPIKE-004)-L1-Fail-Open-Behavior/(SPIKE-004)-L1-Fail-Open-Behavior.md) | 2026-03-12 | cdd85b1 | GO: fail-closed via watchdog sidecar + fd-dup; fallback filter impossible |
-| SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | f82f56b | GO: QEMU-direct + virtiofs; Firecracker lacks virtiofs; guest-side tg-scanner required |
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 
 ## Abandoned
