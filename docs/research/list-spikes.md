@@ -6,7 +6,6 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 | ID | Title | Date | Commit |
 |----|-------|------|--------|
-| SPIKE-001 | [MCP Protocol Abuse Resistance](./Planned/(SPIKE-001)-MCP-Protocol-Abuse-Resistance/(SPIKE-001)-MCP-Protocol-Abuse-Resistance.md) | 2026-02-21 | db146de |
 | SPIKE-002 | [Luhn False Positive Rate](./Planned/(SPIKE-002)-Luhn-False-Positive-Rate/(SPIKE-002)-Luhn-False-Positive-Rate.md) | 2026-02-23 | 138d920 |
 | SPIKE-004 | [L1 Fail-Open Behavior](./Planned/(SPIKE-004)-L1-Fail-Open-Behavior/(SPIKE-004)-L1-Fail-Open-Behavior.md) | 2026-02-23 | 138d920 |
 | SPIKE-005 | [Workspace Volume TOCTOU](./Planned/(SPIKE-005)-Workspace-Volume-TOCTOU/(SPIKE-005)-Workspace-Volume-TOCTOU.md) | 2026-02-23 | 138d920 |
@@ -20,6 +19,7 @@ _No active spikes._
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
+| SPIKE-001 | [MCP Protocol Abuse Resistance](./Complete/(SPIKE-001)-MCP-Protocol-Abuse-Resistance/(SPIKE-001)-MCP-Protocol-Abuse-Resistance.md) | 2026-03-12 | d1cdb60 | Four hardening layers: body size cap, JSON depth limit, rate limiting, JSON-RPC error responses |
 | SPIKE-003 | [Shaped Deny Oracle](./Complete/(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) | 2026-03-12 | 37e4a9b | Verdict: opaque denies. Formalized in ADR-006 |
 | SPIKE-006 | [Agent Memory Exfiltration](./Complete/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) | 2026-03-12 | a8fa47f | Confirmed risk; ADR-006 mitigates feedback channel; memory outside scanning seam |
 | SPIKE-007 | [Leak Detection Tool Selection](./Complete/(SPIKE-007)-Leak-Detection-Tool-Selection/(SPIKE-007)-Leak-Detection-Tool-Selection.md) | 2026-02-21 | db146de | Informed L1 scanner design |
