@@ -20,6 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
 | Active | 2026-03-12 | 6848ce3 | Research in progress |
+| Complete | 2026-03-12 | ee4d3c8 | "Zero FP" claim indefensible; compound validation achieves near-zero |
 
 ## Source
 
