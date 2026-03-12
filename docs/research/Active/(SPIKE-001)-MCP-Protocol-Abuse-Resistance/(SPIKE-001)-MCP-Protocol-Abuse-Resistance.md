@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-001
 title: "MCP Protocol Abuse Resistance"
-status: Planned
+status: Active
 author: cristos
 created: 2026-02-21
-last-updated: 2026-02-21
+last-updated: 2026-03-12
 question: "How should the gateway handle malformed, oversized, or adversarial MCP messages?"
 parent-vision: VISION-002
 gate: Pre-MVP
