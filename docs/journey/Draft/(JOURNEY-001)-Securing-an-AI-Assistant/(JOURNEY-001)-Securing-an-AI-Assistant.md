@@ -93,4 +93,4 @@ journey
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Draft | 2026-03-11 | _TBD_ | Initial journey for PERSONA-001 under VISION-002 |
+| Draft | 2026-03-11 | 7c0ac59 | Initial journey for PERSONA-001 under VISION-002 |
