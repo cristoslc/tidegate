@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-017
 title: "Validate libkrun virtio-net on macOS with Docker Bridge Routing"
-status: Planned
+status: Active
 author: cristos
 created: 2026-03-12
 last-updated: 2026-03-12
