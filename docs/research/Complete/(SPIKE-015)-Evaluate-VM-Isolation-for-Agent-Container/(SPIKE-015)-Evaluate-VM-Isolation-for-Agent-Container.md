@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-015
 title: "SPIKE-015: Evaluate VM Isolation for Agent Container"
-status: Active
+status: Complete
 author: cristos
 created: 2026-03-06
 last-updated: 2026-03-12
