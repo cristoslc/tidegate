@@ -60,4 +60,4 @@ This is the same response regardless of whether L1 regex, L2 checksum validation
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Adopted | 2026-03-12 | — | SPIKE-003 findings made the decision straightforward; skipped Draft/Proposed |
+| Adopted | 2026-03-12 | 37e4a9b | SPIKE-003 findings made the decision straightforward; skipped Draft/Proposed |

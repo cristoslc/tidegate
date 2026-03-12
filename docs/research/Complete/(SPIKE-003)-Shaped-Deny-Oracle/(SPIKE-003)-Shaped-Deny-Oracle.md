@@ -20,7 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
 | Active | 2026-03-09 | 1458121 | Elevated by SPIKE-016 findings — RL evasion validated |
-| Complete | 2026-03-12 | — | Verdict: opaque denies eliminate the oracle. Formalized in ADR-006 |
+| Complete | 2026-03-12 | 37e4a9b | Verdict: opaque denies eliminate the oracle. Formalized in ADR-006 |
 
 ## Source
 
