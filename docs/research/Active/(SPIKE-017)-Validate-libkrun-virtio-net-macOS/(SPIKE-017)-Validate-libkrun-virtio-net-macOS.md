@@ -5,6 +5,7 @@ status: Active
 author: cristos
 created: 2026-03-12
 last-updated: 2026-03-12
+swain-do: required
 question: "Can libkrun's virtio-net mode route agent traffic through Tidegate's Docker bridge topology on macOS?"
 parent-epic: EPIC-001
 gate: Pre-EPIC-001 implementation
@@ -78,3 +79,4 @@ libkrun is used by Podman 5.0+ on macOS, but Podman uses gvproxy for its own net
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-03-12 | 9ea534f | Validation gate for ADR-008; blocks EPIC-001 |
+| Active  | 2026-03-12 | bf292c8 | Begin investigation |

@@ -4,13 +4,13 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 ## Planned
 
-| ID | Title | Date | Commit |
-|----|-------|------|--------|
-| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Planned/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-12 | 9ea534f |
+_No planned spikes._
 
 ## Active
 
-_No active spikes._
+| ID | Title | Date | Commit |
+|----|-------|------|--------|
+| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Active/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-12 | bf292c8 |
 
 ## Complete
 
