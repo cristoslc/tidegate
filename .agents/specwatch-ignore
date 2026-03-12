@@ -15,3 +15,8 @@
 #   LEGACY-*                # ignore any artifact ID starting with LEGACY-
 #   */scratch/*             # ignore links in or to scratch directories
 #   *.draft.md              # ignore draft markdown files
+
+# End-of-life artifacts referencing other end-of-life artifacts (historical)
+docs/research/Complete/*
+docs/research/Abandoned/*
+docs/adr/Superseded/*

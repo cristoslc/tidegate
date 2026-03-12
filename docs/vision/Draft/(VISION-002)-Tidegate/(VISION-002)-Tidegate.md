@@ -5,7 +5,7 @@ status: Draft
 product-type: personal
 author: cristos
 created: 2026-03-11
-last-updated: 2026-03-11
+last-updated: 2026-03-12
 depends-on: []
 evidence-pool: ""
 ---
@@ -26,24 +26,25 @@ The agent does useful work. Tidegate makes sure it can't betray your trust.
 
 ## Problem Statement
 
-Every AI agent framework gives the agent unrestricted access to everything. Install a community skill, and it can read your bank statements and post them to any API. A prompt injection in a document can instruct the agent to exfiltrate credentials through a tool call. There is no boundary between "the agent reads my sensitive files" and "the agent sends data to the outside world."
+AI agents read your most sensitive files and call external APIs in the same breath. A community skill can read your bank statements and post them to any endpoint. A prompt injection in a document can instruct the agent to exfiltrate credentials through a tool call.
 
-Existing frameworks sandbox *code execution* (bubblewrap, Landlock, Seatbelt) but not *data flow*. They prevent the agent from running `rm -rf /` but happily let it pipe your SSN through a Slack message. The sandboxing protects the host machine; nothing protects the operator's data.
+Agent frameworks sandbox *code execution* (bubblewrap, Landlock, Seatbelt) but not *data flow*. MCP gateways scan *tool call payloads* but can't stop the agent from bypassing MCP entirely — `curl`, cron jobs, IPC, or encoding data in the LLM API request. Each layer covers one exit; nothing covers them all. A determined or compromised agent routes around whichever single layer is present.
 
 ## Existing Landscape
 
-- **Agent frameworks** (Claude Code, Codex CLI, Aider, Goose) provide code-execution sandboxing and permission prompts. None inspect data flowing through tool calls or HTTP requests for sensitive content.
-- **MCP gateways** (Docker MCP Gateway, Pipelock) route and filter tool calls but don't scan for sensitive data patterns in payloads.
+- **Agent frameworks** (Claude Code, Codex CLI, Aider, Goose) provide code-execution sandboxing and permission prompts. None enforce data-flow boundaries — a sandboxed agent can still pipe your SSN through a tool call.
+- **MCP gateways with payload scanning** — The landscape has matured rapidly. Docker MCP Gateway (`--block-secrets`), Pipelock (36 DLP patterns), Lasso Security (PII masking via Presidio), Pangea (50+ PII types with format-preserving encryption), Enkrypt AI, Operant AI, MintMCP, and others all scan MCP tool call payloads for credentials and PII. Most are SaaS or enterprise products. Pipelock and Docker MCP Gateway are self-hostable.
+- **MCP governance tools** — Snyk agent-scan (formerly Invariant mcp-scan), Promptfoo, MCP Manager, and Trail of Bits mcp-context-protector focus on tool poisoning, prompt injection, and access control. Some include PII detection as a secondary feature.
+- **AI gateway DLP** — Cloudflare AI Gateway, Lakera Guard, and Nightfall AI provide DLP for LLM interactions. Not MCP-specific but converging toward agent-aware scanning.
 - **Cloud sandboxes** (E2B, Daytona, microsandbox) provide isolated execution environments. They contain blast radius but don't inspect what leaves the sandbox.
-- **DLP products** exist for enterprise email and cloud storage. None are designed for the MCP tool-call / agent-HTTP data paths.
 
-Nothing addresses the specific problem: an AI agent that reads sensitive local files and calls external APIs through MCP, with no enforcement on what data crosses that boundary.
+The gap is not "nobody scans MCP payloads" — many tools now do. The gap is that scanning alone is insufficient without *structural enforcement*. An MCP gateway that scans tool calls doesn't help when the agent bypasses MCP entirely — shelling out to `curl`, writing to a cron job, encoding data in the LLM API request, or exfiltrating through IPC. No existing tool combines payload scanning with network-level enforcement that makes bypass structurally impossible.
 
 ## Build vs. Buy
 
-Tier 3 — build from scratch. The gap between "agent reads sensitive files" and "agent calls external APIs" is not addressed by any existing tool. The security boundary that Tidegate provides (scanning data at every exit point from the agent) does not exist as a product, a library, or a composable service.
+Tier 2 — glue-code existing tools. The individual components exist: Docker MCP Gateway or Pipelock for MCP scanning, Squid for egress proxying, Docker networks for isolation. What doesn't exist is the *composition* — a turnkey, self-hosted package that wires these layers together so that every data path from the agent is covered, credential isolation is structural, and bypass requires a container escape rather than a `curl` command.
 
-The architecture is built from standard tools (Docker networks, MCP SDK, Python regex/checksums, Squid proxy) to keep maintenance feasible for a single person.
+Tidegate's custom code is the gateway scanning pipeline and the glue that makes the topology work as a unit. The architecture is built from standard tools (Docker networks, MCP SDK, Python regex/checksums, Squid proxy) to keep maintenance feasible for one person. If a single existing product covers the full topology in the future, the right move is to adopt it and sunset Tidegate.
 
 ## Maintenance Budget
 
