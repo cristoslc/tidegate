@@ -51,5 +51,5 @@ Moderate. Willing to edit YAML configs and manage Docker. Needs clear documentat
 
 ## Related
 
-- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
 - [PERSONA-001](../(PERSONA-001)-Personal-Assistant-Operator/(PERSONA-001)-Personal-Assistant-Operator.md)

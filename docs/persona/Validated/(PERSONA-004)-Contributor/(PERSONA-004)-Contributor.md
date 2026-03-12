@@ -51,5 +51,5 @@ Moderate to high. Comfortable with TypeScript, Python, Docker. Expects well-docu
 
 ## Related
 
-- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
 - [AGENTS.md](../../../../AGENTS.md)

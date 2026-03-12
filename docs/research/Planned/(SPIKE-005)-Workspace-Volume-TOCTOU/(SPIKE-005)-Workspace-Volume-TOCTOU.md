@@ -49,7 +49,7 @@ The scanner daemon reading a file asynchronously (after the process already read
 
 ## Related
 
-- [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #5: TOCTOU between file open observation and file scan.
+- [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #5: TOCTOU between file open observation and file scan.
 - [ADR-001 (superseded)](../../../adr/Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) residual risk #1: TOCTOU on `/proc/<pid>/mem` (no longer applicable — no `execve` interception).
 
 ## Context at time of writing

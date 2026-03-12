@@ -45,7 +45,7 @@ The threat model covers one-shot exfiltration well but doesn't trace persistent 
 
 ## Related
 
-- [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
+- [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
 - `shaped-deny-oracle.md` — denial feedback persistence in memory compounds both issues.
 
 ## SPIKE-016 escalation (2026-03-09)

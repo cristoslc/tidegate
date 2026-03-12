@@ -51,5 +51,5 @@ High. Happy to read ADRs and inspect Dockerfiles. Will file issues for gaps they
 
 ## Related
 
-- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
 - [Threat model](../../../threat-model/README.md)

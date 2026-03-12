@@ -53,5 +53,5 @@ Zero. If setup takes more than `git clone && ./setup.sh`, they'll use the unprot
 
 ## Related
 
-- [VISION-001](../../../vision/Active/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md)
 - For adversary profiles (who attacks Tidegate), see [threat-personas.md](../../../threat-model/threat-personas.md)

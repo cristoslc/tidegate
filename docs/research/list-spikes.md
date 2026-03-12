@@ -18,8 +18,6 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 |----|-------|------|--------|-------|
 | SPIKE-003 | [Shaped Deny Oracle](./Active/(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) | 2026-03-09 | 1458121 | Elevated by SPIKE-016 — RL evasion validated |
 | SPIKE-006 | [Agent Memory Exfiltration](./Active/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) | 2026-03-09 | 1458121 | Elevated by SPIKE-016 — RL agents accumulate evasion knowledge |
-| SPIKE-013 | [Tideclaw Architecture](./Active/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-02-25 | 0ec6eb8 | Security-first orchestrator design |
-| SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Active/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-02-28 | bb16b22 | Privilege separation: orchestrator/subagent/interceptor model |
 
 ## Complete
 
@@ -30,6 +28,8 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-009 | [Data Flow Taint Model](./Complete/(SPIKE-009)-Data-Flow-Taint-Model/(SPIKE-009)-Data-Flow-Taint-Model.md) | 2026-02-23 | 138d920 | Became ADR-002 |
 | SPIKE-011 | [NanoClaw Tidegate Design](./Complete/(SPIKE-011)-NanoClaw-Tidegate-Design/(SPIKE-011)-NanoClaw-Tidegate-Design.md) | 2026-02-24 | 6749250 | Informed ADR-003 |
 | SPIKE-012 | [ClaudeClaw vs NanoClaw Comparison](./Complete/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison/(SPIKE-012)-ClaudeClaw-vs-NanoClaw-Comparison.md) | 2026-03-09 | 1458121 | NanoClaw confirmed; ClaudeClaw rejected (no process boundary) |
+| SPIKE-013 | [Tideclaw Architecture](./Complete/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) | 2026-03-11 | 30fbbc9 | Findings formalized in ADR-004 and ADR-005 |
+| SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Complete/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-03-11 | 30fbbc9 | Gate: GO; findings in ADR-004; latency benchmarks deferred |
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 
 ## Abandoned

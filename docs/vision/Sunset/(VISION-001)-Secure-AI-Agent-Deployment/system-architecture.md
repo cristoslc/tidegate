@@ -257,10 +257,10 @@ Adding a new MCP server: add its entry to `mcp_servers`, provide credentials. Th
 
 | Decision | ADR | Summary |
 |----------|-----|---------|
-| Taint-and-verify data flow model | [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | eBPF + scanner daemon + seccomp-notify. Runtime taint, not static analysis. |
-| Agent runtime selection | [ADR-003](../../../adr/Proposed/(ADR-003)-Agent-Runtime-Selection.md) | Runtime-agnostic orchestration; NanoClaw process boundary as initial integration target. |
-| IPC as enforcement seam | [ADR-004](../../../adr/Draft/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Orchestrator IPC must be scanned before external forwarding. Fifth seam. |
-| Composable VM isolation | [ADR-005](../../../adr/Proposed/(ADR-005)-Composable-VM-Isolation.md) | Tidegate stays Docker-native; agent container interface is transport-based to compose with external VM isolation. |
+| Taint-and-verify data flow model | [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | eBPF + scanner daemon + seccomp-notify. Runtime taint, not static analysis. |
+| Agent runtime selection | [ADR-003](../../../adr/Superseded/(ADR-003)-Agent-Runtime-Selection.md) | Runtime-agnostic orchestration; NanoClaw process boundary as initial integration target. |
+| IPC as enforcement seam | [ADR-004](../../../adr/Accepted/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Orchestrator IPC must be scanned before external forwarding. Fifth seam. |
+| Composable VM isolation | [ADR-005](../../../adr/Accepted/(ADR-005)-Composable-VM-Isolation.md) | Tidegate stays Docker-native; agent container interface is transport-based to compose with external VM isolation. |
 
 ## Accepted limitations
 
@@ -274,6 +274,6 @@ Adding a new MCP server: add its entry to `mcp_servers`, provide credentials. Th
 
 - [VISION-001](./(VISION-001)-Secure-AI-Agent-Deployment.md) — Product vision and success metrics
 - [Target state](./target-state.md) — The `./setup.sh` end goal
-- [SPIKE-013](../../../research/Active/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) — Tideclaw design spike (runtime landscape, prior art, detailed architecture)
+- [SPIKE-013](../../../research/Complete/(SPIKE-013)-Tideclaw-Architecture/(SPIKE-013)-Tideclaw-Architecture.md) — Tideclaw design spike (runtime landscape, prior art, detailed architecture)
 
 [Threat model](../../../threat-model/) — Attack scenarios, defenses, scorecard
