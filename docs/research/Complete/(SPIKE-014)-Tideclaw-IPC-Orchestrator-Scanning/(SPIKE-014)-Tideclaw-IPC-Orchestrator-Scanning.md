@@ -24,7 +24,7 @@ blocks: [ADR-004]
 | Planned | 2026-02-28 | bb16b22 | Initial creation |
 | Active | 2026-02-28 | 4bd2303 | Initial findings: transport evaluation, data plane separation |
 | Active | 2026-02-28 | 5391e13 | Revised: privilege separation model (orchestrator/subagent/interceptor) |
-| Complete | 2026-03-11 | _TBD_ | Gate: GO; findings formalized in ADR-004; latency benchmarks deferred to implementation |
+| Complete | 2026-03-11 | 30fbbc9 | Gate: GO; findings formalized in ADR-004; latency benchmarks deferred to implementation |
 
 ## Purpose
 

@@ -16,7 +16,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Draft | 2026-02-21 | db146de | Initial gateway + threat model |
 | Active | 2026-02-23 | 94efd00 | M1 complete, architecture validated |
-| Sunset | 2026-03-11 | _TBD_ | Superseded by VISION-002; too technical, drifted from aspirational intent |
+| Sunset | 2026-03-11 | 30fbbc9 | Superseded by VISION-002; too technical, drifted from aspirational intent |
 
 ## Target audience
 

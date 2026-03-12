@@ -20,7 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Active | 2026-02-25 | 0ec6eb8 | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
 | Active | 2026-02-27 | ded5e29 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
-| Complete | 2026-03-11 | _TBD_ | Findings formalized in ADR-004 and ADR-005; architecture settled |
+| Complete | 2026-03-11 | 30fbbc9 | Findings formalized in ADR-004 and ADR-005; architecture settled |
 
 ## Purpose
 
