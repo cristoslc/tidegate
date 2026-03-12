@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-015
 title: "SPIKE-015: Evaluate VM Isolation for Agent Container"
-status: Planned
+status: Active
 author: cristos
 created: 2026-03-06
-last-updated: 2026-03-06
+last-updated: 2026-03-12
 parent-epic: EPIC-001
 question: "Which VM technology best composes with Tidegate's Docker infrastructure for agent isolation?"
 gate: Post-M7 hardening
