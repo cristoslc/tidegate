@@ -12,7 +12,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Active/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | HASH | Re-opened from Planned for expanded microVM research |
+| SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Active/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | d4e8531 | Re-opened from Planned for expanded microVM research |
 
 ## Complete
 

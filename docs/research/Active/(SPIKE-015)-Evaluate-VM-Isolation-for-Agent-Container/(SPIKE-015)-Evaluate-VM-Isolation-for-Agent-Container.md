@@ -25,7 +25,7 @@ blocks:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-03-06 | b7482a6 | From claude-vm analysis; see ADR-005 |
-| Active | 2026-03-12 | HASH | Re-opened for expanded microVM research; broader candidate set + <2s boot target |
+| Active | 2026-03-12 | d4e8531 | Re-opened for expanded microVM research; broader candidate set + <2s boot target |
 
 ## Question
 
