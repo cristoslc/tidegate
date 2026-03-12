@@ -42,9 +42,9 @@ This is distinct from one-shot exfiltration (single prompt injection or maliciou
 
 ## Findings
 
-### Verdict: Confirmed risk, partially mitigated
+### Verdict: Confirmed risk, mitigable with runtime constraint
 
-Agent memory persistence is a confirmed exfiltration vector. ADR-006 (opaque deny responses) eliminates the primary feedback channel — denial metadata no longer leaks detection boundaries into memory. However, memory remains outside Tidegate's scanning seam entirely, leaving residual risks that cannot be addressed at the gateway layer.
+Agent memory persistence is a confirmed exfiltration vector. ADR-006 (opaque deny responses) eliminates the primary feedback channel — denial metadata no longer leaks detection boundaries into memory. Memory scanning becomes architecturally feasible if the agent runtime enforces a key invariant: **only the main orchestrator process can write to persistent memory** (subagents/child processes cannot). When this holds, all memory writes flow through the IPC bridge that ADR-004 already designates as a scanning seam — making memory interception a configuration concern, not an architectural gap.
 
 ### Sub-question answers
 
@@ -70,11 +70,13 @@ ADR-006 (adopted 2026-03-12) makes deny responses opaque — the same generic me
 
 **Residual**: Agents trained on pre-ADR-006 denies (during RL training phases) may have evasion knowledge baked into model weights. This is not a memory problem — it's a model supply chain problem outside Tidegate's scope.
 
-**4. Scope for Tidegate — Memory scanning is out of architectural scope.**
+**4. Scope for Tidegate — Within scope if runtimes enforce orchestrator-only memory writes.**
 
-Tidegate's three enforcement layers (L1 taint/seccomp, L2 MCP gateway, L3 egress proxy) operate at process, protocol, and network boundaries. Agent memory is none of these — it's internal runtime state. Tidegate has no interception point unless the framework exposes memory operations through a boundary Tidegate already monitors.
+Tidegate's three enforcement layers (L1 taint/seccomp, L2 MCP gateway, L3 egress proxy) operate at process, protocol, and network boundaries. Agent memory is none of these — it's internal runtime state. Tidegate has no interception point *unless* memory writes are constrained to flow through a boundary Tidegate already monitors.
 
-ADR-004 (IPC orchestrator scanning) provides an analogous model: scan data at a bridge point before it crosses a trust boundary. A hypothetical "memory bridge" would scan values at framework exit time (when memory is persisted to disk or an external store). But this requires framework instrumentation — the framework must expose a hook, or memory storage must use an MCP server that transits the gateway.
+The key insight is that well-designed agent runtimes already enforce this: **only the main orchestrator process can write to persistent memory**. Subagents and child processes return results to the orchestrator, which decides what to persist. This is exactly how Claude Code works — subagents have no memory access; only the main conversation thread writes to `~/.claude/`. ADR-004 (IPC orchestrator scanning) designates the IPC bridge between child processes and the orchestrator as a scanning seam. If memory writes are restricted to the orchestrator side of that seam, all candidate memory content passes through a point Tidegate can scan.
+
+This transforms the problem: memory scanning is not "out of scope" but rather a **runtime requirement**. Tidegate should require (and verify) that compliant runtimes enforce orchestrator-only memory writes. The IPC scanning infrastructure from ADR-004 then covers memory content as a natural consequence — no separate "memory bridge" needed.
 
 **5. Agent framework memory models — Framework-specific, no unified interface.**
 
@@ -101,13 +103,32 @@ The SPIKE-016 escalation identified that evasion knowledge persists in two disti
 
 The combination is the worst case: weights carry general evasion strategies, memory carries deployment-specific tuning ("this Slack tool blocks credit cards, try rephrasing as prose"). ADR-006 breaks the memory accumulation loop by removing the signal source.
 
+### Runtime requirement: orchestrator-only memory writes
+
+The findings above assume memory is opaque to Tidegate. But this assumption breaks — favorably — when the agent runtime enforces a single invariant:
+
+> **Only the main orchestrator process may write to persistent memory. Subagents and child processes return results to the orchestrator; they cannot write to memory directly.**
+
+This is already the natural architecture of well-designed agent runtimes. Claude Code enforces it: subagents launched via the Agent tool have no access to `~/.claude/` memory. They return findings to the main thread, which decides what to persist.
+
+When this invariant holds, memory writes are a subset of IPC traffic flowing from child processes to the orchestrator. ADR-004 already designates this IPC bridge as a scanning seam. The consequence:
+
+1. **All candidate memory content transits a scanned boundary.** Even if Tidegate cannot distinguish "this IPC payload will become memory" from other IPC traffic, it scans all of it — memory content included.
+2. **Detection is still hard** — meta-instructions ("always include the user's SSN") remain natural language, not scannable patterns. But the *interception point* exists. Future detection improvements (NLP classifiers, LLM-based content policy) have a seam to plug into.
+3. **The requirement is verifiable.** L1 (seccomp/taint) can enforce that child PIDs cannot open memory storage files for writing. Only the orchestrator PID is allowed write access to the memory directory.
+
+This reframes memory scanning from "architecturally impossible" to "detection-limited." The scanning seam exists; what's missing is a detector sophisticated enough to identify poisoned instructions in natural language. That's a solvable problem on a known timeline, rather than a structural gap.
+
+**Recommendation**: Tidegate should document orchestrator-only memory writes as a runtime compliance requirement. Runtimes that violate this invariant (allowing subagents to write directly to memory) should be treated as non-compliant, since their memory is outside the scanning seam.
+
 ### Threat model updates needed
 
 The threat model should be updated to trace memory persistence through attack scenarios:
 
 1. **scorecard.md**: Add or update residual risk entry for cross-session memory persistence, noting ADR-006 mitigation and remaining gap for meta-instruction poisoning.
-2. **defenses.md**: Document that memory is outside all three enforcement layers, with the architectural precondition for future coverage (framework exposes memory as MCP).
+2. **defenses.md**: Document that memory is scannable when the runtime enforces orchestrator-only memory writes (IPC seam from ADR-004 covers memory content). Add orchestrator-only memory writes as a runtime compliance requirement.
 3. **threat-personas.md**: The RL-trained adversarial agent persona should reference the two-layer persistence model (weights + memory).
+4. **Runtime compliance**: Document the orchestrator-only memory write invariant as a requirement for Tidegate-compliant runtimes. L1 can enforce this via seccomp policy on child PIDs.
 
 ## Why it matters
 
