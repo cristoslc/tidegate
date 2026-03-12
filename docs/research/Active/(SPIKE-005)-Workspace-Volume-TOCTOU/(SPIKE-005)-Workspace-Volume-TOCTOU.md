@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-005
 title: "Workspace Volume TOCTOU"
-status: Planned
+status: Active
 author: cristos
 created: 2026-02-23
-last-updated: 2026-02-23
+last-updated: 2026-03-12
 question: "Can a TOCTOU race between file open observation and scanner read allow taint evasion?"
 parent-vision: VISION-002
 gate: Pre-MVP
