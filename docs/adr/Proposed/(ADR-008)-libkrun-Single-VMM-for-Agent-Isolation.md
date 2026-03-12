@@ -109,4 +109,4 @@ Specifically:
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Proposed | 2026-03-12 | — | SPIKE-015 findings (expanded); depends on SPIKE-017 networking validation |
+| Proposed | 2026-03-12 | 9ea534f | SPIKE-015 findings (expanded); depends on SPIKE-017 networking validation |

@@ -77,4 +77,4 @@ libkrun is used by Podman 5.0+ on macOS, but Podman uses gvproxy for its own net
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Planned | 2026-03-12 | — | Validation gate for ADR-008; blocks EPIC-001 |
+| Planned | 2026-03-12 | 9ea534f | Validation gate for ADR-008; blocks EPIC-001 |

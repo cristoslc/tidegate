@@ -8,6 +8,12 @@ Dashboard mirroring lifecycle data from individual ADR artifacts. Source of trut
 |----|-------|-------|------|--------|
 | ADR-007 | [Human-in-the-Loop Exception Approval](./Draft/(ADR-007)-Human-in-the-Loop-Exception-Approval.md) | Draft | 2026-03-12 | 01eb2ac |
 
+## Proposed
+
+| ID | Title | Phase | Date | Commit |
+|----|-------|-------|------|--------|
+| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Proposed/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Proposed | 2026-03-12 | 9ea534f |
+
 ## Accepted
 
 | ID | Title | Phase | Date | Commit |
