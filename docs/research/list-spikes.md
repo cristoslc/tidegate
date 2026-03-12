@@ -16,13 +16,13 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-003 | [Shaped Deny Oracle](./Active/(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) | 2026-03-09 | 1458121 | Elevated by SPIKE-016 — RL evasion validated |
 | SPIKE-006 | [Agent Memory Exfiltration](./Active/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) | 2026-03-09 | 1458121 | Elevated by SPIKE-016 — RL agents accumulate evasion knowledge |
 
 ## Complete
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
+| SPIKE-003 | [Shaped Deny Oracle](./Complete/(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) | 2026-03-12 | — | Verdict: opaque denies. Formalized in ADR-006 |
 | SPIKE-007 | [Leak Detection Tool Selection](./Complete/(SPIKE-007)-Leak-Detection-Tool-Selection/(SPIKE-007)-Leak-Detection-Tool-Selection.md) | 2026-02-21 | db146de | Informed L1 scanner design |
 | SPIKE-008 | [L1 Interpreter Coverage Gap](./Complete/(SPIKE-008)-L1-Interpreter-Coverage-Gap/(SPIKE-008)-L1-Interpreter-Coverage-Gap.md) | 2026-02-23 | 138d920 | Fed ADR-002 |
 | SPIKE-009 | [Data Flow Taint Model](./Complete/(SPIKE-009)-Data-Flow-Taint-Model/(SPIKE-009)-Data-Flow-Taint-Model.md) | 2026-02-23 | 138d920 | Became ADR-002 |

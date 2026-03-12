@@ -9,6 +9,7 @@ Dashboard mirroring lifecycle data from individual ADR artifacts. Source of trut
 | ADR-002 | [Taint-and-Verify Data Flow Model](./Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) | Accepted | 2026-03-11 | — |
 | ADR-004 | [IPC Orchestrator Scanning as Enforcement Seam](./Accepted/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Accepted | 2026-03-11 | — |
 | ADR-005 | [Composable VM Isolation](./Accepted/(ADR-005)-Composable-VM-Isolation.md) | Accepted | 2026-03-11 | — |
+| ADR-006 | [Opaque Deny Responses](./Adopted/(ADR-006)-Opaque-Deny-Responses.md) | Adopted | 2026-03-12 | — |
 
 ## Superseded
 
