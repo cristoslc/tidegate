@@ -6,7 +6,7 @@ author: cristos
 created: 2026-02-23
 last-updated: 2026-03-09
 question: "Can persistent agent memory be poisoned to create a durable cross-session exfiltration channel?"
-parent-vision: VISION-001
+parent-vision: VISION-002
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []

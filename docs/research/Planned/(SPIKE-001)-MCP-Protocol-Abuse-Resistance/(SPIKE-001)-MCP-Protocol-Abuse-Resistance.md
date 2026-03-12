@@ -6,7 +6,7 @@ author: cristos
 created: 2026-02-21
 last-updated: 2026-02-21
 question: "How should the gateway handle malformed, oversized, or adversarial MCP messages?"
-parent-vision: VISION-001
+parent-vision: VISION-002
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []

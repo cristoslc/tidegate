@@ -5,7 +5,7 @@ status: Proposed
 author: cristos
 created: 2026-03-06
 last-updated: 2026-03-06
-parent-vision: VISION-001
+parent-vision: VISION-002
 success-criteria:
   - Agent can run inside a VM (QEMU or Firecracker) with workspace mounted read-only
   - All MCP traffic routes from the VM through the Tidegate gateway on the host
