@@ -19,6 +19,7 @@ depends-on: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-02-21 | db146de | Initial commit; gateway had basic JSON-RPC parsing but no hardening |
+| Active | 2026-03-12 | cc37c4b | Research in progress |
 
 ## Question
 
