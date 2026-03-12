@@ -64,7 +64,7 @@ VM isolation (QEMU, Firecracker) provides a separate kernel boundary. A compromi
 
 | Type | ID | Title | Status |
 |------|----|-------|--------|
-| Spike | SPIKE-015 | [Evaluate VM Isolation for Agent Container](../../../research/Planned/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | Planned |
+| Spike | SPIKE-015 | [Evaluate VM Isolation for Agent Container](../../../research/Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | Complete |
 
 ## Roadmap position
 
