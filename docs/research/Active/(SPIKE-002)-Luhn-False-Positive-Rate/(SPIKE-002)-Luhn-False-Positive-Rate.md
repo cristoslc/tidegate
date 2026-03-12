@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-002
 title: "Luhn False Positive Rate"
-status: Planned
+status: Active
 author: cristos
 created: 2026-02-23
 last-updated: 2026-02-23
