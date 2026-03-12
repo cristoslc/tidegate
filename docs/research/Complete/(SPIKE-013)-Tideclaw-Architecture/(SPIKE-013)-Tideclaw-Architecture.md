@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-013
 title: "Tideclaw Architecture"
-status: Active
+status: Complete
 author: cristos
 created: 2026-02-25
-last-updated: 2026-02-27
+last-updated: 2026-03-11
 question: "What should a security-first orchestrator for AI coding tools look like?"
 parent-vision: VISION-001
 gate: Pre-MVP
@@ -20,6 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Active | 2026-02-25 | 0ec6eb8 | Spike started; researched Claude Code, Codex CLI, Gemini, MCP security, E2B, Daytona |
 | Active | 2026-02-27 | ded5e29 | Added Aider, Goose, llm CLI deep-dives; added Skills Paradigm section; added non-Claude/Codex base evaluation |
+| Complete | 2026-03-11 | _TBD_ | Findings formalized in ADR-004 and ADR-005; architecture settled |
 
 ## Purpose
 
@@ -931,3 +932,15 @@ If Tideclaw must work with a runtime that is not Claude Code, Codex CLI, or Gemi
 - A deep dive on agent sandboxes: https://pierce.dev/notes/a-deep-dive-on-agent-sandboxes
 - Awesome MCP gateways: https://github.com/e2b-dev/awesome-mcp-gateways
 - UK AISI sandboxing toolkit: https://github.com/UKGovernmentBEIS/aisi-sandboxing
+
+---
+
+## Completion Summary
+
+This spike answered its core question: Tideclaw is a runtime-agnostic orchestrator that provides structural enforcement seams — container boundaries, network segmentation, and privilege separation — that security layers (Tidegate gateway, egress proxy, taint tracker, IPC interceptor) attach to.
+
+Key outcomes formalized as architectural decisions:
+- **ADR-004** — IPC orchestrator scanning is a first-class enforcement seam (fifth seam), using the privilege separation model developed in SPIKE-014
+- **ADR-005** — Composable VM isolation; Docker for infrastructure, microVM for agent, specific VM technology deferred
+
+The runtime landscape survey (Claude Code, Codex CLI, Aider, Goose, llm CLI) and skills paradigm security analysis remain as reference material in this spike's supporting documents.
