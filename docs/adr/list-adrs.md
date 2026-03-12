@@ -2,6 +2,12 @@
 
 Dashboard mirroring lifecycle data from individual ADR artifacts. Source of truth is each artifact's own lifecycle table.
 
+## Draft
+
+| ID | Title | Phase | Date | Commit |
+|----|-------|-------|------|--------|
+| ADR-007 | [Human-in-the-Loop Exception Approval](./Draft/(ADR-007)-Human-in-the-Loop-Exception-Approval.md) | Draft | 2026-03-12 | 01eb2ac |
+
 ## Accepted
 
 | ID | Title | Phase | Date | Commit |
