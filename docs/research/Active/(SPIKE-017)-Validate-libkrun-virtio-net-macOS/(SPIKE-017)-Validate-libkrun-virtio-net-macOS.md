@@ -5,6 +5,7 @@ status: Active
 author: cristos
 created: 2026-03-12
 last-updated: 2026-03-12
+findings-status: research-complete
 swain-do: required
 question: "Can libkrun's virtio-net mode route agent traffic through Tidegate's Docker bridge topology on macOS?"
 parent-epic: EPIC-001
@@ -73,6 +74,208 @@ ADR-008's entire value proposition is "one VMM, all platforms." If virtio-net do
 ## Context at time of writing
 
 libkrun is used by Podman 5.0+ on macOS, but Podman uses gvproxy for its own networking needs (port mapping between host and VM), not for bridging to external Docker networks. The specific configuration Tidegate needs — libkrun VM talking to services on a Docker-managed bridge — is novel and untested.
+
+---
+
+## Findings
+
+### Corrected assumptions
+
+Several assumptions in the original spike framing were wrong. The research invalidates them before any experiments:
+
+| Original assumption | Reality |
+|---|---|
+| "virtio-net via passt" is viable on macOS | **passt is Linux-only.** It relies on Linux-specific kernel features (epoll, network namespaces). Not available on macOS. |
+| krunvm can boot a VM with virtio-net | **krunvm only supports TSI.** The CLI has no flag for virtio-net. GitHub issue [#56](https://github.com/containers/krunvm/issues/56) is open requesting passt support. |
+| The VM could join Docker's `agent-net` bridge | **Docker bridge networks on macOS exist inside Docker Desktop's LinuxKit VM.** They are unreachable from the macOS host. No macvlan, no ipvlan, no bridge attachment from outside. |
+| passt or gvproxy could bridge to Docker networks | **Neither is a bridge.** passt is a L4 socket translator; gvproxy is a userspace NAT proxy (gVisor-based TCP/IP stack). Both are proxy/translation layers. |
+
+### Sub-question answers
+
+#### SQ1: passt vs gvproxy on macOS
+
+**passt is not available on macOS.** The only userspace virtio-net backend on macOS is **gvproxy** (from the gvisor-tap-vsock project). An alternative is **vmnet-helper** (wrapping Apple's vmnet.framework).
+
+libkrun's C API supports both via:
+- `krun_add_net_unixgram()` — for gvproxy (Unix datagram socket)
+- `krun_add_net_unixstream()` — for socket_vmnet (Unix stream socket)
+
+**gvproxy routing semantics:** Full userspace TCP/IP stack. VM gets IP on 192.168.127.0/24 (default). Gateway at 192.168.127.1. NAT through host network stack. Port forwarding via HTTP API at the gateway IP.
+
+**vmnet-helper routing semantics:** Uses Apple's vmnet.framework shared mode. VM gets IP on 192.168.64.0/24 (configurable). macOS host can reach VM IP directly (bidirectional). DHCP via macOS `bootpd`. Requires privileged `socket_vmnet` daemon.
+
+#### SQ2: Docker bridge visibility on macOS
+
+**Confirmed unreachable.** Docker Desktop runs Docker inside a LinuxKit VM. All bridge networks (`docker0`, custom networks like `agent-net`) exist inside that VM. The macOS host has no route to bridge IPs (172.17.x.x etc.). The only way to reach Docker containers from macOS is through published ports on `localhost`.
+
+`host.docker.internal` resolves only from inside containers (container → host direction). It has no meaning from the macOS host side.
+
+macvlan/ipvlan drivers are **not supported** on Docker Desktop for Mac — they require physical NIC access unavailable inside the LinuxKit VM.
+
+#### SQ3: OrbStack alternative
+
+**OrbStack changes the picture significantly.** It exposes container IPs directly on the macOS host network (192.168.x.x range) via a custom virtual network stack. Any macOS process can reach containers by IP — no port publishing needed. Up to 45 Gbps throughput.
+
+A libkrun VM using gvproxy (NAT mode) would NAT outbound connections through the host network stack. Since OrbStack container IPs are routable from the host, the VM should be able to reach them. **This is the most promising path but couples the architecture to OrbStack.**
+
+Containers also get automatic DNS names at `container-name.orb.local`.
+
+#### SQ4: Colima/Lima alternative
+
+Lima supports multiple networking modes. The most relevant:
+- **socket_vmnet shared mode**: VM gets IP on 192.168.105.0/24, routable from host. Uses vmnet.framework. Requires sudo.
+- **vzNAT** (vz VMs only): Native Apple Virtualization.framework networking. VM gets routable IP.
+
+However, Docker containers inside Colima's VM still have bridge networks inside that VM — same fundamental problem as Docker Desktop. Containers are accessed through published ports on the VM's IP or localhost.
+
+#### SQ5: virtiofs + virtio-net coexistence
+
+**No conflicts.** On macOS, libkrun uses a built-in virtiofs implementation (no virtiofsd daemon). virtiofs and virtio-net are independent virtio devices. krunkit (which uses both simultaneously for Podman Machine) confirms they coexist. virtiofs is configured via `krun_add_virtiofs(ctx, tag, host_path)`.
+
+Known virtiofs issues on macOS: heavy I/O (30GB+) can trigger WindowServer watchdog timeout (krunvm issue [#37](https://github.com/containers/krunvm/issues/37)). Not relevant for typical workspace sizes.
+
+#### SQ6: DNS resolution
+
+**Docker service name resolution will not work from outside Docker.** The VM cannot resolve `gateway` or `egress-proxy` — Docker's embedded DNS server (127.0.0.11) only serves containers on the same Docker network.
+
+Options:
+- Hard-code IPs or use `host.docker.internal` equivalent
+- With OrbStack: use `container-name.orb.local` names
+- Configure a custom DNS server in the VM pointing to the Docker DNS (but this is inside Docker's VM, so still unreachable)
+- Inject `/etc/hosts` entries into the VM at launch
+
+### The tooling gap: krunvm vs krunkit vs custom launcher
+
+| Tool | TSI | virtio-net | virtiofs | OCI images | Production use |
+|------|-----|-----------|----------|-----------|----------------|
+| **krunvm** | Yes (only) | No | Yes | Yes | Standalone microVMs |
+| **krunkit** | Default | Yes (gvproxy, passt, vmnet) | Yes | No (raw rootfs) | Podman Machine backend |
+| **Custom (libkrun C API)** | Configurable | Yes (any backend) | Yes | Manual | Full control |
+
+krunvm cannot do what Tidegate needs (no virtio-net). krunkit can do virtio-net but doesn't handle OCI images (it expects a pre-extracted rootfs). **Tidegate needs a custom launcher** that uses the libkrun C API (or extends krunvm) to:
+1. Pull/extract OCI image (like krunvm does)
+2. Configure virtio-net with gvproxy (like krunkit does)
+3. Configure virtiofs for workspace mounting
+4. Disable TSI
+
+This is the `tidegate vm start` launcher described in ADR-008 §6.
+
+### Viable network topologies on macOS
+
+#### Topology A: Port publishing + gvproxy NAT (most portable)
+
+```
+┌─────────────────┐     ┌──────────────────────────────────┐
+│  libkrun VM      │     │  Docker Desktop LinuxKit VM       │
+│  192.168.127.2   │     │  ┌──────────┐  ┌──────────────┐  │
+│                  │     │  │ gateway   │  │ egress-proxy │  │
+│  gvproxy NAT ────┼─→ host:4100 ──→ │  │:4100        │  │:3128         │  │
+│                  │     │  │ agent-net │  │ agent-net    │  │
+│                  │     │  └──────────┘  └──────────────┘  │
+└─────────────────┘     └──────────────────────────────────┘
+```
+
+- Docker publishes gateway on host port 4100, egress proxy on host port 3128
+- VM reaches services via gvproxy gateway (192.168.127.1) → host → Docker port forward
+- **Works with Docker Desktop, Colima, OrbStack**
+- Requires `docker-compose.yaml` to publish ports
+- VM must use IPs, not Docker DNS names
+- **Proxy enforcement**: configure VM's `HTTP_PROXY`/`HTTPS_PROXY` env vars to `host-ip:3128`, plus iptables rules inside VM to block direct outbound
+
+#### Topology B: OrbStack direct IP + gvproxy NAT
+
+```
+┌─────────────────┐     ┌──────────────────────────┐
+│  libkrun VM      │     │  OrbStack                 │
+│  192.168.127.2   │     │  gateway: 192.168.215.2   │
+│                  │     │  egress:  192.168.215.3   │
+│  gvproxy NAT ────┼─→ host ──→ OrbStack IPs directly  │
+└─────────────────┘     └──────────────────────────┘
+```
+
+- No port publishing needed — OrbStack makes container IPs routable from macOS
+- VM reaches containers through gvproxy → host → OrbStack container IP
+- **DNS**: `gateway.orb.local`, `egress-proxy.orb.local`
+- **Locks architecture to OrbStack** on macOS
+
+#### Topology C: vmnet-helper shared mode + port publishing
+
+```
+┌─────────────────┐     ┌──────────────────────────────────┐
+│  libkrun VM      │     │  Docker Desktop LinuxKit VM       │
+│  192.168.64.x    │     │  ┌──────────┐  ┌──────────────┐  │
+│                  │     │  │ gateway   │  │ egress-proxy │  │
+│  vmnet bridge ───┼─→ host:4100 ──→ │  │:4100        │  │:3128         │  │
+│                  │     │  └──────────┘  └──────────────┘  │
+└─────────────────┘     └──────────────────────────────────┘
+```
+
+- VM gets a routable IP on vmnet shared subnet — host can reach VM directly (bidirectional)
+- VM reaches Docker services through published ports on host IP
+- **Advantage over Topology A**: host can initiate connections to VM (useful for health checks, callbacks)
+- **Requires sudo** for socket_vmnet daemon
+- More complex setup than gvproxy
+
+### Go / No-Go assessment against criteria
+
+| Criterion | Assessment | Verdict |
+|-----------|-----------|---------|
+| 1. libkrun VM boots with virtio-net on macOS | **Yes**, via libkrun C API + gvproxy. Not via krunvm CLI. Requires custom launcher. | Conditional GO |
+| 2. VM on same subnet as Docker bridge, or can reach services | **Not same subnet** — Docker bridge is unreachable. But VM can reach services via published ports (Topology A/C) or OrbStack direct IPs (Topology B). | Conditional GO |
+| 3. VM can reach gateway:4100 and get MCP response | **Yes**, via published port or OrbStack IP. Cannot use Docker DNS name `gateway` — must use IP or alternative DNS. | Conditional GO |
+| 4. All outbound traffic through egress proxy | **Achievable** via `HTTP_PROXY` env vars + iptables inside VM. gvproxy NAT only allows traffic routed through gvproxy gateway, which limits but doesn't fully control egress. Need iptables in VM to block non-proxy outbound. | Conditional GO |
+| 5. virtiofs + virtio-net coexistence | **Yes**, confirmed by krunkit/Podman usage. No conflicts. | GO |
+| 6. Latency <10ms overhead vs Docker | **Likely** — gvproxy adds ~1-2ms for TCP proxying. Needs empirical measurement. | Likely GO |
+
+**Overall: Conditional GO.** The networking works, but not via direct Docker bridge attachment. The pattern is "published ports + gvproxy NAT" (or OrbStack direct IPs), with a custom launcher replacing krunvm.
+
+### Revised understanding
+
+The original question — "can a libkrun VM route through Docker's `agent-net` bridge?" — has a clear answer: **No, direct bridge attachment is impossible on macOS.** But the question was wrong. The right question is: "can a libkrun VM reach Tidegate's gateway and egress proxy, and can all traffic be forced through them?"
+
+**Answer: Yes**, with these caveats:
+1. **Custom launcher required** — krunvm doesn't support virtio-net. Need libkrun C API or krunkit-based tool.
+2. **Published ports** — Docker services must expose ports to the macOS host (or use OrbStack).
+3. **Proxy enforcement in VM** — iptables rules inside the VM to force all egress through the proxy.
+4. **No Docker DNS** — VM must use IPs or injected host entries, not Docker service names.
+
+### Impact on ADR-008
+
+ADR-008 §3 states: "Guest traffic flows through a virtual NIC, bridged to Docker's `agent-net`." This is inaccurate for macOS. The traffic flows through a virtual NIC, through gvproxy NAT to the host, then through published Docker ports to reach the gateway.
+
+**Recommended ADR-008 amendment:**
+- Replace "bridged to Docker's `agent-net`" with "routed through gvproxy to host-published Docker service ports"
+- Add a note that macOS uses a NAT topology (gvproxy), not a bridge topology
+- Document that Docker services (gateway, egress proxy) must publish ports to the host
+- Note that OrbStack provides a cleaner alternative (direct container IP access) but is not required
+
+### Recommended next steps
+
+1. **Build a minimal proof-of-concept launcher** using libkrun C API (or Rust bindings) that boots an Alpine VM with gvproxy virtio-net + virtiofs. This validates criterion 1 empirically.
+2. **Test Topology A** end-to-end: `docker compose up` with published ports → custom launcher VM → curl gateway → verify MCP response.
+3. **Test proxy enforcement**: iptables in VM blocking all outbound except through proxy port.
+4. **Measure latency**: MCP tool call round-trip from VM vs Docker container.
+5. **Evaluate whether krunkit can be repurposed** as the launcher base (it already handles gvproxy + virtiofs), with OCI image extraction added.
+
+### Sources
+
+- [libkrun GitHub — containers/libkrun](https://github.com/containers/libkrun)
+- [libkrun C API header (libkrun.h)](https://github.com/containers/libkrun/blob/main/include/libkrun.h)
+- [krunvm GitHub — containers/krunvm](https://github.com/containers/krunvm)
+- [krunvm issue #56 — passt support request](https://github.com/containers/krunvm/issues/56)
+- [krunvm issue #51 — getifaddrs/virtio-net discussion](https://github.com/containers/krunvm/issues/51)
+- [krunvm issue #6 — VM clustering/networking](https://github.com/containers/krunvm/issues/6)
+- [krunkit usage docs](https://github.com/containers/krunkit/blob/main/docs/usage.md)
+- [gvisor-tap-vsock / gvproxy](https://github.com/containers/gvisor-tap-vsock)
+- [Docker Desktop networking docs](https://docs.docker.com/desktop/features/networking/)
+- [docker/for-mac #3926 — macvlan not supported](https://github.com/docker/for-mac/issues/3926)
+- [OrbStack container networking](https://docs.orbstack.dev/docker/network)
+- [Lima network configuration](https://lima-vm.io/docs/config/network/)
+- [socket_vmnet GitHub](https://github.com/lima-vm/socket_vmnet)
+- [vmnet-helper GitHub](https://github.com/nirs/vmnet-helper)
+- [passt project (Linux-only)](https://passt.top/passt/about/)
+- [Sergio Lopez — Running Linux microVMs on macOS](https://sinrega.org/running-microvms-on-m1/)
+- [krunvm heavy I/O crash — issue #37](https://github.com/containers/krunvm/issues/37)
 
 ## Lifecycle
 
