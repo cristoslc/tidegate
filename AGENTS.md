@@ -1,6 +1,6 @@
 # AGENTS.md — Tidegate
 
-MCP gateway that sits between an agent and downstream MCP servers. Scans all string values in tool call parameters and responses for sensitive data, returns shaped denies on policy violations. Plus Squid egress proxy and Docker packaging.
+Reference architecture for an MCP gateway that sits between an agent and downstream MCP servers. Scans all string values in tool call parameters and responses for sensitive data, returns shaped denies on policy violations. Plus Squid egress proxy and Docker packaging.
 
 See `docs/vision/` for product vision, `docs/threat-model/` for threat model.
 
