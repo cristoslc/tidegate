@@ -2,7 +2,7 @@
 
 MCP gateway that sits between an agent and downstream MCP servers. Scans all string values in tool call parameters and responses for sensitive data, returns shaped denies on policy violations. Plus Squid egress proxy and Docker packaging.
 
-See `docs/ROADMAP.md` for milestones, `docs/vision/` for product vision, `docs/threat-model/` for threat model.
+See `docs/vision/` for product vision, `docs/threat-model/` for threat model.
 
 ## Directory structure
 
@@ -32,8 +32,7 @@ docs/
 ├── adr/                   # Architecture Decision Records (ADR-NNN)
 ├── research/              # Research spikes (SPIKE-NNN)
 ├── threat-model/
-├── testing.md
-└── ROADMAP.md
+└── testing.md
 ```
 
 Root: `tidegate.yaml` (runtime config), `docker-compose.yaml`.

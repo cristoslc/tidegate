@@ -24,7 +24,6 @@ Specification artifacts and supporting documents for Tidegate. Each subdirectory
 
 | File | Description |
 |------|-------------|
-| [ROADMAP.md](ROADMAP.md) | Milestone tracker |
 | [testing.md](testing.md) | Testing guide |
 
 ## Conventions

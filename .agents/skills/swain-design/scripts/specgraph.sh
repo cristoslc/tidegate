@@ -25,7 +25,7 @@ RESOLVED_RE="Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|
 
 usage() {
   cat <<'USAGE'
-Usage: specgraph.sh <command> [args]
+Usage: specgraph.sh <command> [args] [--all]
 
 Commands:
   build              Force-rebuild the dependency graph from frontmatter
@@ -37,6 +37,10 @@ Commands:
   mermaid            Mermaid diagram to stdout
   status             Summary table by type and phase
   overview           Hierarchy tree with status + execution tracking
+
+Options:
+  --all              Include finished artifacts (resolved/terminal states).
+                     By default, overview/status/mermaid hide them.
 USAGE
   exit 1
 }
@@ -56,6 +60,22 @@ get_field() {
   local val
   val=$(sed -n '/^---$/,/^---$/p' "$file" | grep "^${field}:" | head -1 | sed "s/^${field}:[[:space:]]*//" | sed 's/^"\(.*\)"$/\1/' | sed "s/^'\(.*\)'$/\1/") || true
   printf '%s' "$val"
+}
+
+# Extract a one-line description for an artifact.
+# Priority: question (spikes) > description (frontmatter) > first body paragraph
+get_description() {
+  local file="$1"
+  local desc
+  # Try question field first (SPIKEs use this)
+  desc=$(get_field "$file" "question")
+  [ -n "$desc" ] && { printf '%s' "${desc:0:120}"; return; }
+  # Try description field
+  desc=$(get_field "$file" "description")
+  [ -n "$desc" ] && { printf '%s' "${desc:0:120}"; return; }
+  # Fall back to first non-heading, non-empty body line after frontmatter
+  desc=$(awk '/^---$/{n++; next} n>=2 && /^[^#\[\|>!-]/ && NF>0 {print; exit}' "$file") || true
+  printf '%s' "${desc:0:120}"
 }
 
 # Extract a YAML list field as newline-separated bare IDs (TYPE-NNN)
@@ -109,6 +129,10 @@ do_build() {
     local atype
     atype=$(printf '%s' "$artifact" | sed 's/-[0-9]*//')
 
+    # Extract a one-line description for human context
+    local desc
+    desc=$(get_description "$file")
+
     # Build node JSON
     local node_json
     node_json=$(jq -n \
@@ -116,7 +140,8 @@ do_build() {
       --arg status "$status" \
       --arg type "$atype" \
       --arg file "$file_rel" \
-      '{title: $title, status: $status, type: $type, file: $file}')
+      --arg desc "$desc" \
+      '{title: $title, status: $status, type: $type, file: $file, description: $desc}')
 
     if [ $first_node -eq 1 ]; then
       nodes_json="\"$artifact\": $node_json"
@@ -213,8 +238,13 @@ do_tree() {
 do_ready() {
   ensure_cache
   jq -r '
+    .repo as $repo |
     .nodes as $nodes |
     .edges as $edges |
+    def art_link($aid; $file):
+      if $file != null and $file != "" then
+        "\u001b]8;;file://\($repo)/\($file)\u001b\\\($aid)\u001b]8;;\u001b\\"
+      else $aid end;
     [.nodes | to_entries[] |
       select(
         (.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined") | not)
@@ -225,9 +255,9 @@ do_ready() {
         ($deps | length == 0) or
         ($deps | all(. as $dep | $nodes[$dep] != null and ($nodes[$dep].status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined"))))
       ) |
-      "\(.key)\t\(.value.status)\t\(.value.title)"
+      "  \(art_link(.key; .value.file))  (\(.value.status))  \(.value.title)"
     ] | .[]
-  ' "$CACHE_FILE" | column -t -s $'\t'
+  ' "$CACHE_FILE"
 }
 
 # next — what to work on next (ready items + what they'd unblock + blocked items)
@@ -236,10 +266,14 @@ do_next() {
   # Ready items with what completing them would unblock
   local ready_output
   ready_output=$(jq -r '
+    .repo as $repo |
     .nodes as $nodes |
     .edges as $edges |
-    # Resolved status regex
     def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    def art_link($aid; $file):
+      if $file != null and $file != "" then
+        "\u001b]8;;file://\($repo)/\($file)\u001b\\\($aid)\u001b]8;;\u001b\\"
+      else $aid end;
 
     # Find ready (unresolved, all deps satisfied)
     [.nodes | to_entries[] |
@@ -257,13 +291,13 @@ do_next() {
           all(. as $dep | if $dep == $id then true elif $nodes[$dep] == null then false else ($nodes[$dep].status | is_resolved) end)
         ))
       ) as $would_unblock |
-      {id: $id, status: .value.status, title: .value.title, unblocks: $would_unblock}
+      {id: $id, status: .value.status, title: .value.title, file: .value.file, unblocks: $would_unblock}
     ] |
     sort_by(.id) |
     if length == 0 then "  (none)\n"
     else .[] |
-      "  \(.id)  (\(.status))  \(.title)" +
-      if (.unblocks | length) > 0 then "\n    unblocks: \(.unblocks | join(", "))"
+      "  \(art_link(.id; .file))  (\(.status))  \(.title)" +
+      if (.unblocks | length) > 0 then "\n    unblocks: \(.unblocks | map(art_link(.; ($nodes[.].file // ""))) | join(", "))"
       else "" end
     end
   ' "$CACHE_FILE") || true
@@ -271,9 +305,14 @@ do_next() {
   # Blocked items
   local blocked_output
   blocked_output=$(jq -r '
+    .repo as $repo |
     .nodes as $nodes |
     .edges as $edges |
     def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    def art_link($aid; $file):
+      if $file != null and $file != "" then
+        "\u001b]8;;file://\($repo)/\($file)\u001b\\\($aid)\u001b]8;;\u001b\\"
+      else $aid end;
 
     [.nodes | to_entries[] |
       select(.value.status | is_resolved | not) |
@@ -281,12 +320,12 @@ do_next() {
       ([$edges[] | select(.from == $id and .type == "depends-on") | .to] | unique) as $deps |
       ($deps | map(select(. as $dep | $nodes[$dep] == null or ($nodes[$dep].status | is_resolved | not)))) as $unresolved |
       select(($unresolved | length) > 0) |
-      {id: $id, status: .value.status, title: .value.title, waiting: $unresolved}
+      {id: $id, status: .value.status, title: .value.title, file: .value.file, waiting: $unresolved}
     ] |
     sort_by(.id) |
     if length == 0 then "  (none)\n"
     else .[] |
-      "  \(.id)  (\(.status))  \(.title)\n    waiting on: \(.waiting | join(", "))"
+      "  \(art_link(.id; .file))  (\(.status))  \(.title)\n    waiting on: \(.waiting | map(art_link(.; ($nodes[.].file // ""))) | join(", "))"
     end
   ' "$CACHE_FILE") || true
 
@@ -301,14 +340,21 @@ do_next() {
 do_mermaid() {
   ensure_cache
   echo "graph TD"
-  # Node labels
-  jq -r '
+  # Node labels (filtered by visibility)
+  jq -r --argjson show_all "$SHOW_ALL" '
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    (.nodes | to_entries | map(select($show_all == 1 or (.value.status | is_resolved | not))) | map(.key)) as $visible |
     .nodes | to_entries[] |
+    select(.key | IN($visible[])) |
     "    \(.key)[\"\(.key): \(.value.title | gsub("\""; "#quot;"))\"]"
   ' "$CACHE_FILE"
-  # Edges
-  jq -r '
+  # Edges (only between visible nodes)
+  jq -r --argjson show_all "$SHOW_ALL" '
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    (.nodes | to_entries | map(select($show_all == 1 or (.value.status | is_resolved | not))) | map(.key)) as $visible |
     .edges[] |
+    select(.from | IN($visible[])) |
+    select(.to | IN($visible[])) |
     if .type == "depends-on" then
       "    \(.from) -->|depends-on| \(.to)"
     elif .type == "parent-vision" then
@@ -317,12 +363,14 @@ do_mermaid() {
       "    \(.from) -.->|child-of| \(.to)"
     else empty end
   ' "$CACHE_FILE"
-  # Style resolved nodes
-  jq -r '
-    .nodes | to_entries[] |
-    select(.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined")) |
-    "    style \(.key) fill:#90EE90"
-  ' "$CACHE_FILE"
+  # Style resolved nodes (only when --all is used)
+  if [ "$SHOW_ALL" -eq 1 ]; then
+    jq -r '
+      .nodes | to_entries[] |
+      select(.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined")) |
+      "    style \(.key) fill:#90EE90"
+    ' "$CACHE_FILE"
+  fi
 }
 
 # status — summary table
@@ -331,45 +379,71 @@ do_status() {
   echo "=== Artifact Status Summary ==="
   echo ""
   # Group by type, then by status within type
-  jq -r '
-    [.nodes | to_entries[] | {type: .value.type, status: .value.status, id: .key, title: .value.title}] |
-    group_by(.type) | .[] |
-    ("## " + .[0].type),
-    (. | sort_by(.id) | .[] | "  \(.id)\t\(.status)\t\(.title)"),
-    ""
-  ' "$CACHE_FILE" | column -t -s $'\t'
+  jq -r --argjson show_all "$SHOW_ALL" '
+    .repo as $repo |
+    def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
+    def art_link($aid; $file):
+      if $file != null and $file != "" then
+        "\u001b]8;;file://\($repo)/\($file)\u001b\\\($aid)\u001b]8;;\u001b\\"
+      else $aid end;
+    [.nodes | to_entries[] |
+      select($show_all == 1 or (.value.status | is_resolved | not)) |
+      {type: .value.type, status: .value.status, id: .key, title: .value.title, file: .value.file}] |
+    if length == 0 then "  (no active artifacts)\n"
+    else
+      group_by(.type) | .[] |
+      ("## " + .[0].type),
+      (. | sort_by(.id) | .[] | "  \(art_link(.id; .file))  [\(.status)]  \(.title)"),
+      ""
+    end
+  ' "$CACHE_FILE"
+  if [ "$SHOW_ALL" -eq 0 ]; then
+    local hidden
+    hidden=$(jq '[.nodes | to_entries[] | select(.value.status | test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined"))] | length' "$CACHE_FILE")
+    if [ "$hidden" -gt 0 ]; then
+      echo "($hidden finished artifact$([ "$hidden" -gt 1 ] && echo "s") hidden — use --all to show)"
+    fi
+  fi
 }
 
 # overview — combined hierarchy tree with status indicators, dependency info, and executive summary
 do_overview() {
   ensure_cache
 
-  jq -r '
+  jq -r --argjson show_all "$SHOW_ALL" '
     def is_resolved: test("Complete|Implemented|Adopted|Validated|Archived|Retired|Superseded|Abandoned|Sunset|Deprecated|Verified|Declined");
     def status_icon: if is_resolved then "[x]" else "[ ]" end;
+    # Filter: hide resolved artifacts unless --all is passed
+    def visible: if $show_all == 1 then true else (.status | is_resolved | not) end;
     # Note: titles are already cleaned of ID prefixes during cache build
 
     .nodes as $nodes |
     .edges as $edges |
+    .repo as $repo |
+    def art_link($aid; $file):
+      if $file != null and $file != "" then
+        "\u001b]8;;file://\($repo)/\($file)\u001b\\\($aid)\u001b]8;;\u001b\\"
+      else $aid end;
 
     # Find all Vision nodes (top-level)
-    ($nodes | to_entries | map(select(.value.type == "VISION")) | sort_by(.key)) as $visions |
+    ($nodes | to_entries | map(select(.value.type == "VISION" and (.value | visible))) | sort_by(.key)) as $visions |
 
     # Find orphans (no parent-vision or parent-epic edge)
     ([$nodes | to_entries[] |
       .key as $id |
       select(
+        (.value | visible) and
         .value.type != "VISION" and
         ([$edges[] | select(.from == $id and (.type == "parent-vision" or .type == "parent-epic"))] | length == 0)
       )
     ] | sort_by(.key)) as $orphans |
 
-    # Helper: get children of a node by parent edge type
+    # Helper: get children of a node by parent edge type (filtered by visibility)
     def children_of($parent_id):
       [$edges[] | select(.to == $parent_id and (.type == "parent-vision" or .type == "parent-epic")) | .from] |
       unique | sort |
       map(. as $id | {id: $id, node: $nodes[$id]}) |
-      map(select(.node != null));
+      map(select(.node != null and (.node | visible)));
 
     # Helper: get depends-on for a node (unresolved only, skips missing refs)
     def unresolved_deps($id):
@@ -385,12 +459,12 @@ do_overview() {
       ($node.status | status_icon) as $icon |
       (unresolved_deps($id)) as $udeps |
       (if ($udeps | length) > 0 then "[!]" else $icon end) as $final_icon |
-      "\($prefix)\($connector)\($final_icon) \($id): \($node.title // "(untitled)") [\($node.status // "Unknown")]" +
+      "\($prefix)\($connector)\($final_icon) \(art_link($id; $node.file)): \($node.title // "(untitled)") [\($node.status // "Unknown")]" +
       if ($udeps | length) > 0 then
         if ($udeps | length) <= 3 then
-          "  <- blocked by: \($udeps | join(", "))"
+          "  <- blocked by: \($udeps | map(art_link(.; ($nodes[.].file // ""))) | join(", "))"
         else
-          "\n\($prefix)\(if $connector == "└── " then "    " else "│   " end)    <- blocked by: \($udeps | join(", "))"
+          "\n\($prefix)\(if $connector == "└── " then "    " else "│   " end)    <- blocked by: \($udeps | map(art_link(.; ($nodes[.].file // ""))) | join(", "))"
         end
       else "" end;
 
@@ -405,7 +479,7 @@ do_overview() {
     ($visions | to_entries[] |
       .value as $v |
       ($v.value.status | status_icon) as $vicon |
-      "\($vicon) \($v.key): \($v.value.title // "(untitled)") [\($v.value.status // "Unknown")]",
+      "\($vicon) \(art_link($v.key; $v.value.file)): \($v.value.title // "(untitled)") [\($v.value.status // "Unknown")]",
 
       # Children of this Vision (Epics, Journeys)
       (children_of($v.key) | to_entries[] |
@@ -437,8 +511,8 @@ do_overview() {
           (unresolved_deps($o.key)) as $udeps |
           ($o.value.status | status_icon) as $icon |
           (if ($udeps | length) > 0 then "[!]" else $icon end) as $final_icon |
-          "\($conn)\($final_icon) \($o.key): \($o.value.title // "(untitled)") [\($o.value.status // "Unknown")]" +
-          if ($udeps | length) > 0 then "  <- blocked by: \($udeps | join(", "))" else "" end
+          "\($conn)\($final_icon) \(art_link($o.key; $o.value.file)): \($o.value.title // "(untitled)") [\($o.value.status // "Unknown")]" +
+          if ($udeps | length) > 0 then "  <- blocked by: \($udeps | map(art_link(.; ($nodes[.].file // ""))) | join(", "))" else "" end
         )
       ),
       ""
@@ -489,17 +563,20 @@ do_overview() {
       "── Summary ──",
       "  Ready (unblocked, actionable):",
       if ($ready | length) > 0 then
-        ($ready[] | "    \(.id): \(.title) [\(.status)]")
+        ($ready[] | "    \(art_link(.id; ($nodes[.id].file // ""))): \(.title) [\(.status)]")
       else
         "    (none)"
       end,
       "  Blocked:",
       if ($blocked | length) > 0 then
-        ($blocked[] | "    \(.id): \(.title) [\(.status)]  <- waiting on: \(.waiting | join(", "))")
+        ($blocked[] | "    \(art_link(.id; ($nodes[.id].file // ""))): \(.title) [\(.status)]  <- waiting on: \(.waiting | map(art_link(.; ($nodes[.].file // ""))) | join(", "))")
       else
         "    (none)"
       end,
-      "  Counts: \($total_count) total -- \($resolved_count) resolved, \($ready | length) ready, \($blocked | length) blocked"
+      "  Counts: \($total_count) total -- \($resolved_count) resolved, \($ready | length) ready, \($blocked | length) blocked",
+      if $show_all == 0 and $resolved_count > 0 then
+        "  (\($resolved_count) finished artifact\(if $resolved_count > 1 then "s" else "" end) hidden — use --all to show)"
+      else empty end
     )
   ' "$CACHE_FILE"
 
@@ -518,6 +595,21 @@ do_overview() {
     echo "  (bd not installed — use swain-do skill to bootstrap)"
   fi
 }
+
+# --- Parse --all flag ---
+SHOW_ALL=0
+for arg in "$@"; do
+  if [ "$arg" = "--all" ]; then
+    SHOW_ALL=1
+    break
+  fi
+done
+# Strip --all from positional args
+ARGS=()
+for arg in "$@"; do
+  [ "$arg" != "--all" ] && ARGS+=("$arg")
+done
+set -- "${ARGS[@]}"
 
 # --- Main ---
 [ $# -lt 1 ] && usage

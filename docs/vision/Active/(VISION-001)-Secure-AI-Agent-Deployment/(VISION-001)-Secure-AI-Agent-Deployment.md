@@ -49,7 +49,7 @@ The operator gets the full power of an AI agent without trusting every skill it 
 
 ## Architecture summary
 
-See [architecture-overview.md](architecture-overview.md) for how the system works today. See [target-state.md](target-state.md) for the end goal.
+See [system-architecture.md](system-architecture.md) for the system architecture. See [target-state.md](target-state.md) for the `./setup.sh` end goal.
 
 The security model has three enforcement layers:
 - **L2/L3 (MCP gateway)**: Scans all string values in tool call parameters and responses. Credential patterns, checksums, entropy analysis.
@@ -58,6 +58,4 @@ The security model has three enforcement layers:
 
 ## Related
 
-- [ROADMAP.md](../../../ROADMAP.md) — milestone tracker (M1–M7)
-- [ADR-002](../../../adr/Proposed/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — L1 taint architecture
-- [ADR-003](../../../adr/Proposed/(ADR-003)-Agent-Runtime-Selection.md) — agent runtime choice
+- [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — L1 taint architecture
