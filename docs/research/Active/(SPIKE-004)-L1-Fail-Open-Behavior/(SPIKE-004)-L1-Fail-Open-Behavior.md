@@ -19,6 +19,7 @@ depends-on: []
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review; reframed for journal-based taint architecture (ADR-002) |
+| Active | 2026-03-12 | 642e0a7 | Research initiated: seccomp-notify fd lifecycle, fail-closed design patterns, ring buffer overflow |
 
 ## Source
 
