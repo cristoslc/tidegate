@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-004
 title: "L1 Fail-Open Behavior"
-status: Planned
+status: Active
 author: cristos
 created: 2026-02-23
-last-updated: 2026-02-23
+last-updated: 2026-03-12
 question: "What happens when tg-scanner crashes — does L1 fail open, and how do we mitigate?"
 parent-vision: VISION-002
 gate: Pre-MVP
