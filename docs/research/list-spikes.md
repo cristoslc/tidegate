@@ -10,7 +10,7 @@ _No planned spikes._
 
 | ID | Title | Date | Commit |
 |----|-------|------|--------|
-| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Active/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-12 | bf292c8 |
+| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Active/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-12 | f90c8fb |
 
 ## Complete
 
