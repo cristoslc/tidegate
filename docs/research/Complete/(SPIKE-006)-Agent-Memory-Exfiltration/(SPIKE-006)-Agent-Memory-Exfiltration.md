@@ -20,7 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Planned | 2026-02-23 | 138d920 | Identified by adversarial threat model review |
 | Active | 2026-03-09 | 1458121 | Elevated by SPIKE-016 findings — RL agents accumulate evasion knowledge |
-| Complete | 2026-03-12 | _pending_ | Findings documented; primary feedback channel mitigated by ADR-006 |
+| Complete | 2026-03-12 | a8fa47f | Findings documented; primary feedback channel mitigated by ADR-006 |
 
 ## Source
 
