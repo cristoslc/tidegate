@@ -25,6 +25,7 @@ blocks:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Planned | 2026-03-06 | b7482a6 | From claude-vm analysis; see ADR-005 |
+| Active | 2026-03-12 | 1f1ec57 | Research in progress |
 
 ## Question
 
