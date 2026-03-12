@@ -1,0 +1,46 @@
+## SPIKE-017 experiment: mock gateway + egress proxy on agent-net
+## Publishes gateway on host:4100 so a libkrun VM can reach it
+## via gvproxy NAT or TSI.
+
+services:
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "4100:80"
+    networks:
+      - agent-net
+    volumes:
+      - ./nginx-gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cat /proc/1/status > /dev/null"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+
+  egress-proxy:
+    image: alpine/socat:latest
+    command: TCP-LISTEN:3128,fork,reuseaddr TCP:gateway:80
+    ports:
+      - "3128:3128"
+    networks:
+      - agent-net
+    depends_on:
+      gateway:
+        condition: service_healthy
+    read_only: true
+    cap_drop:
+      - ALL
+
+networks:
+  agent-net:
+    driver: bridge
