@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-001
 title: "MCP Protocol Abuse Resistance"
-status: Active
+status: Complete
 author: cristos
 created: 2026-02-21
 last-updated: 2026-03-12
