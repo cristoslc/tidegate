@@ -20,6 +20,7 @@ depends-on: []
 |-------|------|--------|-------|
 | Planned | 2026-02-21 | db146de | Initial commit; gateway had basic JSON-RPC parsing but no hardening |
 | Active | 2026-03-12 | cc37c4b | Research in progress |
+| Complete | 2026-03-12 | d1cdb60 | Four hardening layers: body size cap, JSON depth limit, rate limiting, JSON-RPC error responses |
 
 ## Question
 
