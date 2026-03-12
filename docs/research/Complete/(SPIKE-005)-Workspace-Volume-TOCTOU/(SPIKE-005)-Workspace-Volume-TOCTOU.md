@@ -1,7 +1,7 @@
 ---
 artifact: SPIKE-005
 title: "Workspace Volume TOCTOU"
-status: Active
+status: Complete
 author: cristos
 created: 2026-02-23
 last-updated: 2026-03-12
