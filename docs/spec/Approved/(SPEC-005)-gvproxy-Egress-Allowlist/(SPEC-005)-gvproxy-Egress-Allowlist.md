@@ -82,4 +82,4 @@ Upstream gvproxy has an open PR (#609) adding `blockAllOutbound` + domain-based 
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | — | Supersedes SPEC-002 (Seatbelt); per ADR-009 infrastructure-embedded enforcement |
+| Approved | 2026-03-13 | e6a1bcb | Supersedes SPEC-002 (Seatbelt); per ADR-009 infrastructure-embedded enforcement |

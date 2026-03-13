@@ -98,4 +98,4 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; backed by SPIKE-015 + SPIKE-017 |
-| Abandoned | 2026-03-13 | — | Superseded by SPEC-004 under EPIC-002; egress model revised per ADR-009 |
+| Abandoned | 2026-03-13 | e6a1bcb | Superseded by SPEC-004 under EPIC-002; egress model revised per ADR-009 |

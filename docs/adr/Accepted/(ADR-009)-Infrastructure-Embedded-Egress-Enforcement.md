@@ -95,4 +95,4 @@ passt has no destination filtering capability. `--no-tcp --no-udp` blocks everyt
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Accepted | 2026-03-13 | — | Based on SPIKE-022 findings; supersedes SPIKE-021 device-level approach |
+| Accepted | 2026-03-13 | e6a1bcb | Based on SPIKE-022 findings; supersedes SPIKE-021 device-level approach |

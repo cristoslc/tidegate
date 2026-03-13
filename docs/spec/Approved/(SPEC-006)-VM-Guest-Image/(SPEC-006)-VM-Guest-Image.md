@@ -74,4 +74,4 @@ The libkrun VM needs a minimal Linux guest image containing the agent runtime (N
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | — | Supersedes SPEC-003; same requirements, new parent epic |
+| Approved | 2026-03-13 | e6a1bcb | Supersedes SPEC-003; same requirements, new parent epic |

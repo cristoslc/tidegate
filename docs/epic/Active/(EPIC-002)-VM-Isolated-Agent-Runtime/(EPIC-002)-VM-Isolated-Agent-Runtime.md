@@ -110,4 +110,4 @@ M1-M4 (MVP) → M5 (agent-proxy) → M6 (taint tracking) → M7 (skill hardening
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-03-13 | — | Supersedes EPIC-001; incorporates SPIKE-015 through SPIKE-022 and ADR-008/009 |
+| Active | 2026-03-13 | e6a1bcb | Supersedes EPIC-001; incorporates SPIKE-015 through SPIKE-022 and ADR-008/009 |

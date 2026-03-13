@@ -22,7 +22,7 @@ success-criteria:
 |-------|------|--------|-------|
 | Proposed | 2026-03-06 | b7482a6 | From claude-vm analysis; see ADR-005 |
 | Active | 2026-03-13 | b530c62 | Both spikes complete (SPIKE-015, SPIKE-017); decomposed into SPECs |
-| Abandoned | 2026-03-13 | — | Superseded by EPIC-002; SPIKE-018 through SPIKE-022 invalidated assumptions (device-level egress, incomplete Linux strategy) |
+| Abandoned | 2026-03-13 | e6a1bcb | Superseded by EPIC-002; SPIKE-018 through SPIKE-022 invalidated assumptions (device-level egress, incomplete Linux strategy) |
 
 ## Goal
 

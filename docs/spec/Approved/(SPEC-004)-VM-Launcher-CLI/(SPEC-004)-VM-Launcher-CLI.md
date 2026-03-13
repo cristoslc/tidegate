@@ -103,4 +103,4 @@ EPIC-002 requires a CLI to boot an agent inside a libkrun VM with virtio-net net
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | — | Supersedes SPEC-001; incorporates SPIKE-018/019 and ADR-009 |
+| Approved | 2026-03-13 | e6a1bcb | Supersedes SPEC-001; incorporates SPIKE-018/019 and ADR-009 |
