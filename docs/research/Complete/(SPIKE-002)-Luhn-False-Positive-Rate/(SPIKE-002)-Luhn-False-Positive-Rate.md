@@ -156,7 +156,7 @@ The industry consensus is clear: **no production DLP system relies on Luhn alone
 
 ### Recommendations
 
-1. **Revise the "zero false positive" claims** in `docs/threat-model/sensitive-data.md` and `docs/vision/Draft/(VISION-002)-Tidegate/system-architecture.md`. Replace with: "near-zero false positive with compound validation (IIN prefix + per-network length + Luhn checksum)."
+1. **Revise the "zero false positive" claims** in `docs/threat-model/sensitive-data.md` and `docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md`. Replace with: "near-zero false positive with compound validation (IIN prefix + per-network length + Luhn checksum)."
 
 2. **Scanner implementation requirements for `src/scanner/scanner.py`:**
    - Extract contiguous digit sequences of 13-19 characters (with optional separators: spaces, hyphens)

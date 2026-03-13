@@ -1,11 +1,11 @@
 ---
 title: "Tidegate"
 artifact: VISION-002
-status: Draft
+status: Active
 product-type: personal
 author: cristos
 created: 2026-03-11
-last-updated: 2026-03-12
+last-updated: 2026-03-13
 depends-on: []
 evidence-pool: ""
 ---
@@ -70,3 +70,4 @@ One person, part-time. This constrains everything downstream: the architecture m
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-11 | 7c0ac59 | Fresh start; aspirational framing, replaces VISION-001 |
+| Active | 2026-03-13 | _pending_ | Value proposition and scope confirmed |

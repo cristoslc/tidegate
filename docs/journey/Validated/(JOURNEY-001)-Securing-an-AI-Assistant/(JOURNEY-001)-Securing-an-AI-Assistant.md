@@ -1,10 +1,10 @@
 ---
 title: "Securing an AI Assistant"
 artifact: JOURNEY-001
-status: Draft
+status: Validated
 author: cristos
 created: 2026-03-11
-last-updated: 2026-03-11
+last-updated: 2026-03-13
 parent-vision: VISION-002
 linked-personas:
   - PERSONA-001
@@ -94,3 +94,4 @@ journey
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-11 | 7c0ac59 | Initial journey for PERSONA-001 under VISION-002 |
+| Validated | 2026-03-13 | _pending_ | Pain points confirmed; journey stages stable |
