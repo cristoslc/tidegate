@@ -8,9 +8,7 @@ _No planned spikes._
 
 ## Active
 
-| ID | Title | Date | Commit | Notes |
-|----|-------|------|--------|-------|
-| SPIKE-021 | [Linux Egress Enforcement](./Active/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) | 2026-03-13 | 11e46d3 | Evaluate Linux egress mechanisms equivalent to macOS Seatbelt |
+_No active spikes._
 
 ## Complete
 
@@ -35,6 +33,7 @@ _No planned spikes._
 | SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
 | SPIKE-019 | [Linux VM Launcher Evaluation](./Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 5863b1f | GO: libkrun on both platforms; Cloud Hypervisor as Linux fallback |
 | SPIKE-020 | [TSI Scope Egress Sufficiency](./Complete/(SPIKE-020)-TSI-Scope-Egress-Sufficiency/(SPIKE-020)-TSI-Scope-Egress-Sufficiency.md) | 2026-03-13 | b8cbfc6 | NO-GO sole enforcement; YES defense-in-depth layer |
+| SPIKE-021 | [Linux Egress Enforcement](./Complete/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) | 2026-03-13 | — | GO: cgroup/eBPF (BPF_CGROUP_INET4_CONNECT) is the Linux Seatbelt equivalent |
 
 ## Abandoned
 
