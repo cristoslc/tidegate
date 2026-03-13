@@ -4,15 +4,13 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 ## Planned
 
-| ID | Title | Date | Commit | Notes |
-|----|-------|------|--------|-------|
-| SPIKE-019 | [Linux VM Launcher Evaluation](./Planned/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 65c695e | Parallel to SPIKE-018; scoped to Linux/KVM |
+_No planned spikes._
 
 ## Active
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-018 | [macOS VM Launcher Evaluation](./Active/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 65c695e | Supersedes SPIKE-015 for macOS; Lima v2.0 as primary candidate |
+| SPIKE-019 | [Linux VM Launcher Evaluation](./Active/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | — | Activated; begin Linux/KVM launcher research |
 
 ## Complete
 
@@ -34,6 +32,7 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 | SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | 9a37d1a | GO: Cloud Hypervisor (Linux) + Apple Containerization (macOS 26+); <2s achievable |
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 | SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | 296b22c | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
+| SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | — | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
 
 ## Abandoned
 

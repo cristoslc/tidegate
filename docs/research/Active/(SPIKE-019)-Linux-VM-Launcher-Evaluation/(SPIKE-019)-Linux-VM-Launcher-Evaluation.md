@@ -1,7 +1,7 @@
 ---
 title: "Linux VM Launcher Evaluation"
 artifact: SPIKE-019
-status: Planned
+status: Active
 author: cristos
 created: 2026-03-13
 last-updated: 2026-03-13
