@@ -25,6 +25,12 @@ Thumbs.db
 *.swo
 *~
 
+# Experiment binary artifacts (VM images, firmware, pcap)
+*.qcow2
+*.iso
+*.fd
+*.pcap
+
 # Build artifacts
 target/
 node_modules/
