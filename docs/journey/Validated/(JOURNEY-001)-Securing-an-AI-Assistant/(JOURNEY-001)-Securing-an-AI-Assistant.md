@@ -94,4 +94,4 @@ journey
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-11 | 7c0ac59 | Initial journey for PERSONA-001 under VISION-002 |
-| Validated | 2026-03-13 | _pending_ | Pain points confirmed; journey stages stable |
+| Validated | 2026-03-13 | 43145a2 | Pain points confirmed; journey stages stable |
