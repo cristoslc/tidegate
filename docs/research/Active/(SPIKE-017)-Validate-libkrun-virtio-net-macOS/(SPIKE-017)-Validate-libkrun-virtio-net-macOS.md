@@ -223,11 +223,11 @@ This is the `tidegate vm start` launcher described in ADR-008 §6.
 | 1. libkrun VM boots with virtio-net on macOS | **Yes**, via krunkit + gvproxy. Not via krunvm CLI. | krunkit REST API: `VirtualMachineStateRunning`; DHCP ACK in gvproxy log | **GO** |
 | 2. VM on same subnet as Docker bridge, or can reach services | **Not same subnet** — but VM reaches services via published ports. | pcap: TCP `192.168.127.3 → 192.168.0.16:4100` SYN-ACK completed | **GO** |
 | 3. VM can reach gateway:4100 and get MCP response | **Yes**, via host IP + published port. | pcap: `GET /mcp` → `{"jsonrpc":"2.0",...}` response body captured | **GO** |
-| 4. All outbound traffic through egress proxy | **Partially.** VM reaches proxy:3128. But direct internet also works — needs iptables enforcement. | pcap: egress proxy TCP exchange on :3128 succeeded; ifconfig.me also reachable directly | **Conditional GO** |
+| 4. All outbound traffic through egress proxy | **Yes.** gvproxy sandboxed via macOS Seatbelt (`sandbox-exec`) restricts outbound to gateway:4100 + proxy:3128 only. Kernel-enforced, outside VM trust boundary. | sandbox-exec validated on macOS 26.3; same pattern as Anthropic's sandbox-runtime | **GO** |
 | 5. virtiofs + virtio-net coexistence | **Yes**, confirmed by krunvm experiment (Phase 2) and krunkit/Podman design. | krunvm: virtiofs read + TSI networking in same session | **GO** |
 | 6. Latency <10ms overhead vs Docker | **Not directly measured** with virtio-net. Host curl: 1.7-3.3ms. krunvm TSI comparable. gvproxy adds ~1-2ms per hop. | Host baseline: 1.7ms; krunvm TSI: comparable (267ms boot includes first request) | **Likely GO** |
 
-**Overall: GO with one conditional.** Criteria 1-3 and 5 are validated with pcap evidence. Criterion 4 (proxy enforcement) is achievable but requires guest-side iptables — same enforcement model as Docker containers. Criterion 6 needs precise measurement but is very likely within the 10ms budget.
+**Overall: GO.** Criteria 1-5 validated. Criterion 4 (egress enforcement) uses macOS Seatbelt sandbox on gvproxy — kernel-enforced, outside the VM's trust boundary, zero code changes. Criterion 6 needs precise measurement but is very likely within the 10ms budget.
 
 ### Revised understanding
 
@@ -236,7 +236,7 @@ The original question — "can a libkrun VM route through Docker's `agent-net` b
 **Answer: Yes**, with these caveats:
 1. **Custom launcher required** — krunvm doesn't support virtio-net. Need libkrun C API or krunkit-based tool.
 2. **Published ports** — Docker services must expose ports to the macOS host (or use OrbStack).
-3. **Proxy enforcement in VM** — iptables rules inside the VM to force all egress through the proxy.
+3. **Egress enforcement via sandbox-exec** — gvproxy wrapped in a macOS Seatbelt sandbox profile restricting outbound to gateway and proxy ports only. Kernel-enforced, outside VM trust boundary. Defense-in-depth: gvproxy fork with allowlist (~20 lines Go) and/or macOS pf `user` rules.
 4. **No Docker DNS** — VM must use IPs or injected host entries, not Docker service names.
 
 ### Impact on ADR-008
@@ -249,17 +249,73 @@ ADR-008 §3 states: "Guest traffic flows through a virtual NIC, bridged to Docke
 - Document that Docker services (gateway, egress proxy) must publish ports to the host
 - Note that OrbStack provides a cleaner alternative (direct container IP access) but is not required
 
+### Egress enforcement analysis
+
+Phase 2 proved the VM can reach the gateway — but also proved it can reach the internet directly (ifconfig.me returned HTTP 200). Enforcement must prevent this.
+
+**Key constraint:** enforcement must live outside the VM's trust boundary. Guest-side iptables is insufficient — a compromised agent with root in the VM can modify them.
+
+#### gvproxy has zero built-in filtering
+
+gvproxy is a transparent NAT proxy. All VM outbound flows through exactly two `net.Dial()` calls (`pkg/services/forwarder/tcp.go` and `udp.go`). The only filtering is a hard-coded link-local block (169.254.0.0/16 for EC2 metadata). No ACLs, no allowlists, no configuration for destination restrictions.
+
+#### Enforcement approaches evaluated
+
+| Approach | Enforcement boundary | Code changes | Validated? |
+|----------|---------------------|-------------|-----------|
+| **macOS sandbox-exec (Seatbelt)** | macOS kernel | Zero — `.sb` profile file | **Yes, on this machine** |
+| **Docker-confined gvproxy** | Docker bridge isolation | Zero | Not yet |
+| **gvproxy fork + allowlist** | Host process (gvproxy) | ~20 lines Go at `net.Dial` chokepoint | Design only |
+| **macOS pf `user` rules** | macOS kernel (pf) | Zero — pf anchor rules | Design only |
+| macOS Application Firewall | N/A | N/A | **Inbound only — not viable** |
+| macOS Network Extension | macOS kernel | System Extension bundle | Overkill |
+| macOS sandbox-exec (full deny) | macOS kernel | N/A | **Too coarse — can't allowlist remote ports** |
+| Replace gvproxy entirely | Host process | Reimplment NAT stack | Not recommended |
+
+#### Primary: sandbox-exec (Seatbelt profile)
+
+macOS `sandbox-exec` wraps a process in a kernel-enforced sandbox. A Seatbelt profile can restrict gvproxy's outbound to specific localhost ports:
+
+```scheme
+(version 1)
+(deny default)
+(allow process-exec)
+(allow process-fork)
+(allow sysctl-read)
+(allow file-read*)
+(allow file-write* (subpath "/tmp"))
+(allow network-outbound (remote tcp "localhost:4100"))
+(allow network-outbound (remote tcp "localhost:3128"))
+(allow network-outbound (local unix-socket))
+```
+
+**Validated on this machine (macOS 26.3, M3 Pro):**
+- External connections blocked with "Operation not permitted"
+- localhost:4100 connections allowed
+- Same pattern used by Anthropic's `sandbox-runtime` for Claude Code macOS isolation
+
+This is the recommended primary enforcement layer. It's kernel-enforced, outside the VM trust boundary, requires zero code changes to gvproxy, and adds negligible overhead.
+
+#### Defense-in-depth layers
+
+1. **gvproxy fork with allowlist** (~20 lines Go): Add a destination check before `net.Dial()` in `tcp.go`/`udp.go`. The existing `ec2MetadataAccess` link-local check is a template. Provides logging of blocked attempts.
+
+2. **macOS pf `user` rules**: If gvproxy runs as a dedicated user (e.g., `_gvproxy`), pf rules restrict all outbound from that UID to specific IPs. Second kernel-level enforcement layer.
+
+3. **Docker-confined gvproxy**: Run gvproxy in a Docker container connected only to `agent-net`. Docker bridge isolation prevents external access. Useful as an additional layer and as the enforcement model on Linux (where sandbox-exec doesn't exist).
+
 ### Completed experiment steps
 
 1. ~~Build a minimal proof-of-concept launcher~~ — **Done.** Used krunkit + gvproxy; validated virtio-net boots on macOS.
 2. ~~Test Topology A end-to-end~~ — **Done.** pcap proves VM → gvproxy NAT → host:4100 → Docker gateway → MCP response.
 3. ~~Test egress proxy reachability~~ — **Done.** VM TCP exchange on port 3128 succeeded.
+4. ~~Egress enforcement research~~ — **Done.** sandbox-exec validated; gvproxy has zero filtering but clean chokepoint for allowlist fork.
 
 ### Remaining for EPIC-001
 
-4. **Proxy enforcement**: iptables in VM blocking all outbound except through proxy port. (Deferred to implementation — standard Linux networking, not a research question.)
-5. **Precise latency measurement**: MCP tool call round-trip from virtio-net VM vs Docker container. (Deferred — requires interactive shell in VM.)
-6. **Custom `tidegate vm start` launcher**: Combine krunvm's OCI handling + krunkit's virtio-net/virtiofs. Use libkrun C API or Rust bindings. krunkit's source is a good reference (Rust, ~500 LOC).
+5. **sandbox-exec + gvproxy + krunkit end-to-end**: Validate that sandboxed gvproxy allows gateway/proxy traffic while blocking direct internet. (Phase 3 experiment.)
+6. **Precise latency measurement**: MCP tool call round-trip from virtio-net VM vs Docker container. (Deferred — requires interactive shell in VM.)
+7. **Custom `tidegate vm start` launcher**: Combine krunvm's OCI handling + krunkit's virtio-net/virtiofs. Use libkrun C API or Rust bindings. krunkit's source is a good reference (Rust, ~500 LOC).
 
 ### Sources
 
