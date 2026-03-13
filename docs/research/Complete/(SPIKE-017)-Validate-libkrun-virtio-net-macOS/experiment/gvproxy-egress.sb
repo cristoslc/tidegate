@@ -1,0 +1,33 @@
+;; Seatbelt profile for gvproxy egress enforcement
+;; Allows: localhost:4100 (gateway), localhost:3128 (egress proxy),
+;;         local unix sockets (gvproxy VM communication)
+;; Denies: all other network, all other filesystem writes
+(version 1)
+(deny default)
+
+;; Process lifecycle
+(allow process-exec)
+(allow process-fork)
+(allow sysctl-read)
+(allow signal (target self))
+(allow mach-lookup)
+
+;; Read access (binaries, libs, config)
+(allow file-read*)
+
+;; Write access — only tmpdir (gvproxy needs scratch space)
+(allow file-write* (subpath "/tmp"))
+(allow file-write* (subpath "/private/tmp"))
+
+;; Local unix sockets — gvproxy listens for VM connections here
+(allow network-bind (local unix-socket))
+(allow network-outbound (local unix-socket))
+(allow network-inbound (local unix-socket))
+
+;; Local TCP bind/inbound — gvproxy may bind local ports for forwarding
+(allow network-bind (local tcp))
+(allow network-inbound (local tcp))
+
+;; Outbound: ONLY gateway and egress proxy on localhost
+(allow network-outbound (remote tcp "localhost:4100"))
+(allow network-outbound (remote tcp "localhost:3128"))

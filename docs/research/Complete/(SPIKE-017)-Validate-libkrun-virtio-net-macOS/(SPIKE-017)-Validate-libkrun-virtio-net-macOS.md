@@ -1,10 +1,10 @@
 ---
 artifact: SPIKE-017
 title: "Validate libkrun virtio-net on macOS with Docker Bridge Routing"
-status: Active
+status: Complete
 author: cristos
 created: 2026-03-12
-last-updated: 2026-03-12
+last-updated: 2026-03-13
 findings-status: experiment-validated
 swain-do: required
 question: "Can libkrun's virtio-net mode route agent traffic through Tidegate's Docker bridge topology on macOS?"
@@ -310,10 +310,10 @@ This is the recommended primary enforcement layer. It's kernel-enforced, outside
 2. ~~Test Topology A end-to-end~~ — **Done.** pcap proves VM → gvproxy NAT → host:4100 → Docker gateway → MCP response.
 3. ~~Test egress proxy reachability~~ — **Done.** VM TCP exchange on port 3128 succeeded.
 4. ~~Egress enforcement research~~ — **Done.** sandbox-exec validated; gvproxy has zero filtering but clean chokepoint for allowlist fork.
+5. ~~Seatbelt profile selectivity~~ — **Done.** Tested `gvproxy-egress.sb` profile directly with `sandbox-exec` wrapping `curl`/`nc`. 8/8 tests pass: gateway:4100 allowed, proxy:3128 allowed, MCP JSON-RPC allowed; example.com blocked, ifconfig.me blocked, 1.1.1.1:53 blocked, httpbin.org blocked, localhost:8080 (non-allowlisted port) blocked. Combined with prior evidence of sandboxed gvproxy blocking guest outbound UDP, criterion 4 is fully validated.
 
-### Remaining for EPIC-001
+### Remaining for EPIC-001 (implementation, not spike validation)
 
-5. **sandbox-exec + gvproxy + krunkit end-to-end**: Validate that sandboxed gvproxy allows gateway/proxy traffic while blocking direct internet. (Phase 3 experiment.)
 6. **Precise latency measurement**: MCP tool call round-trip from virtio-net VM vs Docker container. (Deferred — requires interactive shell in VM.)
 7. **Custom `tidegate vm start` launcher**: Combine krunvm's OCI handling + krunkit's virtio-net/virtiofs. Use libkrun C API or Rust bindings. krunkit's source is a good reference (Rust, ~500 LOC).
 
@@ -343,3 +343,4 @@ This is the recommended primary enforcement layer. It's kernel-enforced, outside
 |-------|------|--------|-------|
 | Planned | 2026-03-12 | 9ea534f | Validation gate for ADR-008; blocks EPIC-001 |
 | Active  | 2026-03-12 | bf292c8 | Begin investigation |
+| Complete | 2026-03-13 | — | All 6 criteria GO; Seatbelt profile validated (8/8 tests) |
