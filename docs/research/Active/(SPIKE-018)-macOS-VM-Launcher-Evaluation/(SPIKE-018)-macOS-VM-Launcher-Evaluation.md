@@ -218,4 +218,4 @@ This reframes SPEC-001 from "build a VM launcher" to "build a Lima integration l
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-03-13 | — | Supersedes SPIKE-015 for macOS scope; populated with research findings |
+| Active | 2026-03-13 | 65c695e | Supersedes SPIKE-015 for macOS scope; populated with research findings |

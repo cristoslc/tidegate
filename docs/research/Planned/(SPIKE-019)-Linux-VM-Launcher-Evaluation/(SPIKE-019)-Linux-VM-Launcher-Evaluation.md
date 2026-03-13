@@ -109,4 +109,4 @@ If no orchestrator provides full launcher functionality:
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Planned | 2026-03-13 | — | Parallel to SPIKE-018 (macOS); scoped to Linux/KVM |
+| Planned | 2026-03-13 | 65c695e | Parallel to SPIKE-018 (macOS); scoped to Linux/KVM |
