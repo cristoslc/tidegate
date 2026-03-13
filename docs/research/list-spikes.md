@@ -10,7 +10,7 @@ _No planned spikes._
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| SPIKE-019 | [Linux VM Launcher Evaluation](./Active/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | — | Activated; begin Linux/KVM launcher research |
+| SPIKE-019 | [Linux VM Launcher Evaluation](./Active/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | Activated; begin Linux/KVM launcher research |
 
 ## Complete
 
@@ -32,7 +32,7 @@ _No planned spikes._
 | SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | 9a37d1a | GO: Cloud Hypervisor (Linux) + Apple Containerization (macOS 26+); <2s achievable |
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 | SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | 296b22c | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
-| SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | — | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
+| SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
 
 ## Abandoned
 
