@@ -269,17 +269,120 @@ libkrun's built-in virtiofs avoids the two-process coordination complexity of Cl
 
 **Disqualified:** Firecracker (no virtiofs), QEMU microvm (GPL, slower), Kata (over-engineered), Lima on Linux (wrong backend), crun/krun (no egress), Flintlock (over-engineered).
 
-### Impact on SPEC-001
+### Extended research: existing libkrun wrappers on Linux
 
-SPIKE-018 recommends Lima as the macOS orchestration layer. This spike finds no equivalent orchestrator for Linux — Lima on Linux uses QEMU (wrong VMM), Kata is over-engineered. The options are:
+A follow-up investigation searched harder for an existing orchestrator that could eliminate custom wrapper code on Linux.
 
-**Option A: libkrun on both, Lima on macOS only.** macOS uses Lima + krunkit (SPIKE-018). Linux uses a thin custom wrapper around libkrun directly. The wrapper is ~200 LOC since libkrun's built-in virtiofs eliminates the virtiofsd daemon management. Different orchestration layers but same VMM.
+#### microsandbox (zerocore-ai/microsandbox, Apache-2.0)
 
-**Option B: libkrun on both, custom wrapper on both.** Skip Lima, write one cross-platform launcher using libkrun's C/Rust API. Simpler architecture but loses Lima's provisioning/lifecycle features on macOS.
+**The closest match to Tidegate's needs — and it changes the architecture picture.**
 
-**Option C: libkrun on macOS (via Lima), Cloud Hypervisor on Linux (custom wrapper).** Best-of-breed per platform. Two VMMs, two wrappers, more maintenance.
+- **Stars:** ~5k. **Last push:** 2026-03-13. Active development (v0.2.6, 59 open issues).
+- **What it does:** Agent sandboxing platform built on libkrun. Python/JS/Rust SDKs, CLI (`msb`), REST API, MCP integration.
+- **virtiofs:** Yes, via `krun_add_virtiofs()`. CLI: `--mapped-dirs=/host/path:/guest/path`.
+- **Env var injection:** Yes. `--envs=KEY=VALUE` and SDK API.
+- **Custom images:** OCI-compatible container images.
+- **Programmatic API:** Strong. Async Python/JS/Rust SDKs, CLI, REST API, MCP tools.
 
-**Recommended: Option A.** It combines SPIKE-018's Lima recommendation (macOS) with this spike's finding that libkrun is the best Linux VMM for consistency. The Linux wrapper is minimal because libkrun's built-in virtiofs eliminates the biggest orchestration burden.
+**Networking: TSI, not virtio-net.** Source-confirmed from `microsandbox-core/lib/vm/microvm.rs` — calls `krun_set_tsi_scope()` and `krun_set_port_map()`. The FFI bindings declare `krun_set_passt_fd` and `krun_set_gvproxy_path` but they are `#[allow(dead_code)]` — present but unused.
+
+**Egress control via `krun_set_tsi_scope()`:**
+- Scope 0 (None): Block all IP communication
+- Scope 1 (Group): Allow within subnet only
+- Scope 2 (Public): Allow public IPs only
+- Scope 3 (Any): Allow any IP
+
+This is socket-level egress control built into libkrun itself — no iptables, no Seatbelt, no gvproxy wrapping needed. The VMM intercepts all socket syscalls and enforces the scope before they reach the host network.
+
+**Key insight:** `krun_set_tsi_scope()` is a recent libkrun addition that provides egress control at a fundamentally different layer than virtio-net + packet filtering. It may obviate the entire gvproxy + Seatbelt/nftables approach.
+
+#### muvm (AsahiLinux/muvm, MIT)
+
+- **Stars:** 831. Active. Maintained by Sergio Lopez (Red Hat/libkrun author).
+- **What it does:** Runs host programs inside a libkrun microVM. Mounts host `/` via virtiofs. **Not** for arbitrary VM images — it's a transparency tool, not a sandbox.
+- **Networking:** Uses **passt** (virtio-net, not TSI). `--passt-socket=PATH` connects to existing passt instance.
+- **virtiofs:** Yes, including DAX mode.
+- **Env injection:** `--env=KEY=VALUE`.
+- **Egress control:** None built-in.
+- **Assessment:** Wrong security model (host transparency vs isolation). But its source code is the best reference for libkrun + passt + virtiofs on Linux.
+
+#### Lima v2.0 plugin system
+
+- Added VM driver plugins in v2.0. External drivers as `lima-driver-<name>` binaries communicating via gRPC.
+- **No libkrun or Cloud Hypervisor driver exists for Linux.** krunkit driver is macOS-only.
+- Writing one is moderate effort — implement ~12 gRPC methods. Plugin API is marked experimental.
+
+#### Podman + krun on Linux
+
+- `podman run --runtime krun` calls `krun_set_root("/")` + `krun_set_exec()`. **No networking calls at all** — TSI activates by default.
+- No configuration surface to switch to virtio-net.
+- `podman machine` has no libkrun provider on Linux.
+
+#### RamaLama (containers/ramalama, MIT)
+
+- AI model lifecycle tool. `--oci-runtime krun` runs model server in libkrun via Podman.
+- Delegates everything to Podman + krun. TSI-only. Not a general VM launcher.
+
+#### Other libkrun projects
+
+- **nerdbox** (containerd/nerdbox): containerd runtime shim with libkrun. Experimental.
+- **ec1** (walteh/ec1): Go bindings for libkrun. Proof-of-concept.
+- **krunsh**: Minimal Go CLI for ephemeral libkrun shells. Research quality.
+
+### Revised comparison matrix
+
+| | microsandbox | muvm | Lima plugin | Podman+krun | Custom wrapper |
+|---|---|---|---|---|---|
+| **License** | Apache-2.0 | MIT | Apache-2.0 | GPL-2.0 | N/A |
+| **Linux** | Yes | Yes | No driver | Yes | Yes |
+| **Networking** | TSI (scoped) | passt (virtio-net) | N/A | TSI (unscoped) | Either |
+| **virtiofs** | Yes | Yes | N/A | Implicit | Yes |
+| **Env injection** | Yes | Yes | N/A | Partial | Yes |
+| **Programmatic API** | Python/JS/Rust SDKs | CLI only | N/A | OCI | Custom |
+| **Custom images** | OCI | No (host root) | N/A | OCI | Any |
+| **Egress control** | `krun_set_tsi_scope()` (4 levels) | None | N/A | None | nftables or TSI scope |
+| **Drop-in for SPEC-001?** | **Nearly** | No | No | No | By definition |
+
+### The TSI scope question
+
+This finding changes the architecture discussion. SPIKE-017 validated gvproxy + virtio-net + Seatbelt for egress enforcement on macOS. But `krun_set_tsi_scope()` provides egress control at the VMM level — no gvproxy, no Seatbelt, no nftables. The tradeoffs:
+
+| | virtio-net + packet filtering | TSI + scope |
+|---|---|---|
+| **Guest sees** | Real NIC (eth0) | No NIC — sockets proxied transparently |
+| **Egress enforcement** | Host-side: Seatbelt (macOS), nftables (Linux) | VMM-internal: `krun_set_tsi_scope()` |
+| **Granularity** | IP + port rules | 4 coarse scopes (None/Group/Public/Any) |
+| **Port forwarding to gateway** | Via routing/proxy env vars | Via `krun_set_port_map()` |
+| **Complexity** | gvproxy lifecycle + host firewall rules | One API call |
+| **iptables inside guest** | Works (real NIC) | Not possible (no NIC) |
+| **Sufficient for Tidegate?** | Yes | **Maybe** — scope 1 (Group) + port map to gateway:4100 could work, but cannot allowlist specific external destinations through the proxy |
+
+**Open question for SPEC-001:** Can TSI scope + port mapping provide sufficient egress control for the Tidegate use case? Scope 1 (Group) blocks all non-subnet traffic, and `krun_set_port_map()` exposes the gateway and proxy as mapped ports. But the agent needs to reach the egress proxy (which then reaches the internet on the agent's behalf) — this requires the proxy to be on the same subnet or mapped as a port.
+
+### Revised Impact on SPEC-001
+
+**Option A (revised): microsandbox as the Linux launcher.**
+- Use microsandbox for VM lifecycle, OCI images, virtiofs, env injection, egress control
+- TSI scope for egress enforcement instead of gvproxy + nftables
+- SDK-driven (Python/JS/Rust) instead of shell wrapper
+- Risk: TSI scope granularity may not be sufficient; microsandbox is pre-1.0
+
+**Option B: microsandbox + passt patch.**
+- microsandbox already has FFI bindings for `krun_set_passt_fd` (unused)
+- A PR to add `--net=passt` mode would give virtio-net when needed
+- Keeps microsandbox's SDK/CLI/API layer, adds packet-level networking as an option
+
+**Option C (original): Custom thin wrapper around libkrun.**
+- ~200 LOC using libkrun C/Rust API directly
+- Full control over networking choice (TSI or passt)
+- No dependency on a pre-1.0 project
+
+**Option D: Lima on macOS, microsandbox on Linux.**
+- Best-of-breed per platform
+- Different CLIs but same VMM (libkrun)
+- Most mature orchestration layer on each platform
+
+**Revised recommendation: Option D, with Option B as a convergence path.** microsandbox is the Linux answer to Lima on macOS — an existing orchestrator that wraps libkrun with the right abstractions. If microsandbox adds a passt networking mode (the FFI is already there), it could potentially replace Lima on macOS too, converging on a single cross-platform tool.
 
 ## References
 
@@ -306,16 +409,14 @@ SPIKE-018 recommends Lima as the macOS orchestration layer. This spike finds no 
 - [virtiofsd Rust crate](https://crates.io/crates/virtiofsd)
 - [TAP and bridge networking on Linux](https://dev.to/krjakbrjak/setting-up-vm-networking-on-linux-bridges-taps-and-more-2bbc)
 - [nftables (ArchWiki)](https://wiki.archlinux.org/title/Nftables)
-
-- SPIKE-015: Evaluate VM Isolation for Agent Container (Cloud Hypervisor recommendation)
-- SPIKE-018: macOS VM Launcher Evaluation (parallel spike)
-- [Cloud Hypervisor](https://www.cloudhypervisor.org/)
-- [Firecracker](https://firecracker-microvm.github.io/)
-- [Kata Containers](https://katacontainers.io/)
-- [libkrun KVM mode](https://github.com/containers/libkrun)
-- [crun/krun](https://github.com/containers/crun/blob/main/krun.1.md)
-- [E2B Firecracker sandboxes](https://e2b.dev/)
-- [Flintlock microVM management](https://github.com/weaveworks-liquidmetal/flintlock)
+- [microsandbox](https://github.com/zerocore-ai/microsandbox)
+- [microsandbox docs](https://docs.microsandbox.dev/)
+- [muvm](https://github.com/AsahiLinux/muvm)
+- [muvm X11 bridging](https://asahilinux.org/2024/12/muvm-x11-bridging/)
+- [Lima VM driver plugins](https://lima-vm.io/docs/config/plugin/vm/)
+- [Lima driver interface (DeepWiki)](https://deepwiki.com/lima-vm/lima/10.1-driver-interface-and-lifecycle)
+- [containerd/nerdbox](https://github.com/containerd/nerdbox)
+- [walteh/ec1](https://github.com/walteh/ec1)
 
 ## Lifecycle
 
