@@ -248,4 +248,4 @@ Layers 2 and 3 are optional hardening. Layer 1 alone meets all Go criteria.
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Active | 2026-03-13 | 11e46d3 | Evaluate Linux egress enforcement mechanisms |
-| Complete | 2026-03-13 | — | GO: cgroup/eBPF (BPF_CGROUP_INET4_CONNECT) is the Linux Seatbelt equivalent |
+| Complete | 2026-03-13 | 245eba5 | GO: cgroup/eBPF (BPF_CGROUP_INET4_CONNECT) is the Linux Seatbelt equivalent |
