@@ -1,0 +1,35 @@
+;; Seatbelt profile for gvproxy egress enforcement.
+;;
+;; Restricts gvproxy's outbound network connections to the Tidegate
+;; gateway and egress proxy only. All other outbound traffic is denied.
+;;
+;; This profile is kernel-enforced (macOS sandbox), outside the VM's
+;; trust boundary. A compromised agent inside the VM cannot modify it.
+;;
+;; Default ports: gateway 4100, proxy 3128.
+;; For custom ports, generate this profile from tidegate.yaml.
+;;
+;; Validated: SPIKE-017 (8/8 test cases pass on macOS 26.3, M3 Pro)
+
+(version 1)
+(deny default)
+
+;; Process lifecycle
+(allow process-exec)
+(allow process-fork)
+(allow sysctl-read)
+
+;; Filesystem: read anything, write to /tmp only
+(allow file-read*)
+(allow file-write* (subpath "/tmp"))
+
+;; Network: allow only gateway and proxy on localhost
+(allow network-outbound (remote tcp "localhost:4100"))
+(allow network-outbound (remote tcp "localhost:3128"))
+
+;; Unix sockets for gvproxy internal communication
+(allow network-outbound (local unix-socket))
+(allow network-bind (local unix-socket))
+
+;; Inbound from VM (gvproxy listens on unix socket)
+(allow network-inbound (local unix-socket))
