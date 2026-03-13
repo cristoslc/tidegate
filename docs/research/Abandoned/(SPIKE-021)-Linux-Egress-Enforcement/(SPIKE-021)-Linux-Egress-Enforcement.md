@@ -249,4 +249,4 @@ Layers 2 and 3 are optional hardening. Layer 1 alone meets all Go criteria.
 |-------|------|--------|-------|
 | Active | 2026-03-13 | 11e46d3 | Evaluate Linux egress enforcement mechanisms |
 | Complete | 2026-03-13 | 245eba5 | GO: cgroup/eBPF (BPF_CGROUP_INET4_CONNECT) is the Linux Seatbelt equivalent |
-| Abandoned | 2026-03-13 | — | Wrong framing: device-level enforcement violates trust zone requirements. Superseded by SPIKE-022. OS mechanism catalog remains valid as defense-in-depth reference. |
+| Abandoned | 2026-03-13 | 2779ae9 | Wrong framing: device-level enforcement violates trust zone requirements. Superseded by SPIKE-022. OS mechanism catalog remains valid as defense-in-depth reference. |

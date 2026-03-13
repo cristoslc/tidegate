@@ -248,5 +248,5 @@ If gvproxy patching proves impractical (upstream rejection, maintenance burden),
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-03-13 | — | Investigate infrastructure-embedded egress enforcement; supersedes SPIKE-021 |
-| Complete | 2026-03-13 | — | GO: gvproxy IP:port allowlist (~90 LOC patch) is cross-platform infrastructure enforcement |
+| Active | 2026-03-13 | 2779ae9 | Investigate infrastructure-embedded egress enforcement; supersedes SPIKE-021 |
+| Complete | 2026-03-13 | 2779ae9 | GO: gvproxy IP:port allowlist (~90 LOC patch) is cross-platform infrastructure enforcement |

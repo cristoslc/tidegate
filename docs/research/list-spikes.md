@@ -35,11 +35,11 @@ _No active spikes._
 | SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
 | SPIKE-019 | [Linux VM Launcher Evaluation](./Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 5863b1f | GO: libkrun on both platforms; Cloud Hypervisor as Linux fallback |
 | SPIKE-020 | [TSI Scope Egress Sufficiency](./Complete/(SPIKE-020)-TSI-Scope-Egress-Sufficiency/(SPIKE-020)-TSI-Scope-Egress-Sufficiency.md) | 2026-03-13 | b8cbfc6 | NO-GO sole enforcement; YES defense-in-depth layer |
-| SPIKE-022 | [VM Infrastructure Egress Enforcement](./Complete/(SPIKE-022)-VM-Infrastructure-Egress-Enforcement/(SPIKE-022)-VM-Infrastructure-Egress-Enforcement.md) | 2026-03-13 | — | GO: gvproxy IP:port allowlist (~90 LOC patch) is cross-platform infrastructure enforcement |
+| SPIKE-022 | [VM Infrastructure Egress Enforcement](./Complete/(SPIKE-022)-VM-Infrastructure-Egress-Enforcement/(SPIKE-022)-VM-Infrastructure-Egress-Enforcement.md) | 2026-03-13 | 2779ae9 | GO: gvproxy IP:port allowlist (~90 LOC patch) is cross-platform infrastructure enforcement |
 
 ## Abandoned
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
 | SPIKE-010 | [Shell Wrapper Command Interception](./Abandoned/(SPIKE-010)-Shell-Wrapper-Command-Interception/(SPIKE-010)-Shell-Wrapper-Command-Interception.md) | 2026-03-06 | 8575371 | Shell wrapper approach dropped in favor of seccomp-notify and journal-based taint tracking |
-| SPIKE-021 | [Linux Egress Enforcement](./Abandoned/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) | 2026-03-13 | — | Device-level enforcement violates trust zone requirements; superseded by SPIKE-022 |
+| SPIKE-021 | [Linux Egress Enforcement](./Abandoned/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) | 2026-03-13 | 2779ae9 | Device-level enforcement violates trust zone requirements; superseded by SPIKE-022 |
