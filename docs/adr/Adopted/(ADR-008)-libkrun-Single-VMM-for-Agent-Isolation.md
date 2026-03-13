@@ -122,3 +122,4 @@ Specifically:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Proposed | 2026-03-12 | 9ea534f | SPIKE-015 findings (expanded); depends on SPIKE-017 networking validation |
+| Adopted | 2026-03-13 | 296b22c | SPIKE-017 validated; corrected networking model; added egress enforcement |

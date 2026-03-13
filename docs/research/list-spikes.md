@@ -29,7 +29,7 @@ _No active spikes._
 | SPIKE-014 | [Tideclaw IPC Orchestrator Scanning](./Complete/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning/(SPIKE-014)-Tideclaw-IPC-Orchestrator-Scanning.md) | 2026-03-11 | 30fbbc9 | Gate: GO; findings in ADR-004; latency benchmarks deferred |
 | SPIKE-015 | [Evaluate VM Isolation for Agent Container](./Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | 2026-03-12 | 9a37d1a | GO: Cloud Hypervisor (Linux) + Apple Containerization (macOS 26+); <2s achievable |
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
-| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | — | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
+| SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | 296b22c | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
 
 ## Abandoned
 

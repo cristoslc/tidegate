@@ -20,7 +20,7 @@ _No proposed ADRs._
 | ADR-004 | [IPC Orchestrator Scanning as Enforcement Seam](./Accepted/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Accepted | 2026-03-11 | — |
 | ADR-005 | [Composable VM Isolation](./Accepted/(ADR-005)-Composable-VM-Isolation.md) | Accepted | 2026-03-11 | — |
 | ADR-006 | [Opaque Deny Responses](./Adopted/(ADR-006)-Opaque-Deny-Responses.md) | Adopted | 2026-03-12 | 37e4a9b |
-| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Adopted/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Adopted | 2026-03-13 | — |
+| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Adopted/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Adopted | 2026-03-13 | 296b22c |
 
 ## Superseded
 

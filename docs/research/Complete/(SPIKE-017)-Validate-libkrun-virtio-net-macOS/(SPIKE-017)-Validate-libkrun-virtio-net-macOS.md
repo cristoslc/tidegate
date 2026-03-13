@@ -343,4 +343,4 @@ This is the recommended primary enforcement layer. It's kernel-enforced, outside
 |-------|------|--------|-------|
 | Planned | 2026-03-12 | 9ea534f | Validation gate for ADR-008; blocks EPIC-001 |
 | Active  | 2026-03-12 | bf292c8 | Begin investigation |
-| Complete | 2026-03-13 | — | All 6 criteria GO; Seatbelt profile validated (8/8 tests) |
+| Complete | 2026-03-13 | 296b22c | All 6 criteria GO; Seatbelt profile validated (8/8 tests) |
