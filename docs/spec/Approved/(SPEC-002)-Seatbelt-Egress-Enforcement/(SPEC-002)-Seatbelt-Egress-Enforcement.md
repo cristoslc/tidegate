@@ -74,4 +74,4 @@ SPIKE-017 validated macOS `sandbox-exec` (Seatbelt) as the primary enforcement m
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | _pending_ | Decomposed from EPIC-001; validated in SPIKE-017 (8/8 tests pass) |
+| Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; validated in SPIKE-017 (8/8 tests pass) |

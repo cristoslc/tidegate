@@ -21,7 +21,7 @@ success-criteria:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Proposed | 2026-03-06 | b7482a6 | From claude-vm analysis; see ADR-005 |
-| Active | 2026-03-13 | _pending_ | Both spikes complete (SPIKE-015, SPIKE-017); decomposed into SPECs |
+| Active | 2026-03-13 | b530c62 | Both spikes complete (SPIKE-015, SPIKE-017); decomposed into SPECs |
 
 ## Goal
 

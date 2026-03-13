@@ -82,4 +82,4 @@ The libkrun VM needs a minimal Linux guest image containing the agent runtime (N
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | _pending_ | Decomposed from EPIC-001; kernel requirements from SPIKE-015 |
+| Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; kernel requirements from SPIKE-015 |
