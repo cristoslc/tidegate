@@ -31,7 +31,7 @@ _No active spikes._
 | SPIKE-016 | [ROME Agentic Training Security Implications](./Complete/(SPIKE-016)-ROME-Agentic-Training-Security-Implications/(SPIKE-016)-ROME-Agentic-Training-Security-Implications.md) | 2026-03-08 | d503211 | GO: RL-trained agents pose validated risks to DLP scanning |
 | SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | 296b22c | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
 | SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
-| SPIKE-019 | [Linux VM Launcher Evaluation](./Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | — | GO: libkrun on both platforms; Cloud Hypervisor as Linux fallback |
+| SPIKE-019 | [Linux VM Launcher Evaluation](./Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 5863b1f | GO: libkrun on both platforms; Cloud Hypervisor as Linux fallback |
 
 ## Abandoned
 

@@ -323,3 +323,4 @@ SPIKE-018 recommends Lima as the macOS orchestration layer. This spike finds no 
 |-------|------|--------|-------|
 | Planned | 2026-03-13 | 65c695e | Parallel to SPIKE-018 (macOS); scoped to Linux/KVM |
 | Active | 2026-03-13 | 1a52155 | Begin Linux/KVM investigation |
+| Complete | 2026-03-13 | 5863b1f | libkrun on both platforms; Cloud Hypervisor as Linux fallback |
