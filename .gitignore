@@ -56,3 +56,7 @@ docs/research/completed/agent-selection/nanoclaw-main/**
 docs/research/completed/agent-selection/openclaw-main/**
 !docs/research/completed/agent-selection/openclaw-main/**/
 !docs/research/completed/agent-selection/openclaw-main/**/*.md
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db

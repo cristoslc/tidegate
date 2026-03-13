@@ -6,7 +6,7 @@ license: MIT
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 metadata:
   short-description: Session state and identity management
-  version: 1.0.0
+  version: 1.1.0
   author: cristos
   source: swain
 ---
@@ -111,6 +111,34 @@ User says "session info" or "what's my session":
 ### Set preference
 User says "set preference X to Y":
 - Update `preferences` in session.json
+
+## Post-operation bookmark (auto-update protocol)
+
+Other swain skills update the session bookmark after completing operations. This gives the developer a "where I left off" marker without requiring manual bookmarking.
+
+### When to update
+
+A skill should update the bookmark when it completes a **state-changing operation** — artifact transitions, task updates, commits, releases, or status checks.
+
+### How to update
+
+Use the `swain-bookmark.sh` script (in this skill's `scripts/` directory):
+
+```bash
+# Find the script
+BOOKMARK_SCRIPT="$(find . .claude .agents -path '*/swain-session/scripts/swain-bookmark.sh' -print -quit 2>/dev/null)"
+
+# Basic note
+bash "$BOOKMARK_SCRIPT" "Transitioned SPEC-001 to Approved"
+
+# Note with files
+bash "$BOOKMARK_SCRIPT" "Implemented auth middleware" --files src/auth.ts src/auth.test.ts
+
+# Clear bookmark
+bash "$BOOKMARK_SCRIPT" --clear
+```
+
+The script handles session.json discovery, atomic writes, and graceful degradation (no jq = silent no-op).
 
 ## Settings
 

@@ -13,7 +13,7 @@ metadata:
 
 # Status
 
-Cross-cutting project status dashboard. Aggregates data from artifact lifecycle (specgraph), task tracking (bd), git, GitHub issues, and session state into an activity-oriented view.
+Cross-cutting project status dashboard. Aggregates data from artifact lifecycle (specgraph), task tracking (tk), git, GitHub issues, and session state into an activity-oriented view.
 
 ## When invoked
 
@@ -32,7 +32,7 @@ Present the script output verbatim — it contains OSC 8 terminal hyperlinks for
 The script collects from five data sources:
 
 1. **Artifacts** — specgraph cache (epic progress, ready/blocked items, dependency info)
-2. **Tasks** — bd (in-progress, recently completed)
+2. **Tasks** — tk (in-progress, recently completed)
 3. **Git** — branch, working tree state, recent commits
 4. **GitHub** — open issues, issues assigned to the user
 5. **Session** — bookmarks and context from swain-session
@@ -47,7 +47,7 @@ The output is ordered by actionability, not by data source. It synthesizes data 
 4. **Decisions Waiting on You** — items requiring human judgment (spec approvals, spike verdicts, ADR decisions, triage), sorted by downstream impact. These are the developer's bottleneck.
 5. **Implementation** — items the agent can handle autonomously (approved specs, implementing tasks), sorted by impact. Only shown when implementation-ready items exist.
 6. **Blocked** — artifacts waiting on dependencies, with descriptions and "(actionable now)" annotations where the blocker is in the ready list
-7. **Tasks** — in-progress and recently completed bd tasks
+7. **Tasks** — in-progress and recently completed tk tasks
 8. **GitHub Issues** — assigned issues first, then open issues, with clickable links
 9. **Artifact counts** — summary footer
 
@@ -107,10 +107,22 @@ Read from `swain.settings.json` (project) and `~/.config/swain/settings.json` (u
 |-----|------|---------|-------------|
 | `status.cacheTTL` | number | `120` | Cache time-to-live in seconds |
 
+## Session bookmark
+
+After presenting the status output, update the session bookmark via `swain-bookmark.sh`:
+
+```bash
+BOOKMARK="$(find . .claude .agents -path '*/swain-session/scripts/swain-bookmark.sh' -print -quit 2>/dev/null)"
+bash "$BOOKMARK" "Checked status — 2 specs awaiting review, EPIC-002 needs decomposition"
+```
+
+- Note format: "Checked status — {key highlight}"
+- Pick the single most actionable highlight from the output (decisions waiting, blocked items, or epic progress)
+
 ## Error handling
 
 - If specgraph is unavailable: skip artifact section, show other data
-- If bd is unavailable: skip task section
+- If tk is unavailable: skip task section
 - If gh CLI is unavailable or no GitHub remote: skip issues section
 - If session.json doesn't exist: skip bookmark
 - Never fail hard — show whatever data is available
