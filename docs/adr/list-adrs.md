@@ -10,9 +10,7 @@ Dashboard mirroring lifecycle data from individual ADR artifacts. Source of trut
 
 ## Proposed
 
-| ID | Title | Phase | Date | Commit |
-|----|-------|-------|------|--------|
-| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Proposed/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Proposed | 2026-03-12 | 9ea534f |
+_No proposed ADRs._
 
 ## Accepted
 
@@ -22,6 +20,7 @@ Dashboard mirroring lifecycle data from individual ADR artifacts. Source of trut
 | ADR-004 | [IPC Orchestrator Scanning as Enforcement Seam](./Accepted/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Accepted | 2026-03-11 | — |
 | ADR-005 | [Composable VM Isolation](./Accepted/(ADR-005)-Composable-VM-Isolation.md) | Accepted | 2026-03-11 | — |
 | ADR-006 | [Opaque Deny Responses](./Adopted/(ADR-006)-Opaque-Deny-Responses.md) | Adopted | 2026-03-12 | 37e4a9b |
+| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Adopted/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Adopted | 2026-03-13 | — |
 
 ## Superseded
 

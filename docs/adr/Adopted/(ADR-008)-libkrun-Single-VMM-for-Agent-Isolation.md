@@ -1,10 +1,10 @@
 ---
 artifact: ADR-008
 title: "libkrun as Single VMM for Agent Isolation"
-status: Proposed
+status: Adopted
 author: cristos
 created: 2026-03-12
-last-updated: 2026-03-12
+last-updated: 2026-03-13
 linked-epics:
   - EPIC-001
 linked-specs: []
@@ -44,9 +44,13 @@ libkrun offers two networking modes:
 
 1. **TSI (Transparent Socket Impersonation)**: Intercepts guest socket calls and maps them to host sockets. Fast, zero-config. **But it bypasses Tidegate's network topology entirely** — guest `connect()` becomes a host `connect()`, never hitting the gateway on port 4100 or the egress proxy. Incompatible with Tidegate's architecture.
 
-2. **virtio-net via passt/gvproxy**: Conventional virtual network interface. Guest traffic traverses a virtual NIC, routable through Docker bridge to reach the gateway and egress proxy. Compatible with Tidegate's topology.
+2. **virtio-net**: Conventional virtual network interface. Guest traffic traverses a virtual NIC through a userspace networking backend. The backend is platform-specific: **gvproxy** (macOS and Linux) or **passt** (Linux only). Both provide NAT routing from the VM through the host network stack.
 
-Tidegate must use virtio-net mode and explicitly disable TSI. This is a supported configuration (Podman uses virtio-net for bridged networking), but **macOS + virtio-net + Docker bridge routing has not been validated end-to-end**. SPIKE-017 covers this validation.
+Tidegate must use virtio-net mode and explicitly disable TSI. This is a supported configuration — Podman uses gvproxy + virtio-net for its macOS VM backend.
+
+**Critical finding (SPIKE-017):** Docker bridge networks on macOS exist inside Docker Desktop's LinuxKit VM. A libkrun VM on the macOS host cannot join these bridges. Instead, the VM reaches Docker services through **published ports on the host** — gvproxy NAT routes VM traffic to the host network, and Docker port publishing makes services reachable there. On Linux, the same published-ports model works; direct TAP-to-bridge attachment is also possible but not required.
+
+The published-ports model is simpler (one topology, both platforms) and has equivalent security properties for Tidegate's single-tenant threat model — the gateway and egress proxy are Tidegate's own infrastructure, not sensitive services. Credential-holding MCP servers remain Docker-internal on `mcp-net`, never published.
 
 ## Decision
 
@@ -54,17 +58,23 @@ Tidegate must use virtio-net mode and explicitly disable TSI. This is a supporte
 
 Specifically:
 
-1. **One VMM, all platforms.** libkrun with KVM on Linux and HVF on macOS Apple Silicon. No platform-specific VMM code paths.
+1. **One VMM, all platforms.** libkrun with KVM on Linux and HVF on macOS Apple Silicon. The VMM, guest image, and virtiofs configuration are identical across platforms. Networking backends differ (gvproxy on macOS, gvproxy or passt on Linux) but are configuration, not code.
 
 2. **OCI guest image.** The agent guest image is built as a standard container image (Dockerfile). krunvm launches it directly. Image contains: minimal Alpine base, Node.js 18+, Python 3.11+, git, Claude Code CLI, tg-scanner daemon. Same image, both platforms.
 
-3. **virtio-net networking (not TSI).** TSI is disabled. Guest traffic flows through a virtual NIC, bridged to Docker's `agent-net`, reaching the gateway at port 4100 and egress via the proxy. This preserves Tidegate's network control plane.
+3. **virtio-net networking (not TSI).** TSI is disabled. Guest traffic flows through a virtual NIC, through a userspace networking backend (gvproxy), NATed to the host network. Docker services (gateway, egress proxy) are reached via published ports on the host. Docker's `docker-compose.yaml` must publish gateway on host port 4100 and egress proxy on host port 3128. MCP servers remain Docker-internal — never published, credentials never exposed to the host network.
 
 4. **virtiofs for workspace mounting.** Project directory mounted read-only via virtiofs. IPC directory mounted read-write. Performance within 2x of native Docker bind mounts (per SPIKE-015 benchmarks).
 
 5. **Guest-side tg-scanner.** Per SPIKE-015 finding: host-side eBPF/seccomp-notify cannot observe guest syscalls across the hypervisor boundary. The tg-scanner daemon runs inside the guest with eBPF on `openat` and seccomp-notify on `connect()`, identical to the Docker deployment architecture (ADR-002). The VM boundary means a guest kernel exploit is required to bypass it — which is the exact attack the VM prevents.
 
 6. **`tidegate vm start` launcher.** A shell script that: pulls/verifies the OCI guest image, starts virtiofsd, launches krunvm with virtio-net + virtiofs configuration, waits for guest ready signal. Target: <5s end-to-end including image verification.
+
+7. **Egress enforcement outside the VM trust boundary.** The VM must not be able to reach the internet directly — all traffic must flow through the gateway and egress proxy. Enforcement lives outside the VM so a compromised guest cannot disable it.
+
+   - **macOS:** gvproxy is wrapped in `sandbox-exec` with a Seatbelt profile that allows outbound TCP only to `localhost:4100` (gateway) and `localhost:3128` (egress proxy). All other outbound is kernel-denied. Validated by SPIKE-017 (8/8 tests pass). Zero code changes to gvproxy — the `.sb` profile is a declarative file.
+   - **Linux:** gvproxy or passt runs in a Docker container connected only to `agent-net`, inheriting Docker's bridge isolation. Alternatively, iptables/nftables rules restrict the networking backend's outbound by UID or cgroup.
+   - **Defense-in-depth (optional):** gvproxy fork with a ~20-line allowlist at the `net.Dial` chokepoint. Provides logging of blocked attempts. macOS `pf` user rules as a second kernel-level layer.
 
 ### What this does not decide
 
@@ -87,7 +97,7 @@ Specifically:
 
 ### Positive
 
-- **Single integration path** for EPIC-001. One VMM, one image format, one networking model, one test matrix.
+- **Single integration path** for EPIC-001. One VMM, one image format, one test matrix. Networking backends differ per platform but the service interface (published Docker ports) is uniform.
 - **macOS support today**, not dependent on macOS 26 release timeline.
 - **OCI compatibility** eliminates custom image pipeline — standard Dockerfile, standard registry, standard tooling.
 - **virtiofs everywhere** — workspace mounting works identically on Linux and macOS.
@@ -97,13 +107,15 @@ Specifically:
 
 - **1-2s cold boot** vs ~200-400ms with Cloud Hypervisor. Acceptable for interactive sessions, potentially slow for session-per-task patterns.
 - **No snapshot/restore** — cold boot every session. Cannot pre-warm VMs from snapshots.
-- **TSI must be disabled** — the more ergonomic networking mode is incompatible with Tidegate's proxy routing. virtio-net via passt adds a small performance overhead.
+- **TSI must be disabled** — the more ergonomic networking mode is incompatible with Tidegate's proxy routing. virtio-net via gvproxy adds a small NAT performance overhead (~1-2ms per hop).
+- **Docker services must publish ports** — gateway (:4100) and egress proxy (:3128) must be published to the host for VM reachability. MCP servers remain internal. This exposes gateway/proxy to host processes, which is acceptable for single-tenant use.
+- **Platform-specific egress enforcement** — sandbox-exec on macOS, Docker isolation or iptables on Linux. The enforcement mechanism is equivalent (kernel-level outbound restriction) but the implementation differs.
 - **Intel Mac fallback to Docker** — users on Intel Macs don't get VM isolation. Acceptable given Apple Silicon adoption trajectory.
 - **Younger project than QEMU/Firecracker** — smaller community, fewer production war stories outside Podman.
 
-### Validation required
+### Validation status
 
-- **SPIKE-017**: Validate virtio-net mode with passt on macOS, routing through Docker bridge to gateway:4100 and egress proxy. This is the critical path — if it doesn't work, the networking assumption fails and we need to revisit.
+- **SPIKE-017 (Complete, GO):** Validated virtio-net via gvproxy on macOS, routing through published Docker ports to gateway:4100 and egress proxy:3128. Seatbelt profile enforcement confirmed: 8/8 tests pass (allow gateway + proxy, block all external). All 6 go/no-go criteria met.
 
 ## Lifecycle
 
