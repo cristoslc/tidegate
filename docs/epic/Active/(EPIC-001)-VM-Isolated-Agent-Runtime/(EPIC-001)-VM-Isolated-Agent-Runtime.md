@@ -1,15 +1,15 @@
 ---
 artifact: EPIC-001
 title: "EPIC-001: VM-Isolated Agent Runtime"
-status: Proposed
+status: Active
 author: cristos
 created: 2026-03-06
-last-updated: 2026-03-06
+last-updated: 2026-03-13
 parent-vision: VISION-002
 success-criteria:
-  - Agent can run inside a VM (QEMU or Firecracker) with workspace mounted read-only
-  - All MCP traffic routes from the VM through the Tidegate gateway on the host
-  - All HTTP egress routes from the VM through the egress proxy on the host
+  - Agent runs inside a libkrun VM with workspace mounted via virtiofs
+  - All MCP traffic routes from the VM through the Tidegate gateway via published ports
+  - All HTTP egress routes through the egress proxy, enforced by Seatbelt sandbox on gvproxy (macOS) or Docker network isolation (Linux)
   - Docker infrastructure services (gateway, scanner, egress proxy, MCP servers) remain unchanged
   - Setup documentation covers VM deployment as an alternative to Docker agent container
 ---
@@ -21,6 +21,7 @@ success-criteria:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Proposed | 2026-03-06 | b7482a6 | From claude-vm analysis; see ADR-005 |
+| Active | 2026-03-13 | _pending_ | Both spikes complete (SPIKE-015, SPIKE-017); decomposed into SPECs |
 
 ## Goal
 
@@ -45,7 +46,7 @@ VM isolation (QEMU, Firecracker) provides a separate kernel boundary. A compromi
 - Replacing Docker for infrastructure services (gateway, scanner, egress proxy, MCP servers)
 - Building a custom VM manager or hypervisor
 - Multi-tenant VM orchestration
-- Windows/macOS host support for VM mode (Linux KVM first)
+- Windows host support (macOS via HVF and Linux via KVM are in scope per ADR-008)
 
 ## Dependencies
 
@@ -65,6 +66,10 @@ VM isolation (QEMU, Firecracker) provides a separate kernel boundary. A compromi
 | Type | ID | Title | Status |
 |------|----|-------|--------|
 | Spike | SPIKE-015 | [Evaluate VM Isolation for Agent Container](../../../research/Complete/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container/(SPIKE-015)-Evaluate-VM-Isolation-for-Agent-Container.md) | Complete |
+| Spike | SPIKE-017 | [Validate libkrun virtio-net on macOS](../../../research/Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | Complete |
+| Spec | SPEC-001 | [VM Launcher CLI](../../../spec/Approved/(SPEC-001)-VM-Launcher-CLI/(SPEC-001)-VM-Launcher-CLI.md) | Approved |
+| Spec | SPEC-002 | [Seatbelt Egress Enforcement](../../../spec/Approved/(SPEC-002)-Seatbelt-Egress-Enforcement/(SPEC-002)-Seatbelt-Egress-Enforcement.md) | Approved |
+| Spec | SPEC-003 | [VM Guest Image](../../../spec/Approved/(SPEC-003)-VM-Guest-Image/(SPEC-003)-VM-Guest-Image.md) | Approved |
 
 ## Roadmap position
 
@@ -79,6 +84,6 @@ M1–M4 (MVP) → M5 (agent-proxy) → M6 (taint tracking) → M7 (skill hardeni
 ## References
 
 - ADR-005 — Composable VM Isolation (architectural decision)
+- ADR-008 — libkrun as Single VMM for Agent Isolation
 - [claude-vm](https://github.com/solomon-b/claude-vm) — Nix flake for headless QEMU VM with Claude Code
 - ADR-002 — Taint-and-Verify Data Flow Model
-- ADR-003 — Agent Runtime Selection
