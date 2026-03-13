@@ -1,22 +1,26 @@
 ---
 title: "VM Launcher CLI"
-artifact: SPEC-001
+artifact: SPEC-004
 status: Approved
 author: cristos
 created: 2026-03-13
 last-updated: 2026-03-13
 type: feature
-parent-epic: EPIC-001
+parent-epic: EPIC-002
 linked-research:
   - SPIKE-015
   - SPIKE-017
   - SPIKE-018
   - SPIKE-019
   - SPIKE-020
+  - SPIKE-022
 linked-adrs:
   - ADR-005
   - ADR-008
-depends-on: []
+  - ADR-009
+depends-on:
+  - SPEC-005
+  - SPEC-006
 addresses:
   - JOURNEY-001.PP-01
 evidence-pool: ""
@@ -24,15 +28,15 @@ source-issue: ""
 swain-do: required
 ---
 
-# SPEC-001: VM Launcher CLI
+# SPEC-004: VM Launcher CLI
 
 ## Problem Statement
 
-EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net networking and virtiofs workspace mounting. Research spikes (SPIKE-015 through SPIKE-020) evaluated the landscape and found:
+EPIC-002 requires a CLI to boot an agent inside a libkrun VM with virtio-net networking, virtiofs workspace mounting, and infrastructure-embedded egress enforcement. Research spikes found:
 
 - **macOS:** Lima v2.0 with `vmType: krunkit` provides VM lifecycle, provisioning, and virtiofs orchestration. A thin `tidegate vm` wrapper generates Lima YAML from `tidegate.yaml` and invokes `limactl` (SPIKE-018).
-- **Linux:** No equivalent orchestrator exists. microsandbox wraps libkrun with SDKs but uses TSI-only networking (SPIKE-019). A thin custom wrapper around libkrun's C/Rust API (~200 LOC) is needed (SPIKE-019).
-- **Both platforms:** libkrun is the VMM. TSI scope provides defense-in-depth but is insufficient as sole egress enforcement (SPIKE-020). Primary egress enforcement is platform-specific (SPEC-002 for macOS, TBD for Linux).
+- **Linux:** No equivalent orchestrator exists. A thin custom wrapper around libkrun's C/Rust API (~200 LOC) is needed (SPIKE-019).
+- **Both platforms:** libkrun is the VMM (ADR-008). Egress enforcement is gvproxy IP:port allowlist (ADR-009, SPEC-005). TSI scope provides defense-in-depth (SPIKE-020).
 
 ## External Behavior
 
@@ -48,7 +52,7 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 
 **Outputs:**
 - Boots a libkrun VM with:
-  - virtio-net via gvproxy (not TSI) for network-controlled operation
+  - virtio-net via gvproxy (patched with IP:port allowlist per SPEC-005)
   - TSI scope=Group as defense-in-depth (narrow subnet: gateway + proxy IPs only)
   - virtiofs mount of workspace at `/workspace`
   - Guest env vars: `HTTP_PROXY`, `HTTPS_PROXY`, `TIDEGATE_GATEWAY`
@@ -64,12 +68,13 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 | **VM config** | Lima YAML template generated from `tidegate.yaml` | Direct libkrun API calls |
 | **VM lifecycle** | `limactl start/stop/shell` | Custom start/stop via libkrun API |
 | **Provisioning** | Lima cloud-init + `PARAM_*` env vars | virtiofs-shared config file + `krun_set_env()` |
-| **Networking** | gvproxy via krunkit | gvproxy via `krun_add_net_unixgram()` or passt via `krun_add_net_unixstream()` |
-| **Egress enforcement** | Seatbelt on gvproxy (SPEC-002) | TBD — nftables, gvproxy-in-container, or network namespace (pending spike) |
+| **Networking** | gvproxy via krunkit | gvproxy via `krun_add_net_unixgram()` |
+| **Egress enforcement** | gvproxy IP:port allowlist (SPEC-005) | gvproxy IP:port allowlist (SPEC-005) |
+| **Defense-in-depth** | Seatbelt on gvproxy + TSI scope | Network namespace + TSI scope |
 
 **Preconditions:**
-- macOS: Lima v2.0 + krunkit + gvproxy installed
-- Linux: libkrun shared library + gvproxy (or passt) installed
+- macOS: Lima v2.0 + krunkit + gvproxy (patched) installed
+- Linux: libkrun shared library + gvproxy (patched) installed
 
 ## Acceptance Criteria
 
@@ -79,6 +84,7 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 4. **Given** a running VM, **when** an outbound HTTP request is attempted, **then** it routes through the configured egress proxy.
 5. **Given** `--workspace /path/to/project`, **when** the VM boots, **then** `/workspace` inside the VM contains the host directory contents via virtiofs.
 6. **Given** missing dependencies (Lima/libkrun/gvproxy), **when** `tidegate vm start` is run, **then** it fails with a clear error message listing what's missing and how to install it.
+7. **Given** a running VM, **when** the VM attempts to connect to a non-allowlisted destination, **then** the connection is blocked by gvproxy's allowlist (SPEC-005).
 
 ## Verification
 
@@ -88,8 +94,8 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 ## Scope & Constraints
 
 - macOS (Apple Silicon, HVF) and Linux (KVM, x86_64/aarch64) are both targets.
-- The launcher does NOT manage the OCI image build — that is SPEC-003's responsibility.
-- The launcher does NOT implement egress enforcement — that is SPEC-002's responsibility (macOS) and a pending spec (Linux).
+- The launcher does NOT manage the OCI image build — that is SPEC-006's responsibility.
+- The launcher does NOT implement egress enforcement — that is SPEC-005's responsibility. The launcher starts gvproxy with the allowlist configured.
 - macOS path: Lima YAML template + thin `tidegate vm` CLI wrapper.
 - Linux path: Rust or Python wrapper using libkrun C API.
 
@@ -97,4 +103,4 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; backed by SPIKE-015 + SPIKE-017 |
+| Approved | 2026-03-13 | — | Supersedes SPEC-001; incorporates SPIKE-018/019 and ADR-009 |

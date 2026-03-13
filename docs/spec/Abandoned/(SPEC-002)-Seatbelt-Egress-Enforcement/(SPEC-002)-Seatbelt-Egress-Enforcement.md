@@ -1,7 +1,7 @@
 ---
 title: "Seatbelt Egress Enforcement"
 artifact: SPEC-002
-status: Approved
+status: Abandoned
 author: cristos
 created: 2026-03-13
 last-updated: 2026-03-13
@@ -75,3 +75,4 @@ SPIKE-017 validated macOS `sandbox-exec` (Seatbelt) as the primary enforcement m
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; validated in SPIKE-017 (8/8 tests pass) |
+| Abandoned | 2026-03-13 | — | Superseded by SPEC-005; ADR-009 moved primary egress to gvproxy allowlist; Seatbelt demoted to defense-in-depth |

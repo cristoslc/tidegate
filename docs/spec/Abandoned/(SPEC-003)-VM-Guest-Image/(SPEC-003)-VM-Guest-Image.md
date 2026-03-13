@@ -1,7 +1,7 @@
 ---
 title: "VM Guest Image"
 artifact: SPEC-003
-status: Approved
+status: Abandoned
 author: cristos
 created: 2026-03-13
 last-updated: 2026-03-13
@@ -83,3 +83,4 @@ The libkrun VM needs a minimal Linux guest image containing the agent runtime (N
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Approved | 2026-03-13 | b530c62 | Decomposed from EPIC-001; kernel requirements from SPIKE-015 |
+| Abandoned | 2026-03-13 | — | Superseded by SPEC-006 under EPIC-002; same requirements, new parent |

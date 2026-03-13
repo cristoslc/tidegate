@@ -21,6 +21,7 @@ _No proposed ADRs._
 | ADR-005 | [Composable VM Isolation](./Accepted/(ADR-005)-Composable-VM-Isolation.md) | Accepted | 2026-03-11 | — |
 | ADR-006 | [Opaque Deny Responses](./Adopted/(ADR-006)-Opaque-Deny-Responses.md) | Adopted | 2026-03-12 | 37e4a9b |
 | ADR-008 | [libkrun as Single VMM for Agent Isolation](./Adopted/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Adopted | 2026-03-13 | 296b22c |
+| ADR-009 | [Infrastructure-Embedded Egress Enforcement](./Accepted/(ADR-009)-Infrastructure-Embedded-Egress-Enforcement.md) | Accepted | 2026-03-13 | — |
 
 ## Superseded
 
