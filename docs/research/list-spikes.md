@@ -8,7 +8,9 @@ _No planned spikes._
 
 ## Active
 
-_No active spikes._
+| ID | Title | Date | Commit | Notes |
+|----|-------|------|--------|-------|
+| SPIKE-021 | [Linux Egress Enforcement](./Active/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) | 2026-03-13 | — | Evaluate Linux egress mechanisms equivalent to macOS Seatbelt |
 
 ## Complete
 
