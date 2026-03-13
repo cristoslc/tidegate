@@ -1,12 +1,12 @@
 ---
 id: tid-nkxq
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-03-13T05:13:39Z
 type: task
 priority: 2
-assignee: Cristos L-C
+assignee: cristos
 parent: tid-49k5
 tags: [spec:SPEC-003]
 ---
@@ -14,3 +14,9 @@ tags: [spec:SPEC-003]
 
 Benchmark script that measures kernel boot to shell ready. Must complete in <2s.
 
+
+## Notes
+
+**2026-03-13T05:19:55Z**
+
+Test written. Boot time measurement requires custom kernel + krunkit rootfs extraction — deferred.

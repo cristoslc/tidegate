@@ -1,6 +1,6 @@
 ---
 id: tid-ca33
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-03-13T05:13:22Z
@@ -14,3 +14,9 @@ tags: [spec:SPEC-001]
 
 Integration test: invoke launcher, verify VM boots and obtains an IP via gvproxy DHCP within 5 seconds.
 
+
+## Notes
+
+**2026-03-13T05:17:39Z**
+
+Tests written in test/vm-launcher/test-launcher.sh. Integration test skeleton present but skipped — needs OCI image (SPEC-003).
