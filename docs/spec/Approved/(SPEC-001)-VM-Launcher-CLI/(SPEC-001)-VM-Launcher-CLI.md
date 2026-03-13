@@ -10,6 +10,8 @@ parent-epic: EPIC-001
 linked-research:
   - SPIKE-015
   - SPIKE-017
+  - SPIKE-018
+  - SPIKE-019
 linked-adrs:
   - ADR-005
   - ADR-008

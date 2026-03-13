@@ -4,11 +4,15 @@ Dashboard mirroring lifecycle data from individual Spike artifacts. Source of tr
 
 ## Planned
 
-_No planned spikes._
+| ID | Title | Date | Commit | Notes |
+|----|-------|------|--------|-------|
+| SPIKE-019 | [Linux VM Launcher Evaluation](./Planned/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | — | Parallel to SPIKE-018; scoped to Linux/KVM |
 
 ## Active
 
-_No active spikes._
+| ID | Title | Date | Commit | Notes |
+|----|-------|------|--------|-------|
+| SPIKE-018 | [macOS VM Launcher Evaluation](./Active/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | — | Supersedes SPIKE-015 for macOS; Lima v2.0 as primary candidate |
 
 ## Complete
 
