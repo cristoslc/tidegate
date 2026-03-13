@@ -127,4 +127,4 @@ If no clean mechanism exists, accept nftables (requires root) as the Linux enfor
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-03-13 | — | Evaluate Linux egress enforcement mechanisms |
+| Active | 2026-03-13 | 11e46d3 | Evaluate Linux egress enforcement mechanisms |
