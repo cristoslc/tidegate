@@ -304,5 +304,5 @@ Use TSI scope as a **defense-in-depth layer**, not the primary enforcement:
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Active | 2026-03-13 | -- | Validate TSI scope for Tidegate egress model |
-| Active | 2026-03-13 | -- | Source analysis complete: NO-GO for sole enforcement, YES for defense-in-depth |
+| Active | 2026-03-13 | b8cbfc6 | Validate TSI scope for Tidegate egress model |
+| Active | 2026-03-13 | b8cbfc6 | Source analysis complete: NO-GO for sole enforcement, YES for defense-in-depth |

@@ -32,7 +32,7 @@ _No active spikes._
 | SPIKE-017 | [Validate libkrun virtio-net on macOS](./Complete/(SPIKE-017)-Validate-libkrun-virtio-net-macOS/(SPIKE-017)-Validate-libkrun-virtio-net-macOS.md) | 2026-03-13 | 296b22c | GO: all 6 criteria met; gvproxy + sandbox-exec validated |
 | SPIKE-018 | [macOS VM Launcher Evaluation](./Complete/(SPIKE-018)-macOS-VM-Launcher-Evaluation/(SPIKE-018)-macOS-VM-Launcher-Evaluation.md) | 2026-03-13 | 1a52155 | GO: Lima v2.0 recommended; supersedes SPIKE-015 for macOS |
 | SPIKE-019 | [Linux VM Launcher Evaluation](./Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) | 2026-03-13 | 5863b1f | GO: libkrun on both platforms; Cloud Hypervisor as Linux fallback |
-| SPIKE-020 | [TSI Scope Egress Sufficiency](./Complete/(SPIKE-020)-TSI-Scope-Egress-Sufficiency/(SPIKE-020)-TSI-Scope-Egress-Sufficiency.md) | 2026-03-13 | — | NO-GO sole enforcement; YES defense-in-depth layer |
+| SPIKE-020 | [TSI Scope Egress Sufficiency](./Complete/(SPIKE-020)-TSI-Scope-Egress-Sufficiency/(SPIKE-020)-TSI-Scope-Egress-Sufficiency.md) | 2026-03-13 | b8cbfc6 | NO-GO sole enforcement; YES defense-in-depth layer |
 
 ## Abandoned
 
