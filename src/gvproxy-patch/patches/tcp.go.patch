@@ -1,0 +1,30 @@
+--- a/pkg/services/forwarder/tcp.go
++++ b/pkg/services/forwarder/tcp.go
+@@ -16,7 +16,9 @@ import (
+
+ const linkLocalSubnet = "169.254.0.0/16"
+
+-func TCP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mutex, ec2MetadataAccess bool) *tcp.Forwarder {
++// TCP creates a TCP forwarder. When egressFilter is non-nil, outbound
++// connections are checked against the allowlist before net.Dial().
++func TCP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mutex, ec2MetadataAccess bool, egressFilter *egress.Filter) *tcp.Forwarder {
+ 	return tcp.NewForwarder(s, 0, 10, func(r *tcp.ForwarderRequest) {
+ 		localAddress := r.ID().LocalAddress
+
+@@ -30,6 +32,16 @@ func TCP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mute
+ 		}
+ 		natLock.Unlock()
+
++		// Egress allowlist check: deny connections to non-allowlisted
++		// destinations before they reach the host network.
++		if egressFilter != nil {
++			if err := egressFilter.CheckEgress(localAddress.String(), r.ID().LocalPort); err != nil {
++				log.Infof("egress blocked (TCP): %v", err)
++				r.Complete(true)
++				return
++			}
++		}
++
+ 		outbound, err := net.Dial("tcp", net.JoinHostPort(localAddress.String(), fmt.Sprint(r.ID().LocalPort)))
+ 		if err != nil {
+ 			log.Tracef("net.Dial() = %v", err)
