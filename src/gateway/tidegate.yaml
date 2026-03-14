@@ -1,0 +1,15 @@
+# Example configuration for tg-gateway.
+# Copy to tidegate.yaml and adjust server URLs for your deployment.
+
+gateway:
+  listen: "0.0.0.0:4100"
+  scan_timeout_ms: 500
+  scan_failure_mode: deny     # deny | allow
+
+servers:
+  gmail:
+    transport: http
+    url: http://gmail-mcp:3000/mcp
+  slack:
+    transport: http
+    url: http://slack-mcp:3000/mcp
