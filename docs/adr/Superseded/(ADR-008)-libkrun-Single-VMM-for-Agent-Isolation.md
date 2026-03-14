@@ -1,12 +1,15 @@
 ---
 artifact: ADR-008
 title: "libkrun as Single VMM for Agent Isolation"
-status: Adopted
+status: Superseded
 author: cristos
 created: 2026-03-12
 last-updated: 2026-03-13
+superseded-by:
+  - ADR-009
+  - ADR-010
 linked-epics:
-  - EPIC-001
+  - EPIC-002
 linked-specs: []
 depends-on:
   - ADR-005
@@ -123,3 +126,4 @@ Specifically:
 |-------|------|--------|-------|
 | Proposed | 2026-03-12 | 9ea534f | SPIKE-015 findings (expanded); depends on SPIKE-017 networking validation |
 | Adopted | 2026-03-13 | 296b22c | SPIKE-017 validated; corrected networking model; added egress enforcement |
+| Superseded | 2026-03-13 | — | Superseded by ADR-009 (egress enforcement) + ADR-010 (platform-specific orchestration); VMM selection (libkrun) reaffirmed |

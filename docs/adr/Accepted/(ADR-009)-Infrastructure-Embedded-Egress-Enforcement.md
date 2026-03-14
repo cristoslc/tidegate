@@ -9,7 +9,7 @@ linked-epics:
   - EPIC-002
 linked-specs: []
 depends-on:
-  - ADR-008
+  - ADR-010
 evidence-pool: ""
 ---
 

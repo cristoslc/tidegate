@@ -12,7 +12,7 @@ linked-research:
 linked-adrs:
   - ADR-002
   - ADR-005
-  - ADR-008
+  - ADR-010
 depends-on: []
 addresses: []
 evidence-pool: ""

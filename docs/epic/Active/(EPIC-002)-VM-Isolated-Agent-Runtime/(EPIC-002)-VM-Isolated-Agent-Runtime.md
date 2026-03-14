@@ -42,7 +42,7 @@ This epic incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-
 
 | ADR | Decision | Constraint |
 |-----|----------|------------|
-| ADR-008 | libkrun is the single VMM on both platforms | No Firecracker, no Cloud Hypervisor |
+| ADR-010 | Platform-specific VM orchestration (Lima on macOS, thin libkrun wrapper on Linux); reaffirms libkrun as single VMM | No Firecracker, no Cloud Hypervisor |
 | ADR-009 | Egress enforcement must be infrastructure-embedded (gvproxy) | No device-level OS sandboxes as primary |
 
 ## Scope Boundaries
@@ -73,7 +73,7 @@ This epic incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-
 
 ## Key Dependencies
 
-- **ADR-008**: libkrun is the VMM on both platforms
+- **ADR-010**: Platform-specific VM orchestration; libkrun is the VMM on both platforms
 - **ADR-009**: Egress enforcement is infrastructure-embedded (gvproxy allowlist)
 - **Lima v2.0**: macOS orchestration layer (CNCF Incubating, Apache-2.0)
 - **gvproxy fork**: IP:port allowlist patch (~90 LOC) on containers/gvisor-tap-vsock
@@ -99,7 +99,8 @@ M1-M4 (MVP) → M5 (agent-proxy) → M6 (taint tracking) → M7 (skill hardening
 ## References
 
 - ADR-005 — Composable VM Isolation
-- ADR-008 — libkrun as Single VMM for Agent Isolation
+- ADR-008 — libkrun as Single VMM for Agent Isolation (Superseded by ADR-009 + ADR-010)
+- ADR-010 — Platform-Specific VM Orchestration
 - ADR-009 — Infrastructure-Embedded Egress Enforcement
 - SPIKE-015 through SPIKE-022 — Research foundation
 - [gvproxy PR #609](https://github.com/containers/gvisor-tap-vsock/pull/609) — upstream outbound filtering

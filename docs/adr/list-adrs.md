@@ -20,8 +20,8 @@ _No proposed ADRs._
 | ADR-004 | [IPC Orchestrator Scanning as Enforcement Seam](./Accepted/(ADR-004)-IPC-Orchestrator-Scanning-as-Enforcement-Seam.md) | Accepted | 2026-03-11 | — |
 | ADR-005 | [Composable VM Isolation](./Accepted/(ADR-005)-Composable-VM-Isolation.md) | Accepted | 2026-03-11 | — |
 | ADR-006 | [Opaque Deny Responses](./Adopted/(ADR-006)-Opaque-Deny-Responses.md) | Adopted | 2026-03-12 | 37e4a9b |
-| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Adopted/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Adopted | 2026-03-13 | 296b22c |
 | ADR-009 | [Infrastructure-Embedded Egress Enforcement](./Accepted/(ADR-009)-Infrastructure-Embedded-Egress-Enforcement.md) | Accepted | 2026-03-13 | e6a1bcb |
+| ADR-010 | [Platform-Specific VM Orchestration](./Adopted/(ADR-010)-Platform-Specific-VM-Orchestration.md) | Adopted | 2026-03-13 | — |
 
 ## Superseded
 
@@ -29,3 +29,4 @@ _No proposed ADRs._
 |----|-------|-------|------|--------|---------------|
 | ADR-001 | [Seccomp-Notify L1 Interception](./Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) | Superseded | 2026-02-23 | 94efd00 | ADR-002 |
 | ADR-003 | [Agent Runtime Selection](./Superseded/(ADR-003)-Agent-Runtime-Selection.md) | Superseded | 2026-03-11 | — | ADR-005 + runtime-agnostic architecture |
+| ADR-008 | [libkrun as Single VMM for Agent Isolation](./Superseded/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) | Superseded | 2026-03-13 | — | ADR-009 (egress) + ADR-010 (orchestration) |

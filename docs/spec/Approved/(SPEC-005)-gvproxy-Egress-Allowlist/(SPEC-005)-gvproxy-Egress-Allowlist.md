@@ -12,8 +12,8 @@ linked-research:
   - SPIKE-020
   - SPIKE-022
 linked-adrs:
-  - ADR-008
   - ADR-009
+  - ADR-010
 depends-on: []
 addresses:
   - JOURNEY-001.PP-01

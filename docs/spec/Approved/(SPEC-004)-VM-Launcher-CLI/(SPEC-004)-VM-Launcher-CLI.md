@@ -16,8 +16,8 @@ linked-research:
   - SPIKE-022
 linked-adrs:
   - ADR-005
-  - ADR-008
   - ADR-009
+  - ADR-010
 depends-on:
   - SPEC-005
   - SPEC-006
@@ -36,7 +36,7 @@ EPIC-002 requires a CLI to boot an agent inside a libkrun VM with virtio-net net
 
 - **macOS:** Lima v2.0 with `vmType: krunkit` provides VM lifecycle, provisioning, and virtiofs orchestration. A thin `tidegate vm` wrapper generates Lima YAML from `tidegate.yaml` and invokes `limactl` (SPIKE-018).
 - **Linux:** No equivalent orchestrator exists. A thin custom wrapper around libkrun's C/Rust API (~200 LOC) is needed (SPIKE-019).
-- **Both platforms:** libkrun is the VMM (ADR-008). Egress enforcement is gvproxy IP:port allowlist (ADR-009, SPEC-005). TSI scope provides defense-in-depth (SPIKE-020).
+- **Both platforms:** libkrun is the VMM (ADR-010). Egress enforcement is gvproxy IP:port allowlist (ADR-009, SPEC-005). TSI scope provides defense-in-depth (SPIKE-020).
 
 ## External Behavior
 
