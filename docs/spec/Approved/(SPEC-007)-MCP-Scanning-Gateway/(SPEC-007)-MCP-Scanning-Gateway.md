@@ -121,3 +121,4 @@ servers:
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-14 | — | Initial creation; L2 enforcement seam per ADR-002 |
+| Approved | 2026-03-14 | 326ed14 | L2 enforcement seam approved; completes EPIC-002 dependency graph |
