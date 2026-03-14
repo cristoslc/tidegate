@@ -1,0 +1,29 @@
+--- a/pkg/services/forwarder/udp.go
++++ b/pkg/services/forwarder/udp.go
+@@ -14,7 +14,9 @@ import (
+ 	"gvisor.dev/gvisor/pkg/waiter"
+ )
+
+-func UDP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mutex) *udp.Forwarder {
++// UDP creates a UDP forwarder. When egressFilter is non-nil, outbound
++// packets are checked against the allowlist before creating the proxy.
++func UDP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mutex, egressFilter *egress.Filter) *udp.Forwarder {
+ 	return udp.NewForwarder(s, func(r *udp.ForwarderRequest) {
+ 		localAddress := r.ID().LocalAddress
+
+@@ -28,6 +30,15 @@ func UDP(s *stack.Stack, nat map[tcpip.Address]tcpip.Address, natLock *sync.Mute
+ 		}
+ 		natLock.Unlock()
+
++		// Egress allowlist check: silently drop packets to non-allowlisted
++		// destinations. No endpoint is created, so the packet is discarded.
++		if egressFilter != nil {
++			if err := egressFilter.CheckEgress(localAddress.String(), r.ID().LocalPort); err != nil {
++				log.Infof("egress blocked (UDP): %v", err)
++				return
++			}
++		}
++
+ 		var wq waiter.Queue
+ 		ep, tcpErr := r.CreateEndpoint(&wq)
+ 		if tcpErr != nil {
