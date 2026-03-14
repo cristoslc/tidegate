@@ -89,4 +89,4 @@ Specifically:
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Adopted | 2026-03-13 | — | Supersedes ADR-008 launcher/orchestration; reaffirms libkrun VMM selection |
+| Adopted | 2026-03-13 | 8cacbfa | Supersedes ADR-008 launcher/orchestration; reaffirms libkrun VMM selection |

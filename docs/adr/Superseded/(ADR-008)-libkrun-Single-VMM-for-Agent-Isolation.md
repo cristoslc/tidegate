@@ -126,4 +126,4 @@ Specifically:
 |-------|------|--------|-------|
 | Proposed | 2026-03-12 | 9ea534f | SPIKE-015 findings (expanded); depends on SPIKE-017 networking validation |
 | Adopted | 2026-03-13 | 296b22c | SPIKE-017 validated; corrected networking model; added egress enforcement |
-| Superseded | 2026-03-13 | — | Superseded by ADR-009 (egress enforcement) + ADR-010 (platform-specific orchestration); VMM selection (libkrun) reaffirmed |
+| Superseded | 2026-03-13 | 8cacbfa | Superseded by ADR-009 (egress enforcement) + ADR-010 (platform-specific orchestration); VMM selection (libkrun) reaffirmed |
