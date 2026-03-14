@@ -79,7 +79,7 @@ Tracing ClawHavoc's actual attack patterns through Tidegate:
 
 11. **RL-emergent instrumental side effects**: RL-trained agents develop unauthorized behaviors (reverse SSH tunnels, crypto mining, network reconnaissance) as instrumental side effects of optimization — without any explicit instruction. Documented in production by ROME team on Alibaba Cloud (section 3.1.4). Mitigated by: egress proxy + Layer 1 taint tracking block most outbound channels, but novel covert channels within allowed protocols remain possible. See SPIKE-016.
 
-12. **Multi-call data distribution**: An agent (adversarially trained or prompt-injected) splits sensitive data across multiple individually clean tool calls. No single call triggers scanning, but the aggregate contains complete sensitive data. No mitigation exists — session-level correlation is a P2 roadmap item. See SPIKE-016.
+12. **Multi-call data distribution**: An agent (adversarially trained or prompt-injected) splits sensitive data across multiple individually clean tool calls. No single call triggers scanning, but the aggregate contains complete sensitive data. No mitigation exists — session-level correlation is an open research problem. See SPIKE-016.
 
 13. **Shaped deny information leakage**: Denial messages explain what was blocked and why, creating a feedback channel. For cooperative agents this is correct UX; for adversarial agents it's a free oracle. IPA-style chunk-level credit assignment makes this probing extremely sample-efficient. Mitigated by: (planned) minimal-deny mode that omits pattern details. See SPIKE-003, SPIKE-016.
 

@@ -58,9 +58,9 @@ Specifically:
 
 2. **The agent container interface is transport-based, not runtime-based.** Tidegate talks to the agent over HTTP (Streamable HTTP MCP) and controls its egress via network routing. Whether the agent runs in a Docker container, a QEMU VM, or a Firecracker microVM is irrelevant to the gateway — it only needs the agent's traffic to arrive at port 4100 and leave through the egress proxy.
 
-3. **Container escape is an accepted risk at MVP (M1–M4).** The most likely attack path is prompt injection through MCP tool calls, which Tidegate already covers. Kernel exploits require a separate vulnerability chain and are lower probability for the personal-assistant threat model.
+3. **Container escape is an accepted risk for Docker-only deployments.** The most likely attack path is prompt injection through MCP tool calls, which Tidegate's scanning architecture covers. Kernel exploits require a separate vulnerability chain and are lower probability for the personal-assistant threat model.
 
-4. **VM isolation is a post-MVP hardening layer (EPIC-001).** For users who need defense against kernel-level escapes (e.g., processing highly sensitive data, running untrusted community skills), Tidegate will document and support VM-based agent deployment that routes through the existing Docker infrastructure.
+4. **VM isolation is a hardening layer (EPIC-002).** For users who need defense against kernel-level escapes (e.g., processing highly sensitive data, running untrusted community skills), Tidegate documents VM-based agent deployment that routes through the existing Docker infrastructure.
 
 ### Alternatives considered
 
@@ -73,11 +73,10 @@ Specifically:
 
 ## Consequences
 
-- The M2 agent container (Docker) ships as the default, with container escape documented as an accepted risk in the threat model.
-- EPIC-001 (VM-Isolated Agent Runtime) is added to the roadmap as post-M7 hardening.
-- SPIKE-015 evaluates specific VM approaches (claude-vm, Firecracker, QEMU-direct) for composability with Tidegate's network topology.
+- Docker containers are the default agent runtime, with container escape documented as an accepted risk in the threat model.
+- EPIC-002 (VM-Isolated Agent Runtime) provides VM-based hardening for users who need defense against kernel-level escapes.
 - The gateway and egress proxy make no assumptions about the agent's runtime — only that traffic arrives on the expected network interfaces.
-- The `docker-compose.yaml` agent service definition should be structured so it can be replaced with a VM launcher without changing infrastructure services.
+- The agent runtime (Docker or VM) should be swappable without changing infrastructure services.
 
 ## References
 

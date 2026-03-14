@@ -30,7 +30,7 @@ Tidegate's architecture addresses the gap by combining three independent enforce
 
 These seams operate independently — compromise of one does not disable the others. The topology is enforced by Docker networking: the agent container sits on a single internal network and can only reach the gateway and the proxy. Bypass requires a container escape, not a creative shell command.
 
-See the [system architecture](docs/vision/Draft/(VISION-002)-Tidegate/system-architecture.md) for the full design.
+See the [system architecture](docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md) for the full design.
 
 ## Honest limitations
 
@@ -50,14 +50,12 @@ Tidegate is a reference architecture. There is no roadmap.
 
 The repo contains research spikes, a threat model, architecture decision records, and user personas alongside the architecture design. If it gets built, the architecture doc guides implementation. If it doesn't, it serves as a point of comparison for evaluating commercial tools — a way to ask "does this product actually cover the gaps it claims to?"
 
-The repo also contains proof-of-concept code from an earlier iteration. This code validated the MCP scanning approach but will be replaced if implementation proceeds.
-
 ## Navigation
 
 | Document | What it covers |
 |----------|---------------|
-| [System architecture](docs/vision/Draft/(VISION-002)-Tidegate/system-architecture.md) | Components, network topology, enforcement seams, scanning pipeline, trust boundaries |
-| [VISION-002](docs/vision/Draft/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) | Product vision — target audience, value proposition, problem statement, landscape analysis |
+| [System architecture](docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md) | Components, network topology, enforcement seams, scanning pipeline, trust boundaries |
+| [VISION-002](docs/vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) | Product vision — target audience, value proposition, problem statement, landscape analysis |
 | [Threat model](docs/threat-model/) | Attack scenarios, defense mapping, sensitive data catalog, threat personas, security scorecard |
 | [Research spikes](docs/research/list-spikes.md) | Investigations — leak detection tools, taint models, architecture options, RL-trained agent risks |
 | [Architecture decisions](docs/adr/list-adrs.md) | ADRs — taint-and-verify model, IPC scanning, composable VM isolation |

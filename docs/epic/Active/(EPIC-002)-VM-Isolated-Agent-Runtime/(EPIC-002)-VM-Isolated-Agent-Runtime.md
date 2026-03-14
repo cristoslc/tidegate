@@ -86,16 +86,6 @@ EPIC-001 (abandoned). EPIC-001 was created before SPIKE-018 through SPIKE-022 es
 - EPIC-001 referenced SPIKE-015 only → EPIC-002 incorporates all 8 spikes
 - EPIC-001's SPEC-002 (Seatbelt) was macOS-only → EPIC-002's SPEC-005 (gvproxy allowlist) is cross-platform
 
-## Roadmap Position
-
-Post-M7. This epic is a hardening layer, not a prerequisite for MVP.
-
-```
-M1-M4 (MVP) → M5 (agent-proxy) → M6 (taint tracking) → M7 (skill hardening)
-                                                                    ↓
-                                                              EPIC-002 (VM isolation)
-```
-
 ## References
 
 - ADR-005 — Composable VM Isolation

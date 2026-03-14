@@ -328,7 +328,7 @@ Note: No Tetragon dependency. The eBPF program for `openat` logging is simple en
 
 ### Implementation sequence
 
-1. **L2 + L3 independent** (current milestones): Build the MCP gateway and agent-proxy. Each scans independently. No taint tracking. This already provides strong coverage for non-encrypted exfiltration.
+1. **L2 + L3 independent**: MCP gateway and agent-proxy scan independently. No taint tracking. This provides strong coverage for non-encrypted exfiltration.
 2. **seccomp-notify on `connect()`**: OCI runtime wrapper injects seccomp-notify filter for `connect`. tg-scanner allows all connections initially (pass-through). Infrastructure in place, enforcement off.
 3. **eBPF event logging**: Load a minimal eBPF program on `openat`. Log `{pid, path, seq}` to ring buffer. Scanner daemon reads events and updates taint table. No enforcement yet — observation only.
 4. **Connect enforcement**: tg-scanner checks taint table on `connect()`. Tainted PID → DENY. Scanner daemon must be caught up (wait for `scanned_through_seq >= pending_seq`). This closes the encryption gap.
