@@ -4,6 +4,9 @@ Dashboard mirroring lifecycle data from individual Spec artifacts. Source of tru
 
 ## Draft
 
+| ID | Title | Date | Commit | Notes |
+|----|-------|------|--------|-------|
+
 _No draft specs._
 
 ## Approved
@@ -13,6 +16,7 @@ _No draft specs._
 | SPEC-004 | [VM Launcher CLI](./Approved/(SPEC-004)-VM-Launcher-CLI/(SPEC-004)-VM-Launcher-CLI.md) | 2026-03-13 | e6a1bcb | Supersedes SPEC-001; Lima (macOS) + thin wrapper (Linux) |
 | SPEC-005 | [gvproxy Egress Allowlist](./Approved/(SPEC-005)-gvproxy-Egress-Allowlist/(SPEC-005)-gvproxy-Egress-Allowlist.md) | 2026-03-13 | e6a1bcb | Supersedes SPEC-002; cross-platform infrastructure egress per ADR-009 |
 | SPEC-006 | [VM Guest Image](./Approved/(SPEC-006)-VM-Guest-Image/(SPEC-006)-VM-Guest-Image.md) | 2026-03-13 | e6a1bcb | Supersedes SPEC-003; same requirements, new parent EPIC-002 |
+| SPEC-007 | [MCP Scanning Gateway](./Approved/(SPEC-007)-MCP-Scanning-Gateway/(SPEC-007)-MCP-Scanning-Gateway.md) | 2026-03-14 | 326ed14 | L2 enforcement seam approved; completes EPIC-002 dependency graph |
 
 ## Implemented
 
