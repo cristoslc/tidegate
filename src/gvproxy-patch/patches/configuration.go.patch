@@ -1,0 +1,30 @@
+--- a/pkg/types/configuration.go
++++ b/pkg/types/configuration.go
+@@ -4,6 +4,13 @@ import (
+ 	"net"
+ 	"regexp"
+ )
++
++// EgressAllowEntry represents a single IP:port pair permitted for
++// VM-initiated outbound connections. Used by the TCP/UDP forwarders
++// to enforce destination filtering before net.Dial().
++type EgressAllowEntry struct {
++	IP   string `yaml:"ip"`
++	Port uint16 `yaml:"port"`
++}
+
+ type Configuration struct {
+ 	// Print packets on stderr
+@@ -50,6 +57,12 @@ type Configuration struct {
+
+ 	// EC2 Metadata Service Access
+ 	Ec2MetadataAccess bool `yaml:"ec2MetadataAccess,omitempty"`
++
++	// EgressAllowlist restricts VM-initiated outbound connections to
++	// only the listed IP:port pairs. Loopback (127.0.0.0/8, ::1) is
++	// always permitted. An empty list means default-deny: all
++	// non-loopback outbound connections are blocked.
++	EgressAllowlist []EgressAllowEntry `yaml:"egressAllowlist,omitempty"`
+ }
+
+ type Protocol string
