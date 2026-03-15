@@ -1,17 +1,19 @@
 ---
 artifact: ADR-007
 title: "Human-in-the-Loop Exception Approval"
-status: Draft
+status: Accepted
 author: cristos
 created: 2026-03-12
-last-updated: 2026-03-12
+last-updated: 2026-03-14
 linked-epics: []
 linked-specs: []
 depends-on:
   - ADR-006
 evidence-pool: ""
+affected-artifacts:
+  - ADR-006
+  - SPIKE-001
 ---
-
 # Human-in-the-Loop Exception Approval
 
 ## Context
@@ -234,3 +236,4 @@ First exception request triggers approval. Once approved, all limits are relaxed
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-12 | 01eb2ac | Motivated by SPIKE-001 exception needs; depends on ADR-006 opacity |
+| Accepted | 2026-03-14 | -- | Decision accepted by operator |
