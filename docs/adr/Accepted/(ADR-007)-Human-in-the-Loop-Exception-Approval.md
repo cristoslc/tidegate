@@ -236,4 +236,4 @@ First exception request triggers approval. Once approved, all limits are relaxed
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
 | Draft | 2026-03-12 | 01eb2ac | Motivated by SPIKE-001 exception needs; depends on ADR-006 opacity |
-| Accepted | 2026-03-14 | -- | Decision accepted by operator |
+| Accepted | 2026-03-14 | 9c9f201 | Decision accepted by operator |
