@@ -12,6 +12,7 @@ linked-research:
 linked-adrs:
   - ADR-005
   - ADR-008
+  - ADR-009
 depends-on:
   - SPEC-001
 addresses:
@@ -19,8 +20,10 @@ addresses:
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - SPEC-001
+  - SPEC-005
 ---
-
 # SPEC-002: Seatbelt Egress Enforcement
 
 ## Problem Statement

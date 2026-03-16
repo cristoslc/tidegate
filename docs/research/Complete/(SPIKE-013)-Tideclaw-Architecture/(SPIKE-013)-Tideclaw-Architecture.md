@@ -10,8 +10,13 @@ parent-vision: VISION-001
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-002
+  - ADR-003
+  - ADR-004
+  - ADR-005
+  - SPIKE-014
 ---
-
 # Tideclaw — Architecture Spike: Security-First Orchestrator for AI Coding Tools
 
 ## Lifecycle

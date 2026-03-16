@@ -10,8 +10,9 @@ parent-vision: VISION-001
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-003
 ---
-
 # ClaudeClaw vs NanoClaw — Agent-Container Runtime Comparison
 
 ## Lifecycle

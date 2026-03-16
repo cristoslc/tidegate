@@ -10,7 +10,7 @@ _No proposed epics._
 
 | ID | Title | Date | Commit | Notes |
 |----|-------|------|--------|-------|
-| EPIC-002 | [VM-Isolated Agent Runtime](./Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) | 2026-03-13 | e6a1bcb | Supersedes EPIC-001; incorporates SPIKE-015 through SPIKE-022 and ADR-008/009 |
+| EPIC-002 | [Agent Enforcement Boundary](./Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) | 2026-03-14 | — | Renamed from VM-Isolated Agent Runtime; adds SPEC-007 (MCP gateway), egress proxy, compose topology |
 
 ## Complete
 

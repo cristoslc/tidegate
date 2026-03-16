@@ -8,8 +8,9 @@ last-updated: 2026-02-26
 linked-journeys: []
 linked-stories: []
 depends-on: []
+linked-artifacts:
+  - VISION-001
 ---
-
 # PERSONA-004: Contributor
 
 ## Lifecycle

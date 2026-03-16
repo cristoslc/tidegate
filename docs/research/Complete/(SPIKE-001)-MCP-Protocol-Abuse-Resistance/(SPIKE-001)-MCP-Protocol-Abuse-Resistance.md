@@ -10,8 +10,10 @@ parent-vision: VISION-002
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-006
+  - SPIKE-003
 ---
-
 # MCP Protocol Abuse Resistance
 
 ## Lifecycle

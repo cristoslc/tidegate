@@ -17,8 +17,11 @@ blocks:
   - SPEC-001 networking architecture decision
   - SPEC-002 egress enforcement approach on Linux
 evidence-pool: "findings-2026-03-13"
+linked-artifacts:
+  - SPIKE-017
+  - SPIKE-018
+  - SPIKE-019
 ---
-
 # SPIKE-020: TSI Scope Egress Sufficiency
 
 ## Question

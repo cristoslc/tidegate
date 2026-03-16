@@ -7,11 +7,13 @@ created: 2026-02-24
 last-updated: 2026-03-11
 affected-artifacts:
   - VISION-001
+  - ADR-002
+  - ADR-004
+  - ADR-005
 linked-epics: []
 linked-specs: []
 depends-on: []
 ---
-
 # ADR-003: Agent Runtime Selection — NanoClaw over OpenClaw
 
 > **This ADR is superseded.** The runtime-agnostic model established by ADR-005 (Composable VM Isolation) and the system architecture makes specific runtime selection unnecessary. Tidegate provides the process boundary structurally via microVM isolation — any MCP-capable or HTTP-capable runtime works. The surviving insight (MCP-capable runtimes get higher scanning fidelity than network-only runtimes) is captured in the system architecture's Integration Modes section.

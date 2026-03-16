@@ -7,8 +7,12 @@ created: 2026-02-28
 last-updated: 2026-03-11
 related: [SPIKE-014, SPIKE-013, SPIKE-011, ADR-003, ADR-002]
 affects: [SPIKE-013]
+affected-artifacts:
+  - ADR-002
+  - SPIKE-011
+  - SPIKE-013
+  - SPIKE-014
 ---
-
 # ADR-004: IPC Orchestrator Scanning as Enforcement Seam
 
 ## Lifecycle

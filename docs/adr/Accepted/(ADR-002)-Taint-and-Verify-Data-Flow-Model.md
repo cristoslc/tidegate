@@ -7,11 +7,11 @@ created: 2026-02-23
 last-updated: 2026-03-11
 affected-artifacts:
   - VISION-001
+  - ADR-001
 linked-epics: []
 linked-specs: []
 depends-on: []
 ---
-
 # ADR-002: Taint-and-Verify Data Flow Model
 
 ## Lifecycle

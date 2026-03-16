@@ -21,8 +21,13 @@ depends-on:
 blocks:
   - Cross-platform egress enforcement spec
 evidence-pool: ""
+linked-artifacts:
+  - SPEC-001
+  - SPEC-002
+  - SPIKE-017
+  - SPIKE-020
+  - SPIKE-021
 ---
-
 # SPIKE-022: VM Infrastructure Egress Enforcement
 
 ## Question

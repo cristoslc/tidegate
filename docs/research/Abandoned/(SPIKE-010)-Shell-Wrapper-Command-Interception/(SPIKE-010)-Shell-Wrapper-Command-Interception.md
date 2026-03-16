@@ -10,8 +10,10 @@ parent-vision: VISION-001
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-001
+  - ADR-002
 ---
-
 # Shell Wrapper Command Interception
 
 ## Lifecycle

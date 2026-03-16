@@ -12,8 +12,19 @@ success-criteria:
   - All HTTP egress routes through the egress proxy, enforced by Seatbelt sandbox on gvproxy (macOS) or Docker network isolation (Linux)
   - Docker infrastructure services (gateway, scanner, egress proxy, MCP servers) remain unchanged
   - Setup documentation covers VM deployment as an alternative to Docker agent container
+linked-artifacts:
+  - ADR-002
+  - ADR-005
+  - ADR-008
+  - EPIC-002
+  - SPEC-001
+  - SPEC-002
+  - SPEC-003
+  - SPIKE-015
+  - SPIKE-017
+  - SPIKE-018
+  - SPIKE-022
 ---
-
 # EPIC-001: VM-Isolated Agent Runtime
 
 ## Lifecycle

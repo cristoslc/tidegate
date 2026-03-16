@@ -18,8 +18,10 @@ depends-on:
 blocks:
   - EPIC-001 implementation work
   - ADR-008 adoption (validation gate)
+linked-artifacts:
+  - ADR-005
+  - ADR-008
 ---
-
 # Validate libkrun virtio-net on macOS with Docker Bridge Routing
 
 ## Question

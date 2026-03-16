@@ -1,33 +1,49 @@
 ---
-title: "EPIC-002: VM-Isolated Agent Runtime"
+title: "EPIC-002: Agent Enforcement Boundary"
 artifact: EPIC-002
 status: Active
 author: cristos
 created: 2026-03-13
-last-updated: 2026-03-13
+last-updated: 2026-03-14
 parent-vision: VISION-002
 success-criteria:
   - Agent runs inside a libkrun VM with workspace mounted via virtiofs on both macOS (Apple Silicon) and Linux (KVM)
-  - All MCP traffic routes from the VM through the Tidegate gateway via published ports
-  - All HTTP egress routes through the egress proxy, enforced by gvproxy IP:port allowlist (infrastructure-embedded, cross-platform)
+  - All MCP traffic routes from the VM through the MCP scanning gateway (SPEC-007), which scans every tool-call argument and response for structured sensitive data
+  - All HTTP egress routes through a CONNECT-only proxy allowlisted to LLM API domains, enforced by gvproxy IP:port allowlist (infrastructure-embedded, cross-platform)
+  - The gateway, egress proxy, and MCP servers run as Docker containers on isolated networks (agent-net, mcp-net, proxy-net)
   - macOS uses Lima v2.0 for VM orchestration; Linux uses a thin libkrun wrapper
   - Defense-in-depth layers active where available (Seatbelt on macOS, network namespace on Linux, TSI scope on both)
-  - Docker infrastructure services (gateway, scanner, egress proxy, MCP servers) remain unchanged
+  - A single `tidegate.yaml` configures the entire topology (gateway, proxy, MCP servers, VM resources)
 depends-on: []
 addresses:
   - JOURNEY-001.PP-01
 evidence-pool: ""
+linked-artifacts:
+  - ADR-002
+  - ADR-005
+  - ADR-008
+  - ADR-009
+  - ADR-010
+  - EPIC-001
+  - SPEC-002
+  - SPEC-004
+  - SPEC-005
+  - SPEC-006
+  - SPEC-007
+  - SPIKE-015
+  - SPIKE-017
+  - SPIKE-018
+  - SPIKE-019
+  - SPIKE-020
+  - SPIKE-022
 ---
-
-# EPIC-002: VM-Isolated Agent Runtime
+# EPIC-002: Agent Enforcement Boundary
 
 ## Goal / Objective
 
-Provide **VM-based agent isolation** that composes with Tidegate's Docker infrastructure, for users who need defense against kernel-level container escapes. Supersedes EPIC-001, which was created before the full research picture was clear.
+Provide a **complete enforcement boundary** around the AI agent: the agent runs in a VM, all MCP traffic passes through a scanning gateway, and all network egress is restricted to allowlisted destinations. These components are inseparable — the VM is not a hardening layer on top of Docker infrastructure, it IS the mechanism that makes egress enforcement possible (gvproxy is the VM's only network path), and the gateway is what makes MCP scanning possible (the agent can only reach MCP servers through it).
 
-Docker containers share the host kernel. A single container escape gives the agent full host access, bypassing all scanning, network isolation, and credential separation. VM isolation provides a separate kernel boundary — a compromised guest cannot touch the host without a VM escape.
-
-This epic incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-022) and 2 architectural decisions (ADR-008, ADR-009) into a cohesive implementation plan.
+Supersedes EPIC-001, which was created before the full research picture was clear. Incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-022) and 3 architectural decisions (ADR-002, ADR-009, ADR-010).
 
 ## Research Foundation
 
@@ -49,15 +65,20 @@ This epic incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-
 
 ### In scope
 
-- VM launcher CLI (`tidegate vm start`) with platform-specific orchestration
+- MCP scanning gateway (L2 enforcement — regex + checksum scanning on tool-call payloads)
 - gvproxy egress allowlist patch (cross-platform primary enforcement)
+- VM launcher CLI (`tidegate vm start`) with platform-specific orchestration
 - Minimal guest image (Alpine, custom init, virtiofs, <2s boot)
+- Egress proxy (CONNECT-only to LLM API domains — Squid or equivalent, minimal config)
+- Docker Compose topology with isolated networks (agent-net, mcp-net, proxy-net)
+- `tidegate.yaml` unified configuration
 - Defense-in-depth layers: Seatbelt (macOS), network namespace (Linux), TSI scope (both)
-- Integration with existing Docker infrastructure (gateway, proxy, MCP servers)
 
 ### Out of scope
 
-- Replacing Docker for infrastructure services
+- L1 taint tracking (ADR-002 eBPF + seccomp-notify) — future hardening, not MVP
+- Semantic or ML-based content analysis
+- Per-tool allowlists/denylists in the gateway
 - Building a custom VMM or hypervisor
 - Multi-tenant VM orchestration
 - Windows host support
@@ -65,18 +86,21 @@ This epic incorporates findings from 8 research spikes (SPIKE-015 through SPIKE-
 
 ## Child Specs
 
-| Type | ID | Title | Status |
-|------|----|-------|--------|
-| Spec | SPEC-004 | [VM Launcher CLI](../../../spec/Approved/(SPEC-004)-VM-Launcher-CLI/(SPEC-004)-VM-Launcher-CLI.md) | Approved |
-| Spec | SPEC-005 | [gvproxy Egress Allowlist](../../../spec/Approved/(SPEC-005)-gvproxy-Egress-Allowlist/(SPEC-005)-gvproxy-Egress-Allowlist.md) | Approved |
-| Spec | SPEC-006 | [VM Guest Image](../../../spec/Approved/(SPEC-006)-VM-Guest-Image/(SPEC-006)-VM-Guest-Image.md) | Approved |
+| Type | ID | Title | Status | Track |
+|------|----|-------|--------|-------|
+| Spec | SPEC-005 | [gvproxy Egress Allowlist](../../../spec/Approved/(SPEC-005)-gvproxy-Egress-Allowlist/(SPEC-005)-gvproxy-Egress-Allowlist.md) | Approved | A — no deps |
+| Spec | SPEC-007 | [MCP Scanning Gateway](../../../spec/Approved/(SPEC-007)-MCP-Scanning-Gateway/(SPEC-007)-MCP-Scanning-Gateway.md) | Approved | B — no deps |
+| Spec | SPEC-006 | [VM Guest Image](../../../spec/Approved/(SPEC-006)-VM-Guest-Image/(SPEC-006)-VM-Guest-Image.md) | Approved | C — no deps |
+| Spec | SPEC-004 | [VM Launcher CLI](../../../spec/Approved/(SPEC-004)-VM-Launcher-CLI/(SPEC-004)-VM-Launcher-CLI.md) | Approved | Integration — depends on 005, 006, 007 |
 
 ## Key Dependencies
 
-- **ADR-010**: Platform-specific VM orchestration; libkrun is the VMM on both platforms
+- **ADR-002**: Taint-and-verify data flow model — defines L2 (gateway scanning) as Step 1 of implementation sequence
 - **ADR-009**: Egress enforcement is infrastructure-embedded (gvproxy allowlist)
+- **ADR-010**: Platform-specific VM orchestration; libkrun is the VMM on both platforms
 - **Lima v2.0**: macOS orchestration layer (CNCF Incubating, Apache-2.0)
 - **gvproxy fork**: IP:port allowlist patch (~90 LOC) on containers/gvisor-tap-vsock
+- **python-stdnum**: Checksum validation for credit cards, IBANs, SSNs in the gateway scanner
 
 ## Supersedes
 

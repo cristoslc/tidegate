@@ -18,8 +18,9 @@ addresses: []
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - SPEC-003
 ---
-
 # SPEC-006: VM Guest Image
 
 ## Problem Statement

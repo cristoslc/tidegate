@@ -249,22 +249,33 @@ docs_dir = sys.argv[1]
 # Fields that contain artifact ID references (single-value or list)
 SINGLE_REF_FIELDS = ['parent-vision', 'parent-epic', 'superseded-by', 'fix-ref']
 LIST_REF_FIELDS = [
-    'depends-on', 'linked-epics', 'linked-specs', 'linked-stories',
-    'linked-adrs', 'linked-research', 'linked-personas', 'linked-journeys',
-    'linked-designs', 'linked-bugs', 'addresses', 'validates',
+    'depends-on-artifacts', 'linked-artifacts', 'addresses', 'validates',
     'affected-artifacts'
 ]
 ALL_REF_FIELDS = SINGLE_REF_FIELDS + LIST_REF_FIELDS
 
-# Terminal/suspicious statuses
+# Terminal/suspicious statuses (for targets)
 TERMINAL_STATUSES = {'Abandoned', 'Rejected', 'Superseded'}
+
+# Terminal/closed phases for source artifacts — these are historical records
+# and should not warn when referencing Superseded/Retired targets
+SOURCE_TERMINAL_PHASES = {
+    'Complete', 'Implemented', 'Done',
+    'Abandoned', 'Rejected',
+    'Retired', 'Archived',
+    'Superseded', 'Deprecated',
+}
 
 # Phase ordering for mismatch detection (higher = more advanced)
 PHASE_ORDER = {
-    'Draft': 0, 'Proposed': 1, 'Active': 2, 'Approved': 2,
-    'Validated': 2, 'Adopted': 2, 'Implementing': 3,
-    'Implemented': 4, 'Complete': 5, 'Done': 5,
-    'Retired': 6, 'Archived': 6, 'Superseded': 6,
+    'Proposed': 0, 'Draft': 0,  # Draft is legacy alias
+    'Ready': 1, 'Approved': 1,  # Approved is legacy alias
+    'Active': 2, 'Adopted': 2, 'Validated': 2,  # Adopted/Validated are legacy
+    'In Progress': 3, 'Implementing': 3,  # Implementing is legacy
+    'Needs Manual Test': 4, 'Testing': 4,  # Testing is legacy
+    'Complete': 5, 'Implemented': 5, 'Done': 5,  # Implemented/Done are legacy
+    'Retired': 6, 'Archived': 6,  # Archived is legacy
+    'Superseded': 6,
     'Abandoned': -1, 'Rejected': -1
 }
 
@@ -403,8 +414,11 @@ for root, dirs, files in os.walk(docs_dir):
                     target_path, target_status = artifact_index[base_id]
                     rel_target = os.path.relpath(target_path, os.path.dirname(docs_dir))
 
-                    # Check for terminal status
-                    if target_status in TERMINAL_STATUSES:
+                    # Check for terminal status — but only warn if
+                    # the SOURCE artifact is still active (not terminal/closed).
+                    # Closed artifacts referencing Superseded/Retired targets
+                    # are historical records and don't need updating.
+                    if target_status in TERMINAL_STATUSES and source_status not in SOURCE_TERMINAL_PHASES:
                         print(f"WARN\t{rel_source}\t{line_num}\t{field}\t{target_id}\t{rel_target}\ttarget is {target_status}")
 
                     # Check for phase mismatch
@@ -412,7 +426,7 @@ for root, dirs, files in os.walk(docs_dir):
                         src_order = PHASE_ORDER.get(source_status, -99)
                         tgt_order = PHASE_ORDER.get(target_status, -99)
                         # Flag if source is significantly more advanced than target
-                        # (e.g., source is Implemented but target is still Draft)
+                        # (e.g., source is Complete but target is still Proposed)
                         if src_order >= 3 and tgt_order <= 0 and tgt_order != -1:
                             print(f"WARN\t{rel_source}\t{line_num}\t{field}\t{target_id}\t{rel_target}\tsource is {source_status} but target is still {target_status}")
                 else:
@@ -465,7 +479,7 @@ PYEOF
 
 # --- TK sync checker ---
 # Cross-references artifact phase/status with tk item state.
-# Detects: open tk items for Implemented/Abandoned artifacts,
+# Detects: open tk items for Complete/Abandoned artifacts,
 #          all-closed tk items for still-active artifacts.
 # Requires: vendored ticket-query plugin and .tickets/ initialized.
 
@@ -509,8 +523,9 @@ IMPLEMENTED_STATUSES = {'Implemented', 'Complete', 'Done'}
 ABANDONED_STATUSES = {'Abandoned', 'Rejected'}
 TERMINAL_STATUSES = IMPLEMENTED_STATUSES | ABANDONED_STATUSES
 # Active statuses where open tk items are expected
-ACTIVE_STATUSES = {'Draft', 'Proposed', 'Active', 'Approved', 'Validated',
-                   'Adopted', 'Implementing', 'Review', 'Testing'}
+ACTIVE_STATUSES = {'Proposed', 'Draft', 'Active', 'Ready', 'Approved',
+                   'Validated', 'Adopted', 'In Progress', 'Implementing',
+                   'Needs Manual Test', 'Testing', 'Review'}
 
 def extract_frontmatter(filepath):
     """Return (artifact_id, status) from YAML frontmatter."""
@@ -604,7 +619,7 @@ for artifact_id, tk_state in artifact_tk_map.items():
 
     rel_path, art_status = artifact_index[artifact_id]
 
-    # Case 1: Artifact is Implemented/Complete but tk still has open items
+    # Case 1: Artifact is Complete but tk still has open items
     if art_status in IMPLEMENTED_STATUSES and tk_state['open']:
         open_ids = ', '.join(i['id'] for i in tk_state['open'])
         mismatches.append({
@@ -672,6 +687,31 @@ PYEOF
     return 1
   else
     echo "specwatch tk-sync: artifacts and tk items are in sync."
+    return 0
+  fi
+}
+
+# --- Architecture diagram checker ---
+# Warns (ARCH_NO_DIAGRAM) for architecture-overview.md files that have no diagram.
+# A diagram is: a mermaid code block, an image reference, or a ## Diagram heading.
+
+scan_arch_diagrams() {
+  local warn_count=0
+  while IFS= read -r arch_file; do
+    [ -f "$arch_file" ] || continue
+    # Check for mermaid block, image reference, or diagram section heading
+    if grep -qE '```mermaid|!\[.*\]\(.*\)|^## .*[Dd]iagram' "$arch_file" 2>/dev/null; then
+      continue
+    fi
+    echo "ARCH_NO_DIAGRAM: $arch_file (no mermaid block, image reference, or ## Diagram heading found)"
+    warn_count=$(( warn_count + 1 ))
+  done < <(find "$REPO_ROOT/docs" -name "architecture-overview.md" 2>/dev/null)
+
+  if [ "$warn_count" -gt 0 ]; then
+    echo "specwatch arch-diagrams: found ${warn_count} architecture overview(s) without a diagram."
+    return 1
+  else
+    echo "specwatch arch-diagrams: all architecture overviews have diagrams."
     return 0
   fi
 }
@@ -969,8 +1009,8 @@ PYEOF
       artifact_item="$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]}"
       item_name="${parts[2]}"
     elif [ "${#parts[@]}" -eq 3 ]; then
-      # e.g., story/Draft/(STORY-001)-Foo.md — move the file
-      #    or adr/Draft/(ADR-001)-Foo.md
+      # e.g., adr/Proposed/(ADR-001)-Foo.md — move the file
+      #    or adr/Proposed/(ADR-001)-Foo.md
       if [ -d "$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]%%.*}" ] 2>/dev/null; then
         # Actually a folder artifact where the .md name matches the folder
         artifact_item="$DOCS_DIR/${parts[0]}/${parts[1]}/${parts[2]%%.*}"
@@ -1035,8 +1075,10 @@ case "$cmd" in
     scan_result="${scan_result:-0}"
     scan_tk_sync || tk_result=$?
     tk_result="${tk_result:-0}"
-    # Exit non-zero if either found issues
-    exit $(( scan_result > 0 || tk_result > 0 ? 1 : 0 ))
+    scan_arch_diagrams || arch_result=$?
+    arch_result="${arch_result:-0}"
+    # Exit non-zero if any check found issues
+    exit $(( scan_result > 0 || tk_result > 0 || arch_result > 0 ? 1 : 0 ))
     ;;
   tk-sync)
     log_header

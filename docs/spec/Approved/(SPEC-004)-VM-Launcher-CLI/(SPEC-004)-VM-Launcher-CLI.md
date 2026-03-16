@@ -4,7 +4,7 @@ artifact: SPEC-004
 status: Approved
 author: cristos
 created: 2026-03-13
-last-updated: 2026-03-13
+last-updated: 2026-03-14
 type: feature
 parent-epic: EPIC-002
 linked-research:
@@ -15,19 +15,25 @@ linked-research:
   - SPIKE-020
   - SPIKE-022
 linked-adrs:
+  - ADR-002
   - ADR-005
   - ADR-009
   - ADR-010
 depends-on:
   - SPEC-005
   - SPEC-006
+  - SPEC-007
 addresses:
   - JOURNEY-001.PP-01
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - SPEC-001
+  - SPEC-005
+  - SPEC-006
+  - SPEC-007
 ---
-
 # SPEC-004: VM Launcher CLI
 
 ## Problem Statement
@@ -94,8 +100,11 @@ EPIC-002 requires a CLI to boot an agent inside a libkrun VM with virtio-net net
 ## Scope & Constraints
 
 - macOS (Apple Silicon, HVF) and Linux (KVM, x86_64/aarch64) are both targets.
+- The launcher orchestrates the full topology: Docker Compose services (gateway, egress proxy, MCP servers) + VM. `tidegate vm start` brings up compose services first, then boots the VM with gvproxy pointed at the gateway and proxy IPs.
+- The egress proxy is a CONNECT-only proxy (Squid or equivalent) allowlisted to LLM API domains. It is deployed as a Docker container via the compose topology — not custom code, just configuration.
 - The launcher does NOT manage the OCI image build — that is SPEC-006's responsibility.
 - The launcher does NOT implement egress enforcement — that is SPEC-005's responsibility. The launcher starts gvproxy with the allowlist configured.
+- The launcher does NOT implement MCP scanning — that is SPEC-007's responsibility. The launcher starts the gateway container and points gvproxy's allowlist at its IP.
 - macOS path: Lima YAML template + thin `tidegate vm` CLI wrapper.
 - Linux path: Rust or Python wrapper using libkrun C API.
 

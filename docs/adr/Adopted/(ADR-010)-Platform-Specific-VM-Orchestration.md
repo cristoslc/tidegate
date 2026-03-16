@@ -9,11 +9,18 @@ linked-epics:
   - EPIC-002
 linked-specs:
   - SPEC-004
+  - SPEC-005
+  - SPEC-006
 depends-on:
   - ADR-005
 evidence-pool: ""
+affected-artifacts:
+  - ADR-008
+  - ADR-009
+  - SPIKE-018
+  - SPIKE-019
+  - SPIKE-020
 ---
-
 # Platform-Specific VM Orchestration
 
 ## Context

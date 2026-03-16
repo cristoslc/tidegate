@@ -7,11 +7,11 @@ created: 2026-02-22
 last-updated: 2026-02-23
 affected-artifacts:
   - VISION-001
+  - ADR-002
 linked-epics: []
 linked-specs: []
 depends-on: []
 ---
-
 # ADR-001: OCI Runtime Wrapper + seccomp-notify for L1 Command Interception
 
 ## Lifecycle

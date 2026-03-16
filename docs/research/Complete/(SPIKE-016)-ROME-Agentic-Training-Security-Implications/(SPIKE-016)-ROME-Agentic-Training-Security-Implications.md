@@ -22,8 +22,10 @@ risks-addressed:
   - Open-source ROME weights enable adversarial fine-tuning for scanner evasion
   - Multi-layer injection attacks (prompt, repository, tool-level) tested by the authors' red team
 depends-on: []
+linked-artifacts:
+  - SPIKE-003
+  - SPIKE-006
 ---
-
 # ROME Agentic Training Security Implications
 
 ## Source

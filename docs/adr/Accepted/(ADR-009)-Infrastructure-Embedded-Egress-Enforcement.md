@@ -7,12 +7,15 @@ created: 2026-03-13
 last-updated: 2026-03-13
 linked-epics:
   - EPIC-002
-linked-specs: []
+linked-specs:
+  - SPEC-002
 depends-on:
   - ADR-010
 evidence-pool: ""
+affected-artifacts:
+  - SPIKE-021
+  - SPIKE-022
 ---
-
 # ADR-009: Infrastructure-Embedded Egress Enforcement
 
 ## Context

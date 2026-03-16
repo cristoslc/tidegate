@@ -9,8 +9,9 @@ parent-vision: VISION-002
 linked-personas:
   - PERSONA-001
 depends-on: []
+linked-artifacts:
+  - SPIKE-002
 ---
-
 # JOURNEY-001: Securing an AI Assistant
 
 ## Persona

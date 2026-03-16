@@ -20,8 +20,10 @@ addresses:
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - SPEC-002
+  - SPEC-004
 ---
-
 # SPEC-005: gvproxy Egress Allowlist
 
 ## Problem Statement

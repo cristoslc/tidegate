@@ -10,8 +10,9 @@ parent-vision: VISION-001
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-002
 ---
-
 # Data Flow Taint Model
 
 ## Lifecycle

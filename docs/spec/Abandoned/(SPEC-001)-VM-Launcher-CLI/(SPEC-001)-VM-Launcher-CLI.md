@@ -16,14 +16,19 @@ linked-research:
 linked-adrs:
   - ADR-005
   - ADR-008
+  - ADR-009
 depends-on: []
 addresses:
   - JOURNEY-001.PP-01
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - EPIC-002
+  - SPEC-002
+  - SPEC-003
+  - SPEC-004
 ---
-
 # SPEC-001: VM Launcher CLI
 
 ## Problem Statement

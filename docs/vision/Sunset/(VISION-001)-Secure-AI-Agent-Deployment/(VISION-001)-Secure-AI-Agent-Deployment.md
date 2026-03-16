@@ -6,8 +6,12 @@ author: cristos
 created: 2026-02-21
 last-updated: 2026-03-11
 depends-on: []
+linked-artifacts:
+  - ADR-002
+  - PERSONA-001
+  - PERSONA-004
+  - VISION-002
 ---
-
 # VISION-001: Secure AI Agent Deployment Platform
 
 ## Lifecycle

@@ -8,8 +8,10 @@ last-updated: 2026-03-12
 linked-epics: []
 linked-specs: []
 depends-on: []
+affected-artifacts:
+  - SPIKE-003
+  - SPIKE-016
 ---
-
 # Opaque Deny Responses
 
 ## Context

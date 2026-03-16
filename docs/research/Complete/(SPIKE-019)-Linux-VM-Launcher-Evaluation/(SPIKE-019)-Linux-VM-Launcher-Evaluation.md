@@ -15,8 +15,13 @@ depends-on: []
 blocks:
   - SPEC-001 Linux support decision
 evidence-pool: ""
+linked-artifacts:
+  - ADR-002
+  - SPEC-001
+  - SPIKE-015
+  - SPIKE-017
+  - SPIKE-018
 ---
-
 # SPIKE-019: Linux VM Launcher Evaluation
 
 ## Question

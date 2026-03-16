@@ -17,8 +17,11 @@ addresses:
 evidence-pool: ""
 source-issue: ""
 swain-do: required
+linked-artifacts:
+  - SPEC-004
+  - SPEC-005
+  - VISION-002
 ---
-
 # SPEC-007: MCP Scanning Gateway
 
 ## Problem Statement

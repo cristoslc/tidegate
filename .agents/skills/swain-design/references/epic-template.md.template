@@ -2,6 +2,7 @@
 ---
 title: "{{ title }}"
 artifact: EPIC-{{ number }}
+track: container
 status: {{ status | default("Proposed") }}
 author: {{ author }}
 created: {{ created_date }}
@@ -11,8 +12,8 @@ success-criteria:
 {%- for criterion in success_criteria %}
   - {{ criterion }}
 {%- endfor %}
-depends-on:
-{%- for dep in depends_on | default([]) %}
+depends-on-artifacts:
+{%- for dep in depends_on_artifacts | default([]) %}
   - {{ dep }}
 {%- endfor %}
 addresses:

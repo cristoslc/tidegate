@@ -10,12 +10,19 @@ superseded-by:
   - ADR-010
 linked-epics:
   - EPIC-002
+  - EPIC-001
 linked-specs: []
 depends-on:
   - ADR-005
 evidence-pool: ""
+affected-artifacts:
+  - ADR-002
+  - ADR-005
+  - ADR-009
+  - ADR-010
+  - SPIKE-015
+  - SPIKE-017
 ---
-
 # libkrun as Single VMM for Agent Isolation
 
 ## Context

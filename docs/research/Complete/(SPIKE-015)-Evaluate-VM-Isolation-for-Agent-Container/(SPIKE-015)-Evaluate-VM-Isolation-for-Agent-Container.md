@@ -16,8 +16,11 @@ dependencies:
   - M2 (Agent Container — Docker baseline must exist first)
 blocks:
   - EPIC-001 implementation work
+linked-artifacts:
+  - ADR-002
+  - ADR-003
+  - ADR-005
 ---
-
 # SPIKE-015: Evaluate VM Isolation for Agent Container
 
 ## Lifecycle

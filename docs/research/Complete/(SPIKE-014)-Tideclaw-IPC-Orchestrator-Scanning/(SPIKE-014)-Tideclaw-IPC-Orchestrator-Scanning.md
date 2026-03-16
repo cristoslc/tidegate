@@ -13,8 +13,12 @@ risks-addressed:
   - Agent exfiltration via orchestrator IPC bypass
   - Unscanned data reaching external messaging channels
 blocks: [ADR-004]
+linked-artifacts:
+  - ADR-002
+  - ADR-004
+  - SPIKE-011
+  - SPIKE-013
 ---
-
 # Tideclaw IPC Orchestrator Scanning
 
 ## Lifecycle

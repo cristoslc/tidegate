@@ -8,8 +8,12 @@ last-updated: 2026-03-11
 affected-artifacts:
   - VISION-001
   - EPIC-001
+  - ADR-002
+  - ADR-003
+  - SPIKE-015
+linked-epics:
+  - EPIC-002
 ---
-
 # ADR-005: Composable VM Isolation
 
 ## Lifecycle

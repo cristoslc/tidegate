@@ -17,8 +17,12 @@ depends-on: []
 blocks:
   - SPEC-001 implementation approach decision
 evidence-pool: ""
+linked-artifacts:
+  - SPEC-001
+  - SPIKE-015
+  - SPIKE-017
+  - SPIKE-019
 ---
-
 # SPIKE-018: macOS VM Launcher Evaluation
 
 ## Question

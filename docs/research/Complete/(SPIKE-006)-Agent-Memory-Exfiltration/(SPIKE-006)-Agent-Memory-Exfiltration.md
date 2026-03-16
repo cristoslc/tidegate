@@ -10,8 +10,13 @@ parent-vision: VISION-002
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-002
+  - ADR-004
+  - ADR-006
+  - SPIKE-003
+  - SPIKE-016
 ---
-
 # Agent Memory as Exfiltration Vector
 
 ## Lifecycle

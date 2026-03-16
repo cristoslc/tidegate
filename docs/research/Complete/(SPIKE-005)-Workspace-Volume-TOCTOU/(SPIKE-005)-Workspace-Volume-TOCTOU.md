@@ -10,8 +10,10 @@ parent-vision: VISION-002
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - ADR-001
+  - ADR-002
 ---
-
 # Workspace Volume TOCTOU
 
 ## Lifecycle

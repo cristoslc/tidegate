@@ -53,9 +53,42 @@ if [[ -d .tickets/.locks ]]; then
   fi
 fi
 
-# 7. Script permissions (spot check)
+# 7. Old lifecycle phase directories (ADR-003 migration)
+OLD_PHASES="Draft Planned Review Approved Testing Implemented Adopted Deprecated Archived Sunset Validated"
+for dir in docs/*/; do
+  [[ -d "$dir" ]] || continue
+  for phase in $OLD_PHASES; do
+    phase_dir="${dir}${phase}"
+    if [[ -d "$phase_dir" ]]; then
+      # Only flag non-empty directories (ignore .DS_Store and hidden files)
+      if find "$phase_dir" -maxdepth 1 -not -name '.*' -not -name "$phase" -print -quit 2>/dev/null | grep -q .; then
+        issues+=("old lifecycle directory: $phase_dir (run migrate-lifecycle-dirs.py)")
+        break 2
+      fi
+    fi
+  done
+done
+
+# 8. Commit signing configured
+if [[ "$(git config --local commit.gpgsign 2>/dev/null)" != "true" ]]; then
+  issues+=("commit signing not configured (run swain-keys --provision)")
+fi
+
+# 9. Script permissions (spot check)
 if find .claude/skills/*/scripts/ -type f \( -name '*.sh' -o -name '*.py' \) ! -perm -u+x 2>/dev/null | grep -q .; then
   issues+=("scripts missing executable permission")
+fi
+
+# 10. Superpowers detection (advisory — warn but don't fail)
+SUPERPOWERS_SKILLS="brainstorming writing-plans test-driven-development verification-before-completion subagent-driven-development executing-plans"
+sp_missing=0
+for skill in $SUPERPOWERS_SKILLS; do
+  if ! ls .agents/skills/$skill/SKILL.md .claude/skills/$skill/SKILL.md 2>/dev/null | head -1 | grep -q .; then
+    sp_missing=$((sp_missing + 1))
+  fi
+done
+if [[ $sp_missing -gt 0 ]]; then
+  echo "swain-preflight: superpowers: $sp_missing/6 skills missing (advisory)"
 fi
 
 # Report
