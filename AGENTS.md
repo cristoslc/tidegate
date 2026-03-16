@@ -2,6 +2,8 @@
 
 Reference architecture for data-flow enforcement in AI agent deployments. Tidegate maps what it takes to prevent an AI agent from leaking sensitive data — through a topology where every data path from the agent passes through an enforcement boundary.
 
+**This is a reference architecture, not a deployable product.** Documentation is the primary artifact. Any code is exploratory — proof-of-concept work that tests architectural assumptions. See [VISION-000](docs/vision/Active/(VISION-000)-Reference-Architecture/(VISION-000)-Reference-Architecture.md).
+
 See `docs/vision/` for product vision, `docs/threat-model/` for threat model.
 
 ## Directory structure

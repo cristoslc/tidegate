@@ -12,6 +12,7 @@ Dashboard mirroring lifecycle data from individual Vision artifacts. Source of t
 
 | ID | Title | Phase | Date | Commit |
 |----|-------|-------|------|--------|
+| VISION-000 | [Reference Architecture](./Active/(VISION-000)-Reference-Architecture/(VISION-000)-Reference-Architecture.md) | Active | 2026-03-16 | pending |
 
 ## Sunset
 
