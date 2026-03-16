@@ -9,22 +9,46 @@ Do NOT just dump bullet lists. Use tables so the user can scan and compare.
 Lead with decisions and actions — answer "what's waiting on me?" before showing
 anything else. Reference data (Epic Progress, Spikes, Blocked) comes after.
 
-## Section 0: Recommendation
+## Section 1: Session Context
 
-Pick the single ready artifact with the highest `unblock_count` from
-`.artifacts.ready[]` in the JSON cache. If multiple items tie on `unblock_count`,
-prefer decision-type artifacts (Proposed specs, ADRs) over implementation items —
-a human-gated decision is more valuable to unblock than an agent-executable task.
-Write exactly two sentences:
+Read `.session.bookmark` from the JSON cache. If the bookmark exists and has a
+non-null `note`, show it as a one-line orientation header before the recommendation:
 
-- **Action:** One sentence naming the action (e.g., "Approve SPEC-030.")
-- **Why:** One sentence naming the unblock count and the artifact IDs that
-  would be unblocked (e.g., "Approving it unblocks SPEC-031, SPEC-032,
-  SPEC-033 — highest downstream leverage of all actionable items.")
+> **Resuming:** {note}
+
+If the bookmark has `files`, list them on the next line as clickable paths.
+
+This tells the operator where they left off. It's context, not a recommendation —
+the recommendation section follows and may suggest continuing that work or
+pivoting elsewhere.
+
+Omit this section entirely if no bookmark exists or the note is null/empty.
+
+## Section 2: Recommendation
+
+Read `.priority.recommendations[0]` from the JSON cache. Write exactly two sentences:
+
+- **Action:** One sentence naming the action (e.g., "Activate EPIC-017.")
+- **Why:** One sentence naming the score, vision context, and unblock count (e.g., "Security is weighted high with 3 pending decisions — activating this unblocks EPIC-023. Note: your last 2 weeks of work has been in design tooling.")
+
+Include attention drift context if any drift is detected for the recommendation's vision (check `.priority.drift`).
 
 Omit this section entirely if no ready items exist.
 
-## Section 1: Decisions Needed
+**Drift prompt:** If `.priority.drift` is non-empty, include a drift prompt after the recommendation:
+"Your attention has drifted from [Vision Name] (weight: [W]) — [N] days since last activity. Is that intentional, or should we course-correct?"
+
+This is not a recommendation to change — it's a mirror. The operator decides.
+
+## Section 3: Peripheral Awareness
+
+If a focus lane is set (`.session.focus_lane` is non-null) and there are decisions in other visions, summarize:
+"Meanwhile: [Vision Name] has N pending decisions (weight: W)"
+
+One line per non-focus vision with pending decisions from `.priority.decision_debt`.
+Omit this section entirely if no focus lane is set.
+
+## Section 4: Decisions Needed
 
 Artifacts requiring human judgment, sorted by unblock_count descending so
 highest-leverage decisions appear first. Includes:
@@ -45,8 +69,9 @@ Rules:
 - "What's Needed" = the human action required (approve, decide, accept, activate)
 - Unblocks = downstream artifact IDs waiting on this decision
 - Only show this section if there are items to list
+- For EPICs without a parent chain to an Initiative (check `.priority.decision_debt` — if the EPIC appears in `_unaligned`), append "(no initiative — assign first)" to the What's Needed column
 
-## Section 2: Work Ready to Start
+## Section 5: Work Ready to Start
 
 Agent-delegatable, implementation-ready items from `.artifacts.ready[]` that
 are NOT decision-type artifacts (i.e., not Proposed specs, ADRs, or spikes).
@@ -62,7 +87,7 @@ Rules:
 - Unblocks = downstream artifact IDs that become unblocked once this is done
 - Omit this section if there are no implementation-ready items
 
-## Section 3: Epic Progress
+## Section 6: Epic Progress
 
 One table with all active epics and their child specs in a tree.
 Use `└` to indent children under their parent epic.
@@ -84,7 +109,7 @@ Rules:
 - Epics with no children: readiness = "Needs decomposition into specs"
 - Epics/specs that are blocked: note what they're blocked on
 
-## Section 4: Research (Spikes)
+## Section 7: Research (Spikes)
 
 Table of all unresolved spikes.
 
@@ -99,7 +124,7 @@ Rules:
 - Unblocks = downstream artifacts waiting on this spike
 - Sort: Active first, then by unblock count descending, then by ID
 
-## Section 5: Blocked Items
+## Section 8: Blocked Items
 
 Only if there are blocked items not already shown in the epic tree.
 
@@ -111,11 +136,11 @@ Rules:
 - Group items that share a common blocker under a single entry. State whether
   the blocker is actionable now.
 
-## Section 6: Tasks & Issues
+## Section 9: Tasks & Issues
 
 Brief summary of in-progress tk tasks. Omit if empty.
 
-## Section 7: Open GitHub Issues
+## Section 10: Open GitHub Issues
 
 Table of open GitHub issues. These are external signals — bugs, feature requests,
 or process gaps reported outside the artifact system.
@@ -133,7 +158,7 @@ Rules:
 - If an issue is linked to an artifact (visible in the Linked Issues section), note the artifact ID in parentheses after the title
 - Omit this section if there are no open issues
 
-## Section 8: Cross-Reference Gaps
+## Section 11: Cross-Reference Gaps
 
 Table of artifacts with frontmatter/body cross-reference discrepancies. Only
 show artifacts with at least one discrepancy. Merge body-not-in-frontmatter and
@@ -157,6 +182,8 @@ Rules:
 ## Full Example
 
 ```markdown
+> **Resuming:** Fixed xref gaps across 79 artifact files — 0 missing reciprocals remain
+
 ## Recommendation
 
 **Action:** Approve SPEC-009.

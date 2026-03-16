@@ -14,7 +14,7 @@ metadata:
 
 # Status
 
-Cross-cutting project status dashboard. Aggregates data from artifact lifecycle (specgraph), task tracking (tk), git, GitHub issues, and session state into an activity-oriented view.
+Cross-cutting project status dashboard. Aggregates data from artifact lifecycle (`swain chart`), task tracking (tk), git, GitHub issues, and session state into an activity-oriented view.
 
 ## When invoked
 
@@ -34,7 +34,7 @@ The script's terminal output uses OSC 8 hyperlinks for clickable artifact links.
 
 The script collects from five data sources:
 
-1. **Artifacts** — specgraph cache (epic progress, ready/blocked items, dependency info)
+1. **Artifacts** — `swain chart` vision-rooted hierarchy (epic progress, ready/blocked items, dependency info). Use `bash skills/swain-design/scripts/chart.sh recommend` for ranked artifact view; respects focus lane automatically.
 2. **Tasks** — tk (in-progress, recently completed)
 3. **Git** — branch, working tree state, recent commits
 4. **GitHub** — open issues, issues assigned to the user
@@ -66,16 +66,51 @@ The MOTD can read this cache cheaply between full refreshes.
 
 ## Recommendation
 
-The first thing the operator reads must be a single ranked recommendation — not a follow-up footnote, not a list of options.
+The recommendation uses a scoring formula:
 
-**How to generate:**
-1. From `.artifacts.ready[]` in the JSON cache, pick the item with the highest `unblock_count` (precomputed — no need to compute length)
-2. If there are ties, prefer decision-type artifacts (ADR, SPEC needing review) over implementation items
-3. Write exactly one `**Action:**` sentence (e.g., "Approve SPEC-030")
-4. Write exactly one `**Why:**` sentence naming unblock count and artifact IDs (e.g., "Approving it unblocks SPEC-031, SPEC-032, SPEC-033 — highest downstream leverage of all actionable items.")
-5. If no ready items exist, omit the section entirely
+```
+score = unblock_count × vision_weight
+```
 
-Do NOT offer multiple options. One recommendation, one reason.
+Where `vision_weight` is inherited from the artifact's Vision ancestor (high=3, medium=2, low=1, default=medium). Read `.priority.recommendations[0]` from the JSON cache for the top-ranked item.
+
+Tiebreakers (applied in order):
+1. Higher decision debt in the artifact's vision
+2. Decision-type artifacts over implementation-type
+3. Artifact ID (deterministic fallback)
+
+When a focus lane is set, recommendations are scoped to that vision/initiative. Peripheral visions are summarized separately (see Peripheral Awareness).
+
+If attention drift is detected for the recommended item's vision, include it as context in the recommendation.
+
+## Mode Inference
+
+swain-status infers the operating mode from context (first match wins):
+
+1. Both specs in review AND strategic decisions pending → ask: "Steering or reviewing?"
+2. Specs awaiting operator review (agent finished, needs sign-off) → **detail mode**
+3. Focus lane set with pending strategic decisions → **vision mode** within that lane
+4. No specs in review, decisions piling up → **vision mode**
+5. Nothing actionable in either mode → **vision mode** (show the master plan mirror)
+
+Once the operator answers, swain remembers for the session via swain-session bookmark.
+
+## Focus Lane
+
+The operator can set a focus lane via swain-session to scope recommendations to a single vision or initiative:
+
+```bash
+bash "$(find . .claude .agents -path '*/swain-session/scripts/swain-focus.sh' -print -quit 2>/dev/null)" set VISION-001
+```
+
+When set, `.priority.recommendations` only includes items under that vision. Non-focus visions appear in the Peripheral Awareness section.
+
+## Peripheral Awareness
+
+When a focus lane is set, non-focus visions with pending decisions are summarized:
+"Meanwhile: [Vision] has N pending decisions (weight: W)"
+
+This is a mirror, not a recommendation — the operator decides when accumulation warrants redirection.
 
 ## Active epics with all specs resolved
 
@@ -98,7 +133,7 @@ After presenting status, update the bookmark with the most actionable highlight:
 
 ## Error handling
 
-- If specgraph is unavailable: skip artifact section, show other data
+- If chart.sh / specgraph is unavailable: skip artifact section, show other data
 - If tk is unavailable: skip task section
 - If gh CLI is unavailable or no GitHub remote: skip issues section
 - If `.agents/session.json` doesn't exist: skip bookmark

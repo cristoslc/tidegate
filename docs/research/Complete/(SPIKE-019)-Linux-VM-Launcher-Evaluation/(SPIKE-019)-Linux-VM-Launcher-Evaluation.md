@@ -14,7 +14,7 @@ risks-addressed:
 depends-on: []
 blocks:
   - SPEC-001 Linux support decision
-evidence-pool: ""
+trove: ""
 linked-artifacts:
   - ADR-002
   - SPEC-001

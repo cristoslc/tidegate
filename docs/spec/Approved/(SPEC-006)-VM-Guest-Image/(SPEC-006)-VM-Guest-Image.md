@@ -15,7 +15,7 @@ linked-adrs:
   - ADR-010
 depends-on: []
 addresses: []
-evidence-pool: ""
+trove: ""
 source-issue: ""
 swain-do: required
 linked-artifacts:

@@ -7,7 +7,7 @@ author: cristos
 created: 2026-03-11
 last-updated: 2026-03-15
 depends-on: []
-evidence-pool: "agent-runtime-security"
+trove: "agent-runtime-security"
 linked-artifacts:
   - PERSONA-001
   - PERSONA-002

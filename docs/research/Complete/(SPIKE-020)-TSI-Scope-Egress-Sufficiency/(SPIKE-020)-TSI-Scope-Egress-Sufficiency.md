@@ -16,7 +16,7 @@ depends-on:
 blocks:
   - SPEC-001 networking architecture decision
   - SPEC-002 egress enforcement approach on Linux
-evidence-pool: "findings-2026-03-13"
+trove: "findings-2026-03-13"
 linked-artifacts:
   - SPIKE-017
   - SPIKE-018

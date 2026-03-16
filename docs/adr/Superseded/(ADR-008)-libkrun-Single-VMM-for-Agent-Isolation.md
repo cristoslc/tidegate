@@ -14,7 +14,7 @@ linked-epics:
 linked-specs: []
 depends-on:
   - ADR-005
-evidence-pool: ""
+trove: ""
 affected-artifacts:
   - ADR-002
   - ADR-005

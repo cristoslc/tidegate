@@ -6,6 +6,7 @@ author: cristos
 created: 2026-03-13
 last-updated: 2026-03-14
 parent-vision: VISION-002
+parent-initiative: INITIATIVE-001
 success-criteria:
   - Agent runs inside a libkrun VM with workspace mounted via virtiofs on both macOS (Apple Silicon) and Linux (KVM)
   - All MCP traffic routes from the VM through the MCP scanning gateway (SPEC-007), which scans every tool-call argument and response for structured sensitive data
@@ -17,7 +18,7 @@ success-criteria:
 depends-on: []
 addresses:
   - JOURNEY-001.PP-01
-evidence-pool: ""
+trove: ""
 linked-artifacts:
   - ADR-002
   - ADR-005

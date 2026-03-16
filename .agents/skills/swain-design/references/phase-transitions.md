@@ -15,7 +15,7 @@ Phases listed in the artifact definition files are available waypoints, not mand
 2. **Move the artifact** to the new phase subdirectory using `git mv` (e.g., `git mv docs/epic/Proposed/(EPIC-001)-Foo/ docs/epic/Active/(EPIC-001)-Foo/`). Every artifact type uses phase subdirectories — see the artifact's definition file for the exact directory names. Phase subdirectories use PascalCase: `Proposed/`, `Ready/`, `InProgress/`, `NeedsManualTest/`, `Complete/`, `Active/`, `Retired/`, `Superseded/`, `Abandoned/`.
 3. Update the artifact's status field in frontmatter to match the new phase.
 4. **ADR compliance check** — for transitions to active phases (Active, Ready, In Progress, Complete), run `skills/swain-design/scripts/adr-check.sh <artifact-path>`. Review any findings with the user before committing.
-4c. **Alignment check** — for transitions to active phases (Active, Ready), run `skills/swain-design/scripts/specgraph.sh scope <artifact-id>` and assess per [alignment-checking.md](alignment-checking.md). Skip for implementation-phase transitions (In Progress, Needs Manual Test, Complete) unless content changed since last check. Skip for terminal-phase transitions (Abandoned, Retired, Superseded).
+4c. **Alignment check** — for transitions to active phases (Active, Ready), run `bash skills/swain-design/scripts/chart.sh scope <artifact-id>` and assess per [alignment-checking.md](alignment-checking.md). Skip for implementation-phase transitions (In Progress, Needs Manual Test, Complete) unless content changed since last check. Skip for terminal-phase transitions (Abandoned, Retired, Superseded).
 4d. **Spike final pass (SPIKE only)** — for `Active → Complete` transitions, populate the `## Summary` section at the top of the spike document. Lead with the verdict (Go / No-Go / Hybrid / Conditional), then 1–3 sentences distilling the key finding and recommended next step. This reorders emphasis without changing content — Findings stay in place, but the reader reaches the decision immediately. See [spike-definition.md](spike-definition.md) for rationale.
 4a. **Verification gate (SPEC only)** — for `Needs Manual Test → Complete` transitions, run `skills/swain-design/scripts/spec-verify.sh <artifact-path>`. Address gaps before proceeding.
 4b. **Code review gate (SPEC only)** — for `Needs Manual Test → Complete`, if superpowers code review skills are installed, request spec compliance + code quality reviews (see [superpowers-integration.md](superpowers-integration.md)). Not a hard gate.
@@ -29,9 +29,34 @@ Phases listed in the artifact definition files are available waypoints, not mand
 
 ## Completion rules
 
+- An Initiative is "Complete" only when all child Epics are "Complete" and its stated objectives are met.
 - An Epic is "Complete" only when all child Agent Specs are "Complete" and success criteria are met.
 - An Agent Spec is "Complete" only when its implementation plan is closed (or all tasks are done in fallback mode) **and** its Verification table confirms all acceptance criteria pass (enforced by `spec-verify.sh`).
 - An ADR is "Superseded" only when the superseding ADR is "Active" and links back.
+
+## Child artifact propagation
+
+When a parent artifact (e.g., INITIATIVE, EPIC, VISION) transitions to a new phase, child artifacts that were already attached at the time of the transition should be promoted to the equivalent phase automatically:
+
+1. After completing the parent's own phase transition (steps 1–9 above), identify all child artifacts currently linked to the parent (via `parent-initiative`, `parent-epic`, `parent-vision`, `linked-specs`, `linked-research`, etc.).
+2. For each child that is in the same phase as the parent *was* (or in `Proposed` if the parent was being activated), transition it to match the parent's new phase using the same workflow.
+3. Children created **after** a parent transition are not affected retroactively — they follow the normal creation rules (user-requested → Active; agent-suggested → Proposed).
+4. If a child has already advanced past the equivalent phase, leave it in its current phase — only pull lagging children forward, never push advanced ones backward.
+
+**Example:** User promotes EPIC-005 from `Proposed` → `Active`. SPEC-012 and SPIKE-014, both currently in `Proposed`, are automatically promoted to `Active`. SPEC-013, already in `InProgress`, is left alone.
+
+## INITIATIVE phase transitions
+
+INITIATIVE follows the **container track** (same as EPIC): `Proposed → Active → Complete`, with `Abandoned` and `Superseded` available from any phase.
+
+| From | To | Gate |
+|------|----|------|
+| Proposed | Active | Objectives and scope defined; at least one child Epic linked |
+| Active | Complete | All child Epics are Complete and stated objectives are met |
+| Any | Abandoned | Intentionally dropped — record rationale in the lifecycle table Notes column |
+| Active | Superseded | A replacement Initiative exists and links back via `superseded-by` |
+
+Use two-commit stamp for all INITIATIVE transitions (same rule as EPIC).
 
 ## EPIC completion hook
 

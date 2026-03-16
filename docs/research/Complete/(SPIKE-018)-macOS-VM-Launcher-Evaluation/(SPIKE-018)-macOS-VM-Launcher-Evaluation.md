@@ -16,7 +16,7 @@ supersedes:
 depends-on: []
 blocks:
   - SPEC-001 implementation approach decision
-evidence-pool: ""
+trove: ""
 linked-artifacts:
   - SPEC-001
   - SPIKE-015

@@ -13,7 +13,7 @@ linked-specs:
   - SPEC-006
 depends-on:
   - ADR-005
-evidence-pool: ""
+trove: ""
 affected-artifacts:
   - ADR-008
   - ADR-009

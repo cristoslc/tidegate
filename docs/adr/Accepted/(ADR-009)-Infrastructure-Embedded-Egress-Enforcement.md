@@ -11,7 +11,7 @@ linked-specs:
   - SPEC-002
 depends-on:
   - ADR-010
-evidence-pool: ""
+trove: ""
 affected-artifacts:
   - SPIKE-021
   - SPIKE-022

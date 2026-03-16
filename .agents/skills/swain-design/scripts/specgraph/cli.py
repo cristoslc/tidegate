@@ -142,7 +142,7 @@ def main(argv: list[str] | None = None) -> None:
     xref_parser.add_argument("--json", action="store_true", help="Output raw JSON")
 
     # Commands requiring a mandatory ID
-    for cmd in ("blocks", "blocked-by", "tree", "neighbors", "scope", "impact"):
+    for cmd in ("blocks", "blocked-by", "tree", "deps", "neighbors", "scope", "impact"):
         sp = subparsers.add_parser(cmd)
         sp.add_argument("id", help="Artifact ID (e.g. SPEC-001)")
 
@@ -153,6 +153,18 @@ def main(argv: list[str] | None = None) -> None:
     # Commands with no ID argument
     for cmd in ("ready", "next", "mermaid", "status", "overview"):
         subparsers.add_parser(cmd)
+
+    # Priority commands
+    subparsers.add_parser("decision-debt", help="Show decision debt per vision")
+    rec_parser = subparsers.add_parser("recommend", help="Show ranked recommendation")
+    rec_parser.add_argument("--focus", default=None, help="Focus vision ID (e.g. VISION-001)")
+    rec_parser.add_argument("--json", action="store_true", help="Output raw JSON")
+
+
+    # attention: drift detection
+    att_parser = subparsers.add_parser("attention", help="Show attention distribution by vision")
+    att_parser.add_argument("--days", type=int, default=30, help="Lookback window in days")
+    att_parser.add_argument("--json", action="store_true", help="Output raw JSON")
 
     args = parser.parse_args(argv)
 
@@ -178,7 +190,7 @@ def main(argv: list[str] | None = None) -> None:
             print(queries.blocks(args.id, nodes, edges, repo_root_str, show_links))
         elif args.command == "blocked-by":
             print(queries.blocked_by(args.id, nodes, edges, repo_root_str, show_links))
-        elif args.command == "tree":
+        elif args.command in ("tree", "deps"):
             print(queries.tree(args.id, nodes, edges, repo_root_str, show_links))
         elif args.command == "neighbors":
             print(queries.neighbors(args.id, nodes, edges, repo_root_str, show_links))
@@ -198,6 +210,54 @@ def main(argv: list[str] | None = None) -> None:
             print(queries.status_cmd(nodes, edges, show_all))
         elif args.command == "overview":
             print(queries.overview(nodes, edges, show_all, repo_root_str, show_links))
+        elif args.command == "decision-debt":
+            from .priority import compute_decision_debt
+            import json as _json
+            debt = compute_decision_debt(nodes, edges)
+            print(_json.dumps(debt, indent=2))
+        elif args.command == "recommend":
+            from .priority import rank_recommendations
+            import json as _json
+            focus = getattr(args, "focus", None)
+            ranked = rank_recommendations(nodes, edges, focus_vision=focus)
+            if getattr(args, "json", False):
+                print(_json.dumps(ranked, indent=2))
+            else:
+                for i, item in enumerate(ranked[:10]):
+                    marker = "→ " if i == 0 else "  "
+                    print(f"{marker}{item['id']}  score={item['score']}  unblocks={item['unblock_count']}  weight={item['vision_weight']}  vision={item['vision_id'] or 'none (orphan)'}")
+        elif args.command == "attention":
+            from .attention import scan_git_log, compute_attention, compute_drift
+            import json as _json
+            # Read settings for drift thresholds
+            settings_path = repo_root / "swain.settings.json"
+            drift_thresholds = None
+            att_days = getattr(args, "days", 30)
+            if settings_path.exists():
+                try:
+                    settings = _json.loads(settings_path.read_text())
+                    p = settings.get("prioritization", {})
+                    drift_thresholds = p.get("driftThresholds")
+                    att_days = p.get("attentionWindowDays", att_days)
+                except (ValueError, KeyError):
+                    pass
+            log_entries = scan_git_log(repo_root, days=att_days)
+            attention = compute_attention(log_entries, nodes, edges)
+            drift = compute_drift(attention, nodes, drift_thresholds=drift_thresholds)
+            if getattr(args, "json", False):
+                print(_json.dumps({"attention": attention, "drift": drift}, indent=2))
+            else:
+                print("=== Attention Distribution ===")
+                for vid, data in sorted(attention.items()):
+                    vnode = nodes.get(vid, {})
+                    label = vnode.get("title", vid)
+                    weight = vnode.get("priority_weight", "medium") or "medium"
+                    print(f"  {vid} ({label}) [weight: {weight}] — {data['transitions']} transitions, last: {data['last_activity'] or 'never'}")
+                if drift:
+                    print()
+                    print("=== Attention Drift ===")
+                    for d in drift:
+                        print(f"  {d['vision_id']} (weight: {d['weight']}) — {d['days_since_activity']} days since last activity (threshold: {d['threshold']})")
         else:
             print(f"Unknown command: {args.command}", file=sys.stderr)
             sys.exit(1)

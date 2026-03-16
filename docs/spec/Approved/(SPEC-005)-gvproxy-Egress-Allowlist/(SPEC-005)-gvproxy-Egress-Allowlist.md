@@ -17,7 +17,7 @@ linked-adrs:
 depends-on: []
 addresses:
   - JOURNEY-001.PP-01
-evidence-pool: ""
+trove: ""
 source-issue: ""
 swain-do: required
 linked-artifacts:

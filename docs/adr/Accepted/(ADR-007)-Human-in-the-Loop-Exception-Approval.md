@@ -9,7 +9,7 @@ linked-epics: []
 linked-specs: []
 depends-on:
   - ADR-006
-evidence-pool: ""
+trove: ""
 affected-artifacts:
   - ADR-006
   - SPIKE-001

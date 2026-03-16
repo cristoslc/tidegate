@@ -20,7 +20,7 @@ depends-on:
   - SPIKE-020
 blocks:
   - Cross-platform egress enforcement spec
-evidence-pool: ""
+trove: ""
 linked-artifacts:
   - SPEC-001
   - SPEC-002

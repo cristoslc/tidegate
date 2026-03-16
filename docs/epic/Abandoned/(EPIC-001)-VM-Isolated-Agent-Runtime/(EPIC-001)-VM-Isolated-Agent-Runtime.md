@@ -6,6 +6,7 @@ author: cristos
 created: 2026-03-06
 last-updated: 2026-03-13
 parent-vision: VISION-002
+parent-initiative: INITIATIVE-001
 success-criteria:
   - Agent runs inside a libkrun VM with workspace mounted via virtiofs
   - All MCP traffic routes from the VM through the Tidegate gateway via published ports

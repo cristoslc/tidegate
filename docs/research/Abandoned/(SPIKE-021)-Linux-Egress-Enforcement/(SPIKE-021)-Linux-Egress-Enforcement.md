@@ -16,7 +16,7 @@ depends-on:
   - SPIKE-020
 blocks:
   - Linux egress enforcement spec
-evidence-pool: ""
+trove: ""
 linked-artifacts:
   - SPEC-002
   - SPIKE-017
