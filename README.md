@@ -1,62 +1,57 @@
 # Tidegate
 
-A reference architecture for data-flow enforcement in AI agent deployments. Tidegate maps what it takes to prevent an AI agent from leaking sensitive data — not through best-effort scanning of one channel, but through a topology where every data path from the agent passes through an enforcement boundary. It may get built; it may remain an analytical tool for evaluating how well commercial solutions cover the problem. The value is in the analysis regardless.
+Your AI agent reads your bank statements and calls external APIs in the same breath. Tidegate makes sure nothing leaks.
+
+Not through best-effort scanning of one channel, but through a network topology where every data path from the agent passes through an enforcement boundary. The agent does useful work. Tidegate makes sure it can't betray your trust.
 
 ## The problem
 
-AI agents read your most sensitive files and call external APIs in the same breath. A community skill can read your bank statements and post them to any endpoint. A prompt injection in a document can instruct the agent to exfiltrate credentials through a tool call.
+Simon Willison's [lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/): any AI agent that combines (1) access to **private data**, (2) exposure to **untrusted content**, and (3) the ability to **externally communicate** can be tricked into exfiltrating your data to an attacker. Remove any one leg and the attack breaks. Today's agents have all three legs wide open.
 
-Agent frameworks sandbox *code execution* (bubblewrap, Landlock, Seatbelt) but not *data flow*. MCP gateways scan *tool call payloads* but can't stop the agent from bypassing MCP entirely — `curl`, cron jobs, IPC, or encoding data in the LLM API request. Each layer covers one exit; nothing covers them all. A determined or compromised agent routes around whichever single layer is present.
+This is not theoretical. As of early 2026, [36% of community agent skills have security flaws](https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub/), [credential exfiltration via prompt-injected emails](https://www.kaspersky.com/blog/openclaw-vulnerabilities-exposed/55263/) has been demonstrated in the wild, and [over 18,000 agent instances](https://www.reddit.com/r/MachineLearning/comments/1r30nzv/) were found exposed on the public internet.
 
-## Existing landscape
+The industry has responded with partial solutions: agent frameworks sandbox code execution but not data flow. MCP gateways scan tool-call payloads but can't stop the agent from bypassing MCP entirely -- `curl`, cron jobs, IPC, or encoding data in the LLM API request. Cloud sandboxes (Google's [Agent Sandbox](https://cloud.google.com/blog/products/containers-kubernetes/agentic-ai-on-kubernetes-and-gke), E2B, Daytona) provide VM-grade isolation but don't inspect what leaves the boundary, and none target personal-device deployment. Each layer covers one exit. Nothing covers them all.
 
-The landscape for agent security tooling has matured rapidly, but each category covers only part of the problem:
+## How Tidegate breaks the trifecta
 
-- **Agent frameworks** (Claude Code, Codex CLI, Aider, Goose) provide code-execution sandboxing and permission prompts. None enforce data-flow boundaries — a sandboxed agent can still pipe your SSN through a tool call.
-- **MCP gateways with payload scanning** — Docker MCP Gateway (`--block-secrets`), Pipelock (36 DLP patterns), Lasso Security (PII masking via Presidio), Pangea (50+ PII types with format-preserving encryption), Enkrypt AI, Operant AI, MintMCP, and others all scan MCP tool call payloads for credentials and PII. Most are SaaS or enterprise products. Pipelock and Docker MCP Gateway are self-hostable.
-- **MCP governance tools** — Snyk agent-scan (formerly Invariant mcp-scan), Promptfoo, MCP Manager, and Trail of Bits mcp-context-protector focus on tool poisoning, prompt injection, and access control. Some include PII detection as a secondary feature.
-- **AI gateway DLP** — Cloudflare AI Gateway, Lakera Guard, and Nightfall AI provide DLP for LLM interactions. Not MCP-specific but converging toward agent-aware scanning.
-- **Cloud sandboxes** (E2B, Daytona, microsandbox) provide isolated execution environments. They contain blast radius but don't inspect what leaves the sandbox.
+Each enforcement layer targets a specific leg. VM isolation makes all three inescapable.
 
-The gap is not "nobody scans MCP payloads" — many tools now do. The gap is that scanning alone is insufficient without *structural enforcement*. An MCP gateway that scans tool calls doesn't help when the agent bypasses MCP entirely — shelling out to `curl`, writing to a cron job, encoding data in the LLM API request, or exfiltrating through IPC. No existing tool combines payload scanning with network-level enforcement that makes bypass structurally impossible.
+| Trifecta leg | Tidegate control |
+|---|---|
+| **Private data access** | Taint-and-verify data flow model -- track what sensitive data enters the agent boundary |
+| **External communication** | gvproxy egress allowlist -- the VM's only network path, enforcing per-destination allowlisting at the infrastructure level |
+| **Untrusted content** | MCP scanning gateway -- inspects every tool-call argument and response crossing the boundary |
+| *All three at once* | VM boundary -- the agent runs inside a VM; bypass requires a VM escape, not a `curl` command |
 
-## What comprehensive enforcement requires
+These layers operate independently -- compromise of one does not disable the others. The agent's only path to the outside world is through gvproxy, which routes traffic through the scanning gateway and egress proxy. There is no alternative path.
 
-Tidegate's architecture addresses the gap by combining three independent enforcement seams:
+Tidegate wraps your existing agent (Claude Code, Codex CLI, Aider, Goose). You pick the brain; Tidegate provides the boundary.
 
-- **MCP gateway scanning** — An interposition proxy sits between the agent and all downstream MCP servers. It discovers tools automatically, scans every string value in every tool call parameter and response, and returns shaped denies on policy violations. The agent never contacts MCP servers directly.
-- **Network egress control** — A CONNECT-only proxy is the agent container's sole path to the internet. LLM API domains get passthrough; everything else is blocked. The agent cannot reach the internet without going through the proxy.
-- **Credential isolation** — API keys and tokens live in isolated MCP server containers on a network the agent cannot reach. The agent has zero external service credentials. Credential exposure requires a Docker compose misconfiguration, not a `curl` command.
+## Limitations
 
-These seams operate independently — compromise of one does not disable the others. The topology is enforced by Docker networking: the agent container sits on a single internal network and can only reach the gateway and the proxy. Bypass requires a container escape, not a creative shell command.
+- **Semantic exfiltration** -- If the LLM rephrases your bank balance as prose, no pattern scanner catches it. Fundamental limit of all scanning approaches. Documented as accepted risk, not claimed as blocked.
+- **LLM API channel** -- The agent's API key must exist inside the VM. A sophisticated attacker could encode data in API requests. Hard architectural limit.
+- **Sabotage** -- Tidegate prevents data *leaving*; it doesn't prevent the agent from deleting files or running destructive commands.
+- **Single operator** -- This is a personal deployment, not a shared platform.
 
-See the [system architecture](docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md) for the full design.
-
-## Honest limitations
-
-Tidegate is honest about what it cannot do:
-
-- **Semantic exfiltration** — If the LLM rephrases your bank balance as prose, no pattern scanner catches it. This is a fundamental limit of all scanning approaches. Documented as accepted risk, not claimed as blocked.
-- **LLM API as exfiltration channel** — The agent's API key must exist in the agent container (it's how the agent thinks). A sophisticated attacker could encode data in API requests. This is a hard architectural limit.
-- **Sabotage prevention** — Tidegate prevents data *leaving*; it doesn't prevent the agent from deleting files or running destructive commands. Containerization and workspace backups handle that.
-- **Multi-tenant hosting** — This is a single-operator deployment, not a shared platform.
-- **Replacing agent frameworks** — Tidegate wraps your existing agent (Claude Code, Codex, Aider, Goose). It doesn't compete with them. You pick the brain; Tidegate provides the boundary.
-
-See the [threat model](docs/threat-model/) for the full analysis including attack scenarios, defense mapping, and a security scorecard.
+See the [threat model](docs/threat-model/) for the full analysis including attack scenarios, defense mapping, and security scorecard.
 
 ## Status
 
-Tidegate is a reference architecture. There is no roadmap.
+Active development. [EPIC-002](docs/epic/Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) covers the full enforcement boundary: VM-isolated agent runtime on macOS and Linux, MCP scanning gateway, and infrastructure-embedded egress enforcement. Four specs are approved.
 
-The repo contains research spikes, a threat model, architecture decision records, and user personas alongside the architecture design. If it gets built, the architecture doc guides implementation. If it doesn't, it serves as a point of comparison for evaluating commercial tools — a way to ask "does this product actually cover the gaps it claims to?"
+Built from standard tools (libkrun, gvproxy, Docker networks, MCP SDK) to stay maintainable by one person part-time. If a single existing product covers the full topology in the future, the right move is to adopt it and sunset Tidegate.
 
-## Navigation
+## Documentation
 
-| Document | What it covers |
-|----------|---------------|
-| [System architecture](docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md) | Components, network topology, enforcement seams, scanning pipeline, trust boundaries |
-| [VISION-002](docs/vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) | Product vision — target audience, value proposition, problem statement, landscape analysis |
-| [Threat model](docs/threat-model/) | Attack scenarios, defense mapping, sensitive data catalog, threat personas, security scorecard |
-| [Research spikes](docs/research/list-spikes.md) | Investigations — leak detection tools, taint models, architecture options, RL-trained agent risks |
-| [Architecture decisions](docs/adr/list-adrs.md) | ADRs — taint-and-verify model, IPC scanning, composable VM isolation |
-| [Personas](docs/persona/list-personas.md) | User archetypes — personal assistant operator, small team operator, security-conscious developer, contributor |
+| | |
+|---|---|
+| **[Vision](docs/vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md)** | Target audience, value proposition, lethal trifecta threat model, landscape analysis |
+| **[Architecture](docs/vision/Active/(VISION-002)-Tidegate/system-architecture.md)** | Components, network topology, enforcement seams, trust boundaries |
+| **[Epic](docs/epic/Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md)** | VM-isolated agent runtime with MCP scanning and egress enforcement |
+| **[Specs](docs/spec/)** | VM launcher CLI, gvproxy egress allowlist, guest image, MCP scanning gateway |
+| **[ADRs](docs/adr/list-adrs.md)** | Taint-and-verify model, IPC scanning, composable VM isolation, infrastructure-embedded enforcement |
+| **[Research](docs/research/list-spikes.md)** | 22 spikes -- VM isolation, egress enforcement, taint models, architecture evaluations |
+| **[Threat model](docs/threat-model/)** | Attack scenarios, defense mapping, sensitive data catalog, security scorecard |
+| **[Personas](docs/persona/list-personas.md)** | Personal assistant operator, small team operator, security-conscious developer, contributor |
+| **[Evidence pool](docs/evidence-pools/agent-runtime-security/)** | 13 external sources on agent runtime security from vendor, regulatory, and practitioner perspectives |
