@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-001
   - ADR-002
+  - VISION-001
 ---
 # Shell Wrapper Command Interception
 
@@ -32,6 +33,10 @@ Can a shell wrapper binary (replacing `/bin/sh` in the agent container) intercep
 ## Outcome
 
 Research validated the approach technically (Go binary with mvdan/sh parser, layered with LD_PRELOAD and seccomp-BPF). However, static analysis of Turing-complete scripts is fundamentally limited (halting problem), and the approach was superseded by ADR-002's journal-based taint tracking model which handles the encryption gap through observation + correlation rather than command interception.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision whose L1 command interception this spike explored
 
 ## Supporting docs
 

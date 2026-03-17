@@ -10,6 +10,8 @@ parent-vision: VISION-001
 gate: Pre-MVP
 risks-addressed: []
 depends-on: []
+linked-artifacts:
+  - VISION-001
 ---
 
 # Leak Detection Tool Selection
@@ -37,3 +39,7 @@ Which tools should the gateway use to detect leaked secrets and PII in agent tra
 - [presidio-pii-evaluation.md](presidio-pii-evaluation.md) — Microsoft Presidio deep-dive (all 50 recognizers)
 - [ner-standalone-evaluation.md](ner-standalone-evaluation.md) — spaCy, GLiNER, Flair, Stanza, DataFog comparison
 - [pii-regex-evaluation.md](pii-regex-evaluation.md) — PII regex pattern evaluation
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision requiring leak detection for the scanning gateway

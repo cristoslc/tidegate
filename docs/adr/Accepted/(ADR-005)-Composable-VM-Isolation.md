@@ -11,6 +11,8 @@ affected-artifacts:
   - ADR-002
   - ADR-003
   - SPIKE-015
+linked-artifacts:
+  - VISION-001
 linked-epics:
   - EPIC-002
 ---
@@ -84,6 +86,7 @@ Specifically:
 
 ## References
 
+- [VISION-001](../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision establishing the security architecture this ADR extends
 - [claude-vm](https://github.com/solomon-b/claude-vm) — Nix flake for headless QEMU VM with Claude Code
 - ADR-002 — Taint-and-Verify Data Flow Model (eBPF + seccomp-notify, requires shared kernel — implications for VM mode)
 - ADR-003 — Agent Runtime Selection (NanoClaw process boundary enables Tidegate wrapping)

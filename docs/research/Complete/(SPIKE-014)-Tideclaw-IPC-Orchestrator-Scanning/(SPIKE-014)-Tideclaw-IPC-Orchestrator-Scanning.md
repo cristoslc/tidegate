@@ -18,6 +18,7 @@ linked-artifacts:
   - ADR-004
   - SPIKE-011
   - SPIKE-013
+  - VISION-001
 ---
 # Tideclaw IPC Orchestrator Scanning
 
@@ -499,6 +500,10 @@ However, the **tool separation** principle should be established from Phase 1: e
 3. **The PID 1 problem is structurally resolved.** No process needs both workspace access and external network access. The taint boundary is the subagent, not PID 1.
 
 4. **Phase 1-3 don't need IPC scanning.** The interceptor activates in Phase 4 (messaging bridges). But tool separation should be established early.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision whose IPC scanning seam this spike designs
 
 ## Expected Outputs
 

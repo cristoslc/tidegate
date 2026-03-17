@@ -26,6 +26,8 @@ linked-artifacts:
   - ADR-009
   - ADR-010
   - EPIC-001
+  - INITIATIVE-001
+  - JOURNEY-001
   - SPEC-002
   - SPEC-004
   - SPEC-005
@@ -37,6 +39,7 @@ linked-artifacts:
   - SPIKE-019
   - SPIKE-020
   - SPIKE-022
+  - VISION-002
 ---
 # EPIC-002: Agent Enforcement Boundary
 
@@ -113,6 +116,9 @@ EPIC-001 (abandoned). EPIC-001 was created before SPIKE-018 through SPIKE-022 es
 
 ## References
 
+- [INITIATIVE-001](../../../initiative/Active/(INITIATIVE-001)-Agent-Enforcement-Boundary/(INITIATIVE-001)-Agent-Enforcement-Boundary.md) — Parent initiative coordinating the agent enforcement boundary
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision defining Tidegate's structural enforcement model
+- [JOURNEY-001](../../../journey/Validated/(JOURNEY-001)-Securing-an-AI-Assistant/(JOURNEY-001)-Securing-an-AI-Assistant.md) — User journey this epic addresses (PP-01)
 - ADR-005 — Composable VM Isolation
 - ADR-008 — libkrun as Single VMM for Agent Isolation (Superseded by ADR-009 + ADR-010)
 - ADR-010 — Platform-Specific VM Orchestration

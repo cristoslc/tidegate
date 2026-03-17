@@ -14,6 +14,13 @@ success-criteria:
   - The enforcement topology works on both macOS (Apple Silicon) and Linux (KVM)
   - A single operator can deploy and maintain the full boundary
 depends-on-artifacts: []
+linked-artifacts:
+  - ADR-002
+  - ADR-009
+  - ADR-010
+  - EPIC-001
+  - EPIC-002
+  - JOURNEY-001
 addresses:
   - JOURNEY-001.PP-01
 trove: "agent-runtime-security"
@@ -61,6 +68,10 @@ None yet.
 - **ADR-009** — egress enforcement must be infrastructure-embedded
 - **ADR-010** — platform-specific VM orchestration (Lima on macOS, thin wrapper on Linux)
 - **agent-runtime-security trove** — 13 external sources validating the threat model and control selection
+
+## Related
+
+- [JOURNEY-001](../../../journey/Validated/(JOURNEY-001)-Securing-an-AI-Assistant/(JOURNEY-001)-Securing-an-AI-Assistant.md) — User journey this initiative addresses (PP-01: operator securing their AI assistant)
 
 ## Lifecycle
 

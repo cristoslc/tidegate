@@ -8,6 +8,8 @@ last-updated: 2026-03-11
 affected-artifacts:
   - VISION-001
   - ADR-001
+linked-artifacts:
+  - VISION-001
 linked-epics: []
 linked-specs: []
 depends-on: []
@@ -334,3 +336,7 @@ Note: No Tetragon dependency. The eBPF program for `openat` logging is simple en
 4. **Connect enforcement**: tg-scanner checks taint table on `connect()`. Tainted PID → DENY. Scanner daemon must be caught up (wait for `scanned_through_seq >= pending_seq`). This closes the encryption gap.
 5. **File provenance tracking**: Files written by tainted PIDs inherit taint via journal. Subsequent processes opening tainted files are also tainted. Catches multi-step exfiltration (process A reads sensitive file → writes intermediate → process B reads intermediate → connects).
 6. **Calibration**: Tune which scanner findings set taint (high-confidence L2 patterns only vs. all findings). Monitor taint explosion in real workloads. Adjust.
+
+## Related
+
+- [VISION-001](../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision that established the three-layer scanning architecture

@@ -5,6 +5,8 @@ status: Accepted
 author: cristos
 created: 2026-03-13
 last-updated: 2026-03-13
+linked-artifacts:
+  - EPIC-002
 linked-epics:
   - EPIC-002
 linked-specs:
@@ -93,6 +95,10 @@ passt has no destination filtering capability. `--no-tcp --no-udp` blocks everyt
 - Any new egress spec must use gvproxy-level enforcement as primary, not OS sandboxes
 - SPEC-002 (Seatbelt) is superseded by this decision — Seatbelt is defense-in-depth
 - The gvproxy fork/patch is a new dependency that must be maintained
+
+## Related
+
+- [EPIC-002](../../epic/Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) — Epic implementing infrastructure-embedded egress enforcement via gvproxy
 
 ## Lifecycle
 

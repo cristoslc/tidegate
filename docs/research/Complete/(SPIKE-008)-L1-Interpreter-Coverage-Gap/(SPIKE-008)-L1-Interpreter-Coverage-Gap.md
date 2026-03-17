@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-001
   - ADR-002
+  - VISION-001
 ---
 # L1 Coverage Gap — In-Process Interpreter Execution
 
@@ -265,3 +266,7 @@ Given that static analysis is bounded, tg-scanner's strategy should prioritize:
 - **macOS development**: Tetragon requires Linux eBPF. Docker Desktop's Linux VM may work. What's the dev experience?
 - **L1+ priority**: Is eBPF observability worth the deployment complexity for Tidegate's Docker Compose target, or should it be deferred to a Kubernetes deployment option?
 - **LLM-computed encoding**: Can an LLM mentally base64-encode enough data to be a real exfiltration vector? Bounded by LLM capabilities, caught by L2 pattern matching on the output. Probably not practical for bulk data.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision whose L1 layer this spike validates

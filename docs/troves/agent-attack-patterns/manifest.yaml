@@ -1,0 +1,142 @@
+trove: agent-attack-patterns
+created: 2026-03-17
+refreshed: 2026-03-17
+tags:
+  - attack-patterns
+  - prompt-injection
+  - indirect-prompt-injection
+  - jailbreak
+  - tool-poisoning
+  - mcp-security
+  - data-exfiltration
+  - agent-exploitation
+  - memory-poisoning
+  - rug-pull
+  - orchestration-injection
+  - cve-catalog
+  - ide-vulnerabilities
+  - supply-chain
+  - config-injection
+  - serialization-injection
+  - owasp-agentic-top-10
+
+freshness-ttl:
+  web: 14d
+  forum: 7d
+  document: 30d
+  media: never
+
+referenced-by: []
+
+sources:
+  - source-id: arxiv-adversarial-poetry-jailbreak
+    type: web
+    url: "https://arxiv.org/abs/2511.15304v1"
+    fetched: 2026-03-17T00:00:00Z
+    title: "Adversarial Poetry as a Universal Single-Turn Jailbreak Mechanism in Large Language Models"
+    hash: "f4b18ec8195b642ed905138e551ab9d3f25dca0171220f490f293296681c7526"
+    notes: "User-requested source. Demonstrates stylistic variation as universal jailbreak — 62% ASR with hand-crafted poems across 25 frontier models."
+
+  - source-id: arxiv-prompt-to-protocol-exploits
+    type: web
+    url: "https://arxiv.org/html/2506.23260v1"
+    fetched: 2026-03-17T00:00:00Z
+    title: "From Prompt Injections to Protocol Exploits: Threats in LLM-Powered AI Agents Workflows"
+    hash: "3a69ef989349cf34af4e527fd8047e2e7447d06939041d46a6ba607a7b81b5b1"
+    notes: "Unified end-to-end threat model spanning host-to-tool and agent-to-agent comms. Catalogs 30+ attack techniques across four domains."
+
+  - source-id: arxiv-coding-assistant-injection
+    type: web
+    url: "https://arxiv.org/html/2601.17548v1"
+    fetched: 2026-03-17T00:00:00Z
+    title: "Prompt Injection Attacks on Agentic Coding Assistants: A Systematic Analysis of Vulnerabilities in Skills, Tools, and Protocol Ecosystems"
+    hash: "17458529b7e23fc2216c22064e7e76ecd2bbc9751b343ce52b1c07fe0aea69b9"
+    notes: "Three-dimensional taxonomy (delivery vectors, modalities, propagation). Meta-analysis of 78 studies. 85%+ success rates against defenses with adaptive attacks."
+
+  - source-id: lakera-q4-2025-agent-attacks
+    type: web
+    url: "https://www.lakera.ai/blog/the-year-of-the-agent-what-recent-attacks-revealed-in-q4-2025-and-what-it-means-for-2026"
+    fetched: 2026-03-17T00:00:00Z
+    title: "The Year of the Agent: What Recent Attacks Revealed in Q4 2025 (and What It Means for 2026)"
+    hash: "c19ebe428f18a4235a8fcbd25ab7c64c30a09ed88428956ab634599469cce183"
+    notes: "Real attack telemetry from Q4 2025 via Lakera Guard. Key finding: indirect attacks require fewer attempts than direct injection."
+
+  - source-id: unit42-web-idpi-wild
+    type: web
+    url: "https://unit42.paloaltonetworks.com/ai-agent-prompt-injection/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "Fooling AI Agents: Web-Based Indirect Prompt Injection Observed in the Wild"
+    hash: "799757e9ef098023766293ca273cf5dc81e40c41d189236352b7f15683c63ea9"
+    notes: "22 distinct payload engineering techniques observed in the wild. First documented real-world IDPI bypass of AI ad review system (Dec 2025)."
+
+  - source-id: repello-agentic-threats-2026
+    type: web
+    url: "https://repello.ai/blog/agentic-ai-security-threats-2026"
+    fetched: 2026-03-17T00:00:00Z
+    title: "The Agentic AI security threat landscape in 2026: what attackers are actually doing"
+    hash: "c6a38663c86f1e2e584b837893c76da66e03bae7e779012c485af8489127ac37"
+    notes: "Maps OWASP Agentic AI Top 10 to real attack patterns. Covers tool call hijacking, memory poisoning, orchestrator manipulation. 89% attack surge year-over-year."
+
+  - source-id: elastic-mcp-tools-attack-defense
+    type: web
+    url: "https://www.elastic.co/security-labs/mcp-tools-attack-defense-recommendations"
+    fetched: 2026-03-17T00:00:00Z
+    title: "MCP Tools: Attack Vectors and Defense Recommendations for Autonomous Agents"
+    hash: "16155a26f32b750ed390234d58f1a530262c993234edae0f6e146eeb1a96d41a"
+    notes: "Detailed MCP attack taxonomy: tool poisoning, rug-pull redefinitions, orchestration injection, implicit tool calls. Includes concrete exploit examples."
+
+  - source-id: heyuan-mcp-30-cves
+    type: web
+    url: "https://www.heyuan110.com/posts/ai/2026-03-10-mcp-security-2026/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "MCP Security 2026: 30 CVEs in 60 Days — What Went Wrong"
+    hash: "e077560d10495004b1661871eb8158d1c28cb3f7c6ba5e60cfb3fc2f541b559d"
+    notes: "CVE catalog from April 2025 through February 2026. Covers WhatsApp tool poisoning, GitHub MCP injection, MCP Inspector RCE, mcp-remote command injection."
+
+  - source-id: cyberdesserts-agent-security-2026
+    type: web
+    url: "https://blog.cyberdesserts.com/ai-agent-security-risks/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "AI Agent Security Risks in 2026: A Practitioner's Guide"
+    hash: "c1a378d36687e43ae991f2f44fc1bb25990f363f90a95a41a332e17e2abb13e0"
+    notes: "Cross-cutting practitioner guide. Claude Code CVEs, OpenClaw CVE-2026-25253, MCP server CVEs, 1184 malicious ClawHub skills, Git MCP server RCE chain."
+
+  - source-id: bleepingcomputer-owasp-real-attacks
+    type: web
+    url: "https://www.bleepingcomputer.com/news/security/the-real-world-attacks-behind-owasp-agentic-ai-top-10/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "The Real-World Attacks Behind OWASP Agentic AI Top 10"
+    hash: "7155dde76f42e2fc512dfb266aa6c19d951a0a71b688136ef36d671df526bd26"
+    notes: "OWASP categories mapped to real incidents. First malicious MCP server (Postmark npm, Sep 2025), Amazon Q poisoning, Claude Desktop extension RCE chain."
+
+  - source-id: tigran-idesaster-vulnerabilities
+    type: web
+    url: "https://tigran.tech/securing-ai-coding-agents-idesaster-vulnerabilities/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "Securing AI coding agents: What IDEsaster vulnerabilities should you know"
+    hash: "5920717e4809e64f2ce354b498487886c1dd15ca7fc3e7f6f74a25934d77d644"
+    notes: "24+ CVEs across VS Code, JetBrains, Zed, Cursor, Windsurf. Attack classes: config manipulation, AGENTS.MD hijacking, JSON schema exfiltration, Chromium vulns."
+
+  - source-id: checkpoint-claude-code-cves
+    type: web
+    url: "https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "Caught in the Hook: RCE and API Token Exfiltration Through Claude Code Project Files"
+    hash: "5a025b056bf559e469050c517389d6194a6f67047bb90f1711f7c035b74d4b49"
+    notes: "Deep dive on CVE-2025-59536 (hooks RCE), CVE-2026-21852 (API key exfil via ANTHROPIC_BASE_URL), and consent bypass. Full disclosure timeline Jul 2025 – Jan 2026."
+
+  - source-id: cyata-langgrinch-langchain
+    type: web
+    url: "https://cyata.ai/blog/langgrinch-langchain-core-cve-2025-68664/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "All I Want for Christmas is Your Secrets: LangGrinch hits LangChain Core (CVE-2025-68664)"
+    hash: "ac70aba28ec6f64227094d5ac52fc05e470075aeb209bf90be5ca21880d25991"
+    notes: "CVSS 9.3 serialization injection in langchain-core. 847M downloads affected. Prompt injection → crafted 'lc' key → secret extraction. Also CVE-2025-68665 (JS)."
+
+  - source-id: lares-owasp-agentic-wild
+    type: web
+    url: "https://labs.lares.com/owasp-agentic-top-10/"
+    fetched: 2026-03-17T00:00:00Z
+    title: "OWASP Agentic AI Top 10: Threats in the Wild"
+    hash: "e1cc02dba99fd7b89260018dea438cb19fdd9c7c03e41207f7d6dbbb5ba3afae"
+    notes: "All 10 ASI categories with real CVEs: EchoLeak CVE-2025-32711, Copilot YOLO CVE-2025-53773, AGENTS.MD hijacking, Amazon Q CVE-2025-8217, MCPoison CVE-2025-54136."

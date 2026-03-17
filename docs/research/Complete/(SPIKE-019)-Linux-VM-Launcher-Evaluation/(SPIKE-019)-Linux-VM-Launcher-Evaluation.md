@@ -17,6 +17,7 @@ blocks:
 trove: ""
 linked-artifacts:
   - ADR-002
+  - EPIC-001
   - SPEC-001
   - SPIKE-015
   - SPIKE-017
@@ -391,6 +392,7 @@ This finding changes the architecture discussion. SPIKE-017 validated gvproxy + 
 
 ## References
 
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Parent epic requesting Linux VM launcher evaluation
 - SPIKE-015: Evaluate VM Isolation for Agent Container (Cloud Hypervisor recommendation)
 - SPIKE-018: macOS VM Launcher Evaluation (parallel spike)
 - [Cloud Hypervisor](https://www.cloudhypervisor.org/)

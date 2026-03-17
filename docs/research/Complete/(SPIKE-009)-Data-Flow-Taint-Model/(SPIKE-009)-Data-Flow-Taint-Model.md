@@ -12,6 +12,7 @@ risks-addressed: []
 depends-on: []
 linked-artifacts:
   - ADR-002
+  - VISION-001
 ---
 # Data Flow Taint Model
 
@@ -192,3 +193,7 @@ Session-level and cross-layer taint sharing are valuable but add complexity that
 - **Taint through the LLM**: The LLM is a black-box taint propagator. If the agent read a sensitive file 10 turns ago, is the current MCP call "tainted"? Context window limits provide natural taint decay, but within the window, we can't know what the LLM retained.
 - **Cross-session taint**: Agent memory persists across sessions. A sensitive file read in session 1 could influence MCP calls in session 2 via poisoned memory. Related to the `agent-memory-exfiltration.md` spike.
 - **Implementation priority**: Is explicit taint tracking needed before the base layers are implemented, or is it a refinement to add after L1/L2/L3 are operational?
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision whose three-layer model this spike maps through data-flow analysis

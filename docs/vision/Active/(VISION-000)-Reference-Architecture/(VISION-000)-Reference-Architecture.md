@@ -31,6 +31,10 @@ If a deployable product emerges from this work, it will live in a separate repos
 - **No release packaging.** No versioned releases, no install instructions, no deployment guides.
 - **The architecture is tool-agnostic.** Specific tools (libkrun, gvproxy, Docker, Squid) appear in specs as reference implementations, not requirements.
 
+## Related
+
+- [VISION-002](../../Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — The reference architecture that Tidegate documents
+
 ## Lifecycle
 
 | Phase | Date | Commit | Notes |

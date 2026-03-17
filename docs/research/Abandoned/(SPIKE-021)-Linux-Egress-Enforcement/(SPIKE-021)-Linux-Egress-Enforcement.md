@@ -18,6 +18,7 @@ blocks:
   - Linux egress enforcement spec
 trove: ""
 linked-artifacts:
+  - EPIC-001
   - SPEC-002
   - SPIKE-017
   - SPIKE-020
@@ -236,6 +237,7 @@ Layers 2 and 3 are optional hardening. Layer 1 alone meets all Go criteria.
 
 ## References
 
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Parent epic requesting Linux egress enforcement evaluation
 - SPEC-002: Seatbelt Egress Enforcement (macOS equivalent)
 - SPIKE-017: Validate libkrun virtio-net macOS (gvproxy egress analysis)
 - SPIKE-020: TSI Scope Egress Sufficiency (NO-GO for sole enforcement)

@@ -1,5 +1,12 @@
 # Architecture Decision Records
 
+## Active
+
+| Artifact | Title | Last Updated | Commit |
+|----------|-------|-------------|--------|
+| ADR-006 | Opaque Deny Responses | 2026-03-12 | — |
+| ADR-010 | Platform-Specific VM Orchestration | 2026-03-13 | — |
+
 ## Superseded
 
 | Artifact | Title | Last Updated | Commit |

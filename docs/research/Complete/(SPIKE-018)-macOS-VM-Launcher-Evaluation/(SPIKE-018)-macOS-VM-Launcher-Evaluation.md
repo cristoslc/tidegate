@@ -18,6 +18,7 @@ blocks:
   - SPEC-001 implementation approach decision
 trove: ""
 linked-artifacts:
+  - EPIC-001
   - SPEC-001
   - SPIKE-015
   - SPIKE-017
@@ -200,6 +201,7 @@ This reframes SPEC-001 from "build a VM launcher" to "build a Lima integration l
 
 ## References
 
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Parent epic requesting macOS VM launcher evaluation
 - [Lima v2.0 — CNCF Blog](https://www.cncf.io/blog/2025/12/11/lima-v2-0-new-features-for-secure-ai-workflows/)
 - [Lima krunkit docs](https://lima-vm.io/docs/config/vmtype/krunkit/)
 - [Lima network docs](https://lima-vm.io/docs/config/network/)

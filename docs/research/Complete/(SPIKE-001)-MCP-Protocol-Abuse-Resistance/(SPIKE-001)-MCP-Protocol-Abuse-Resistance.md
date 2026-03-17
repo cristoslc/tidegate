@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-006
   - SPIKE-003
+  - VISION-002
 ---
 # MCP Protocol Abuse Resistance
 
@@ -173,6 +174,10 @@ protocol:
 ## Why it matters
 
 The gateway is the security boundary. If it can be crashed or confused by adversarial input, the entire model fails.
+
+## Related
+
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision defining the scanning gateway as a core enforcement layer
 
 ## Context at time of writing
 

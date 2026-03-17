@@ -12,6 +12,7 @@ risks-addressed: []
 depends-on: []
 linked-artifacts:
   - ADR-003
+  - VISION-001
 ---
 # NanoClaw × Tidegate Integration — Design Spike
 
@@ -121,6 +122,10 @@ volumes:
 ```
 
 tg-pipeline rejects any compose spec with writable source mounts. The agent runtime's build process (skills, code generation, hand edits) is its own concern. Tidegate's contract: give us an image, we run it with enforced constraints.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision defining the agent wrapping contract this spike designs for
 
 ## Produced Artifact
 `nanoclaw-analysis.md` — deep codebase analysis covering architecture, data flow, security model, code quality, and integration mapping with specific file/function references.

@@ -8,6 +8,8 @@ last-updated: 2026-03-13
 superseded-by:
   - ADR-009
   - ADR-010
+linked-artifacts:
+  - EPIC-002
 linked-epics:
   - EPIC-002
   - EPIC-001
@@ -126,6 +128,10 @@ Specifically:
 ### Validation status
 
 - **SPIKE-017 (Complete, GO):** Validated virtio-net via gvproxy on macOS, routing through published Docker ports to gateway:4100 and egress proxy:3128. Seatbelt profile enforcement confirmed: 8/8 tests pass (allow gateway + proxy, block all external). All 6 go/no-go criteria met.
+
+## Related
+
+- [EPIC-002](../../epic/Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) — Epic delivering the agent enforcement boundary using libkrun
 
 ## Lifecycle
 

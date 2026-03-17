@@ -1,0 +1,37 @@
+trove: intentshield
+created: 2026-03-17
+refreshed: 2026-03-17
+tags:
+- intent-verification
+- pre-execution-audit
+- agent-safety
+- deterministic-guardrails
+- prompt-injection
+- action-filtering
+- hitl
+- siem
+- python
+- zero-dependencies
+
+freshness-ttl:
+  web: 14d
+  repository: 30d
+  document: 30d
+  media: never
+
+referenced-by: []
+
+sources:
+- source-id: intentshield-repo
+  type: repository
+  url: "https://github.com/mattijsmoens/intentshield"
+  fetched: 2026-03-17T00:00:00Z
+  title: "IntentShield — Pre-execution intent verification for AI agents"
+  hash: "c030a29e1dbf3f7adb140afdc40ff3db9a213e49239e412c3e1a9e88d7c245f9"
+  highlights:
+    - "intentshield/shield.py"
+    - "intentshield/core_safety.py"
+    - "intentshield/conscience.py"
+    - "intentshield/hitl.py"
+    - "README.md"
+  selective: false

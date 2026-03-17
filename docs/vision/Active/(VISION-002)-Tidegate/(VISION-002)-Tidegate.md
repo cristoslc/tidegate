@@ -9,9 +9,22 @@ last-updated: 2026-03-15
 depends-on: []
 trove: "agent-runtime-security"
 linked-artifacts:
+  - ADR-002
+  - EPIC-001
+  - EPIC-002
+  - INITIATIVE-001
   - PERSONA-001
   - PERSONA-002
   - PERSONA-003
+  - SPEC-004
+  - SPEC-005
+  - SPEC-007
+  - SPIKE-001
+  - SPIKE-003
+  - SPIKE-004
+  - SPIKE-005
+  - SPIKE-006
+  - VISION-000
   - VISION-001
 ---
 # VISION-002: Tidegate
@@ -80,6 +93,18 @@ One person, part-time. This constrains everything downstream: the architecture m
 - **Semantic exfiltration** — If the LLM rephrases your bank balance as prose, no pattern scanner catches it. This is a fundamental limit of all scanning approaches. Documented as accepted risk, not claimed as blocked.
 - **Multi-tenant hosting** — This is a single-operator deployment, not a shared platform.
 - **Replacing agent frameworks** — Tidegate wraps your existing agent (Claude Code, Codex, Aider, Goose). It doesn't compete with them. You pick the brain; Tidegate provides the boundary.
+
+## Related
+
+- [VISION-000](../../Active/(VISION-000)-Reference-Architecture/(VISION-000)-Reference-Architecture.md) — Establishes Tidegate as a reference architecture, not a deployable product
+- [INITIATIVE-001](../../../initiative/Active/(INITIATIVE-001)-Agent-Enforcement-Boundary/(INITIATIVE-001)-Agent-Enforcement-Boundary.md) — Primary initiative delivering the enforcement boundary
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Original VM isolation epic (abandoned, superseded by EPIC-002)
+- [EPIC-002](../../../epic/Active/(EPIC-002)-VM-Isolated-Agent-Runtime/(EPIC-002)-VM-Isolated-Agent-Runtime.md) — Active epic delivering the agent enforcement boundary
+- [SPIKE-001](../../../research/Complete/(SPIKE-001)-MCP-Protocol-Abuse-Resistance/(SPIKE-001)-MCP-Protocol-Abuse-Resistance.md) — MCP protocol abuse resistance research
+- [SPIKE-003](../../../research/Complete/(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) — Shaped deny oracle risk analysis
+- [SPIKE-004](../../../research/Complete/(SPIKE-004)-L1-Fail-Open-Behavior/(SPIKE-004)-L1-Fail-Open-Behavior.md) — L1 fail-open behavior and watchdog architecture
+- [SPIKE-005](../../../research/Complete/(SPIKE-005)-Workspace-Volume-TOCTOU/(SPIKE-005)-Workspace-Volume-TOCTOU.md) — Workspace volume TOCTOU race condition analysis
+- [SPIKE-006](../../../research/Complete/(SPIKE-006)-Agent-Memory-Exfiltration/(SPIKE-006)-Agent-Memory-Exfiltration.md) — Agent memory as exfiltration vector research
 
 ## Lifecycle
 

@@ -18,6 +18,7 @@ blocks:
   - SPEC-002 egress enforcement approach on Linux
 trove: "findings-2026-03-13"
 linked-artifacts:
+  - EPIC-001
   - SPIKE-017
   - SPIKE-018
   - SPIKE-019
@@ -302,6 +303,10 @@ Use TSI scope as a **defense-in-depth layer**, not the primary enforcement:
 - **No virtio-net:** Do not configure virtio-net alongside TSI. This ensures disabling tsi_hijack results in no connectivity, not unrestricted connectivity.
 - **DNS:** Configure the guest's `/etc/resolv.conf` to point to a resolver within the allowed subnet, or use DNS-over-HTTPS through the proxy.
 - **Future hardening:** If microsandbox merges IP filtering to mainline and adds per-port filtering, revisit this assessment.
+
+## Related
+
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Parent epic evaluating egress enforcement mechanisms for VM isolation
 
 ## Lifecycle
 

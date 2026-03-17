@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-006
   - SPIKE-016
+  - VISION-002
 ---
 # Shaped Deny as Adversarial Oracle
 
@@ -85,6 +86,10 @@ This eliminates the oracle because:
 ### Recommendation
 
 Create ADR-006 to formalize this as an architectural decision: deny responses are opaque instructions, never diagnostic feedback.
+
+## Related
+
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision whose scanning gateway design this spike hardens
 
 ## Context at time of writing
 

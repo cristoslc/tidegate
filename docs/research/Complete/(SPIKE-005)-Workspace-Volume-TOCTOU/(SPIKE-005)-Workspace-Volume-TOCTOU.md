@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-001
   - ADR-002
+  - VISION-002
 ---
 # Workspace Volume TOCTOU
 
@@ -189,6 +190,7 @@ The scanner daemon reading a file asynchronously (after the process already read
 
 ## Related
 
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision requiring robust data-flow enforcement
 - [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #5: TOCTOU between file open observation and file scan.
 - [ADR-001 (superseded)](../../../adr/Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) residual risk #1: TOCTOU on `/proc/<pid>/mem` (no longer applicable — no `execve` interception).
 - CVE-2025-59497: TOCTOU in Microsoft Defender for Endpoint on Linux. Same vulnerability class — file checked by security daemon, state changes before enforcement.

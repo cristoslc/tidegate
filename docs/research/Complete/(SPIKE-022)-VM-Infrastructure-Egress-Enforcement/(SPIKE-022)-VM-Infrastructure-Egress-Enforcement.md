@@ -22,6 +22,7 @@ blocks:
   - Cross-platform egress enforcement spec
 trove: ""
 linked-artifacts:
+  - EPIC-001
   - SPEC-001
   - SPEC-002
   - SPIKE-017
@@ -236,6 +237,7 @@ If gvproxy patching proves impractical (upstream rejection, maintenance burden),
 
 ## References
 
+- [EPIC-001](../../../epic/Abandoned/(EPIC-001)-VM-Isolated-Agent-Runtime/(EPIC-001)-VM-Isolated-Agent-Runtime.md) — Parent epic whose egress enforcement gap this spike resolves
 - [gvproxy PR #609: outbound filtering](https://github.com/containers/gvisor-tap-vsock/pull/609) — upstream `blockAllOutbound` + domain allowlist
 - [gvproxy PR #600: blockAllOutbound](https://github.com/containers/gvisor-tap-vsock/pull/600) — superseded by #609
 - [gvproxy PR #599: DNS allowlist](https://github.com/containers/gvisor-tap-vsock/pull/599) — superseded by #609

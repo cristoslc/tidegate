@@ -10,6 +10,8 @@ affected-artifacts:
   - ADR-002
   - ADR-004
   - ADR-005
+linked-artifacts:
+  - VISION-001
 linked-epics: []
 linked-specs: []
 depends-on: []
@@ -120,6 +122,7 @@ The credential isolation gap (Gateway holds its own keys) is partially mitigated
 
 ## References
 
+- [VISION-001](../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision requiring agent process boundary for wrapping
 - Design spike: `docs/research/completed/agent-selection/nanoclaw-tidegate-design-spike.md`
 - ADR-002 (taint tracking): `docs/adr/proposed/002-taint-and-verify-data-flow-model.md`
 - NanoClaw source analysis: `docs/research/completed/agent-selection/nanoclaw-main/`

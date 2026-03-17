@@ -8,6 +8,8 @@ last-updated: 2026-02-23
 affected-artifacts:
   - VISION-001
   - ADR-002
+linked-artifacts:
+  - VISION-001
 linked-epics: []
 linked-specs: []
 depends-on: []
@@ -195,3 +197,7 @@ Use Docker's built-in seccomp profile support to set `SCMP_ACT_NOTIFY`.
 2. **Dynamically constructed scripts**: A script that uses `eval()`/`exec()` to hide its intent. Mitigated by: tg-scanner flags `eval`/`exec`/`compile` as suspicious patterns.
 3. **Operations entirely within an already-approved process**: A Python process approved at execve time that subsequently discovers new files. Mitigated by: script source analysis at execve time catches encoding + file I/O patterns; L2/L3 catch the outbound network request.
 4. **Fail-open on tg-scanner crash**: Mitigated by seccomp-bpf fallback filter.
+
+## Related
+
+- [VISION-001](../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision defining the secure agent deployment platform

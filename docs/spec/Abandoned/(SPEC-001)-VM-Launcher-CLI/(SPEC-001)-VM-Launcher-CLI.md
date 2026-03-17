@@ -24,7 +24,10 @@ trove: ""
 source-issue: ""
 swain-do: required
 linked-artifacts:
+  - ADR-005
+  - ADR-008
   - EPIC-002
+  - JOURNEY-001
   - SPEC-002
   - SPEC-003
   - SPEC-004
@@ -97,6 +100,12 @@ EPIC-001 requires a way to boot an agent inside a libkrun VM with virtio-net net
 - The launcher does NOT implement egress enforcement — that is SPEC-002's responsibility (macOS) and a pending spec (Linux).
 - macOS path: Lima YAML template + thin `tidegate vm` CLI wrapper.
 - Linux path: Rust or Python wrapper using libkrun C API.
+
+## Related
+
+- [ADR-005](../../../adr/Accepted/(ADR-005)-Composable-VM-Isolation.md) — Architectural decision making VM isolation composable with Docker infrastructure
+- [ADR-008](../../../adr/Superseded/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) — Selected libkrun as the VMM for agent isolation
+- [JOURNEY-001](../../../journey/Validated/(JOURNEY-001)-Securing-an-AI-Assistant/(JOURNEY-001)-Securing-an-AI-Assistant.md) — User journey this spec addresses (PP-01)
 
 ## Lifecycle
 

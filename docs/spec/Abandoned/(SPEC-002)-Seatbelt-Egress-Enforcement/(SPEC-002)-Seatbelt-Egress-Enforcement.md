@@ -21,6 +21,9 @@ trove: ""
 source-issue: ""
 swain-do: required
 linked-artifacts:
+  - ADR-005
+  - ADR-008
+  - JOURNEY-001
   - SPEC-001
   - SPEC-005
 ---
@@ -72,6 +75,12 @@ SPIKE-017 validated macOS `sandbox-exec` (Seatbelt) as the primary enforcement m
 3. **Test**: Run the 8-case test suite from SPIKE-017 (gateway allowed, proxy allowed, MCP JSON-RPC allowed, example.com blocked, ifconfig.me blocked, 1.1.1.1:53 blocked, httpbin.org blocked, non-allowlisted port blocked).
 4. **Implement**: Template generation — `tidegate vm start` reads gateway/proxy ports from config and generates the .sb profile with correct port numbers.
 5. **Test**: Integration test with custom ports.
+
+## Related
+
+- [ADR-005](../../../adr/Accepted/(ADR-005)-Composable-VM-Isolation.md) — Architectural decision establishing VM isolation approach
+- [ADR-008](../../../adr/Superseded/(ADR-008)-libkrun-Single-VMM-for-Agent-Isolation.md) — Selected libkrun VMM whose gvproxy networking this spec enforces
+- [JOURNEY-001](../../../journey/Validated/(JOURNEY-001)-Securing-an-AI-Assistant/(JOURNEY-001)-Securing-an-AI-Assistant.md) — User journey requiring egress enforcement (PP-01)
 
 ## Lifecycle
 

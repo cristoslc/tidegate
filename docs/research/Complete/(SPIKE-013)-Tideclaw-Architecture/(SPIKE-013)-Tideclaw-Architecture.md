@@ -16,6 +16,7 @@ linked-artifacts:
   - ADR-004
   - ADR-005
   - SPIKE-014
+  - VISION-001
 ---
 # Tideclaw — Architecture Spike: Security-First Orchestrator for AI Coding Tools
 
@@ -949,3 +950,7 @@ Key outcomes formalized as architectural decisions:
 - **ADR-005** — Composable VM isolation; Docker for infrastructure, microVM for agent, specific VM technology deferred
 
 The runtime landscape survey (Claude Code, Codex CLI, Aider, Goose, llm CLI) and skills paradigm security analysis remain as reference material in this spike's supporting documents.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision whose enforcement seam model this spike architects

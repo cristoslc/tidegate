@@ -12,6 +12,7 @@ risks-addressed: []
 depends-on: []
 linked-artifacts:
   - ADR-003
+  - VISION-001
 ---
 # ClaudeClaw vs NanoClaw — Agent-Container Runtime Comparison
 
@@ -238,6 +239,10 @@ No changes to ADR-003. ClaudeClaw falls into the same category as OpenClaw (netw
 3. Accept that tool-call-level scanning is not possible
 
 This is a viable but significantly weaker security posture than the NanoClaw integration.
+
+## Related
+
+- [VISION-001](../../../vision/Sunset/(VISION-001)-Secure-AI-Agent-Deployment/(VISION-001)-Secure-AI-Agent-Deployment.md) — Parent vision requiring a process boundary for agent wrapping
 
 ## Source material
 

@@ -18,13 +18,19 @@ linked-artifacts:
   - ADR-005
   - ADR-008
   - EPIC-002
+  - INITIATIVE-001
   - SPEC-001
   - SPEC-002
   - SPEC-003
   - SPIKE-015
   - SPIKE-017
   - SPIKE-018
+  - SPIKE-019
+  - SPIKE-020
+  - SPIKE-021
+  - ADR-009
   - SPIKE-022
+  - VISION-002
 ---
 # EPIC-001: VM-Isolated Agent Runtime
 
@@ -96,6 +102,11 @@ M1–M4 (MVP) → M5 (agent-proxy) → M6 (taint tracking) → M7 (skill hardeni
 
 ## References
 
+- [INITIATIVE-001](../../../initiative/Active/(INITIATIVE-001)-Agent-Enforcement-Boundary/(INITIATIVE-001)-Agent-Enforcement-Boundary.md) — Parent initiative coordinating the agent enforcement boundary
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision defining Tidegate's structural enforcement model
+- [SPIKE-019](../../../research/Complete/(SPIKE-019)-Linux-VM-Launcher-Evaluation/(SPIKE-019)-Linux-VM-Launcher-Evaluation.md) — Linux VM launcher evaluation informing platform strategy
+- [SPIKE-020](../../../research/Complete/(SPIKE-020)-TSI-Scope-Egress-Sufficiency/(SPIKE-020)-TSI-Scope-Egress-Sufficiency.md) — TSI scope evaluation for egress sufficiency
+- [SPIKE-021](../../../research/Abandoned/(SPIKE-021)-Linux-Egress-Enforcement/(SPIKE-021)-Linux-Egress-Enforcement.md) — Linux egress enforcement research (abandoned, superseded by ADR-009)
 - ADR-005 — Composable VM Isolation (architectural decision)
 - ADR-008 — libkrun as Single VMM for Agent Isolation
 - [claude-vm](https://github.com/solomon-b/claude-vm) — Nix flake for headless QEMU VM with Claude Code

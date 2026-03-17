@@ -13,6 +13,7 @@ depends-on: []
 linked-artifacts:
   - ADR-001
   - ADR-002
+  - VISION-002
 ---
 # L1 Fail-Open Behavior
 
@@ -280,6 +281,7 @@ The key difference: Firecracker and gVisor achieve fail-closed through seccomp o
 
 ## Related
 
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) -- Parent vision requiring fail-closed enforcement boundaries
 - [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) -- the current L1 architecture
 - [ADR-001 (superseded)](../../../adr/Superseded/(ADR-001)-Seccomp-Notify-L1-Interception.md) -- original fail-open analysis still applies to seccomp-notify mechanism
 

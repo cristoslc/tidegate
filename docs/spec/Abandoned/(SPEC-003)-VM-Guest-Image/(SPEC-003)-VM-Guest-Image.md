@@ -18,6 +18,8 @@ trove: ""
 source-issue: ""
 swain-do: required
 linked-artifacts:
+  - ADR-002
+  - ADR-005
   - EPIC-002
   - SPEC-006
 ---
@@ -79,6 +81,11 @@ The libkrun VM needs a minimal Linux guest image containing the agent runtime (N
 4. **Implement**: Custom kernel compilation with minimal config. Start from Alpine's config, strip unnecessary subsystems.
 5. **Test**: Verify eBPF tracepoints work inside the guest.
 6. **Refactor**: Optimize image size (remove docs, man pages, package cache).
+
+## Related
+
+- [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) — Requires eBPF-capable kernel in the guest image
+- [ADR-005](../../../adr/Accepted/(ADR-005)-Composable-VM-Isolation.md) — Architectural decision requiring a VM guest image for agent isolation
 
 ## Lifecycle
 

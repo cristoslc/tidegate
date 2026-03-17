@@ -16,6 +16,7 @@ linked-artifacts:
   - ADR-006
   - SPIKE-003
   - SPIKE-016
+  - VISION-002
 ---
 # Agent Memory as Exfiltration Vector
 
@@ -141,6 +142,7 @@ The threat model covers one-shot exfiltration well but doesn't trace persistent 
 
 ## Related
 
+- [VISION-002](../../../vision/Active/(VISION-002)-Tidegate/(VISION-002)-Tidegate.md) — Parent vision framing the data-flow enforcement model
 - [ADR-002](../../../adr/Accepted/(ADR-002)-Taint-and-Verify-Data-Flow-Model.md) residual risk #3: cross-session taint via agent memory. Process-level taint (PID-based) doesn't cross sessions.
 - [ADR-006](../../../adr/Adopted/(ADR-006)-Opaque-Deny-Responses.md) — opaque deny responses eliminate detection metadata from the feedback channel, mitigating the primary memory accumulation vector.
 - [SPIKE-003](../(SPIKE-003)-Shaped-Deny-Oracle/(SPIKE-003)-Shaped-Deny-Oracle.md) — shaped deny oracle research; ADR-006 is its resolution.

@@ -1,8 +1,8 @@
 # Synthesis: Agent Runtime Security
 
-Evidence pool `agent-runtime-security` — 14 sources collected 2026-03-15, extended 2026-03-16.
+Trove `agent-runtime-security` — 15 sources collected 2026-03-15, extended 2026-03-17.
 
-Sources span 7 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], MCP scanning landscape [009, 011], and independent security research [014].
+Sources span 8 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], MCP scanning landscape [009, 011], independent security research [014], and credential management [015].
 
 ## Key findings
 
@@ -26,9 +26,25 @@ This directly validates Tidegate's architectural thesis: if guardrails can't rel
 
 ### The security boundary has shifted from application to runtime
 
-All fourteen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
+All fifteen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
 
 NIST [007] formalizes this as a regulatory question: "What are the unique security threats, risks, or vulnerabilities currently affecting AI agent systems, distinct from those affecting traditional software systems?" The Perplexity response identifies three fundamental challenges: code-data separation collapse, flexible automation without matching security primitives, and existing security mechanisms designed for pre-agent computing.
+
+### Credential exposure is a first-class attack surface
+
+API Stronghold [015] names the specific mechanism: agents hold API keys as environment variables, and a prompt-injected agent can exfiltrate them via `env | grep API_KEY`. On Linux, any same-user process can read `/proc/PID/environ` — credentials don't even need to be exfiltrated through the agent's own logic. **The problem isn't key rotation frequency. It's that the agent holds the key at all.**
+
+The **phantom token pattern** (credited to Luke Hinds / Sigstore, introduced in [nono](https://nono.sh/blog/blog-credential-injection)) addresses this structurally: a local proxy generates a cryptographically random 256-bit session token, the agent receives this phantom token instead of the real credential, and the proxy validates/strips/replaces it before forwarding upstream over TLS. If the agent exfiltrates its environment, the attacker gets a token that expires with the session and only works against a localhost port.
+
+Implementation details from nono [015]: memory zeroization (Rust `zeroize` crate), DNS rebinding protection (hostname pre-resolution and IP pinning), request size limits.
+
+This pattern is a **credential enforcement boundary** — architecturally parallel to Tidegate's network egress enforcement. The agent never touches the real credential, just as (in Tidegate's model) the agent never directly reaches the external network. Both patterns enforce by making the controlled resource structurally inaccessible rather than relying on the agent's cooperation.
+
+### Local patterns need infrastructure backing at scale
+
+The phantom token pattern [015] works for single-machine dev use but breaks at team boundaries: CI/CD pipelines, cloud containers, and multi-tenant platforms have no single localhost. Production-grade implementations require: session lifecycle management (auto-expiry, immediate revocation), group-based access control enforced at the proxy layer, per-call HMAC signing for individual audit trails (HMAC-SHA256 over request ID + timestamp + provider + method + path), and multi-provider routing.
+
+This mirrors a recurring theme across the trove: patterns that work for individual developers (local sandboxes, environment variables, manual review) consistently fail when applied to teams and production. The transition from "works on my machine" to "works for my organization" is where infrastructure-embedded enforcement becomes non-negotiable.
 
 ### Infrastructure-embedded enforcement is the only viable control plane
 
@@ -45,6 +61,8 @@ The Reddit thread [008] adds the practitioner dimension: u/AccordingWeight6019 a
 2. **Filesystem write restriction** (workspace-only writes) — NVIDIA [002] mandates blocking writes outside the active workspace at OS level, calling out `~/.zshrc`, `~/.gitconfig`, `~/.curlrc` as high-value targets for persistence and RCE.
 
 3. **Configuration file protection** — NVIDIA [002] mandates that agent configuration files (hooks, MCP configs, `.cursorrules`, `CLAUDE.md`, skills) must be protected from any agent modification, with no user-approval override. "Direct, manual modification by the user is the only acceptable modification mechanism."
+
+A fourth control is now emerging: **credential isolation** — ensuring agents never hold real credentials, only proxy tokens that are worthless outside the session [015]. This complements network egress restriction: even if egress enforcement fails, exfiltrated phantom tokens are useless.
 
 ### The agent skills supply chain is actively under attack
 
@@ -91,17 +109,17 @@ This framing maps directly to Tidegate's architecture: the MCP scanning gateway 
 All sources agree on:
 
 - **Assume-breach posture is required.** Self-hosted agents will eventually process malicious input. Controls must prioritize containment and recoverability over prevention.
-- **Dedicated credentials, not inherited ones.** Agents should use purpose-built, least-privilege, short-lived tokens — never the user's full credential set.
+- **Dedicated credentials, not inherited ones.** Agents should use purpose-built, least-privilege, short-lived tokens — never the user's full credential set. The phantom token pattern [015] takes this further: the agent shouldn't hold even the dedicated credential — only a proxy token.
 - **VM/microVM isolation is the gold standard.** Shared-kernel solutions are insufficient. Google [012] and Northflank [005] both default to hardware-enforced isolation. NVIDIA [002] recommends full virtualization.
-- **Disposable environments.** Microsoft [001]: "Treat the environment as disposable." NVIDIA [002]: ephemeral sandboxes. Google [012]: warm pools with checkpoint/restore.
+- **Disposable environments.** Microsoft [001]: "Treat the environment as disposable." NVIDIA [002]: ephemeral sandboxes. Google [012]: warm pools with checkpoint/restore. The phantom token's session-scoped expiry [015] extends disposability to credentials.
 - **The skills ecosystem mirrors early npm/PyPI** — but with higher stakes because skills inherit agent permissions (Snyk [004], Reddit [008], Kaspersky [010]).
-- **Guardrails are probabilistic, not deterministic.** Willison [014] and Sophos [006] agree that application-layer defenses cannot guarantee prevention — only structural enforcement (network, VM) provides a deterministic boundary.
+- **Guardrails are probabilistic, not deterministic.** Willison [014] and Sophos [006] agree that application-layer defenses cannot guarantee prevention — only structural enforcement (network, VM, credential proxy) provides a deterministic boundary.
 
 ## Points of disagreement
 
 - **Prevention vs. pragmatic risk management.** Microsoft [001] and Cisco [003] lean toward "don't run this." Sophos [006] and Northflank [005] take a pragmatic stance: agentic AI is coming, so manage it. Willison [014] occupies a middle ground: the only user-side defense is avoidance of the trifecta combination, while acknowledging that application developers can use design patterns to mitigate (but not eliminate) the risk. The Reddit thread [008] surfaces real practitioners who have already accepted the risk and are asking how to sandbox effectively.
 
-- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). Willison [014] frames it as an unsolved problem at any layer. These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement.
+- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). Willison [014] frames it as an unsolved problem at any layer. The phantom token pattern [015] adds a new enforcement point: the credential proxy layer, orthogonal to network/VM enforcement. These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement.
 
 - **Approval caching.** NVIDIA [002] explicitly calls it dangerous: "Allow-once / run-many is not an adequate control." No other source addresses this directly, but the ClawJacked vulnerability [011] demonstrates the consequence: localhost trust (a form of cached approval) enabled full agent takeover.
 
@@ -114,3 +132,5 @@ All sources agree on:
 - **Cost and performance trade-offs of personal-device VM isolation.** Google [012] provides cloud numbers (sub-second warm pools) but no source addresses the developer experience cost of running agents inside VMs on a laptop.
 
 - **No source proposes per-destination egress enforcement with scanning.** All say "restrict egress" but stop at "allowlist known destinations." None propose the gvproxy-level, infrastructure-embedded, per-destination allowlisting that Tidegate implements.
+
+- **Credential isolation + egress enforcement as a combined pattern.** The phantom token pattern [015] and Tidegate's egress enforcement are complementary but no source proposes combining them into a unified enforcement boundary where both credential access and network access are proxy-mediated. This is a potential architectural contribution.
