@@ -1,6 +1,6 @@
 trove: agent-runtime-security
 created: 2026-03-15
-refreshed: 2026-03-15
+refreshed: 2026-03-16
 tags:
 - agent-security
 - identity-isolation
@@ -143,5 +143,16 @@ sources:
   fetched: 2026-03-15T00:00:00Z
   title: "From runtime risk to real-time defense: Securing AI agents"
   hash: "38cd508e5e81ae841ee88b018a32ba6ea1ca8aa35ee2c3d0ab2fdbf6ebed0bd9"
+  highlights: []
+  selective: false
+- source-id: 014-willison-lethal-trifecta
+  type: web
+  url: "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/"
+  fetched: 2026-03-16T00:00:00Z
+  title: "The lethal trifecta for AI agents: private data, untrusted content, and
+    external communication"
+  hash: "163b2fe0ebaffe77ce3e35565123bb0060dc05e67c2babd7a4c9931792fbf6df"
+  notes: "Primary source for the 'lethal trifecta' concept — Simon Willison's canonical
+    definition. Part of his prompt injection series."
   highlights: []
   selective: false

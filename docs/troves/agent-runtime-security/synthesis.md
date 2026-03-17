@@ -1,22 +1,32 @@
 # Synthesis: Agent Runtime Security
 
-Evidence pool `agent-runtime-security` — 13 sources collected 2026-03-15.
+Evidence pool `agent-runtime-security` — 14 sources collected 2026-03-15, extended 2026-03-16.
 
-Sources span 6 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], and MCP scanning landscape [009, 011].
+Sources span 7 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], MCP scanning landscape [009, 011], and independent security research [014].
 
 ## Key findings
 
 ### The "lethal trifecta" is the threat model
 
-Sophos [006] names the pattern that all sources describe: an agent with access to (1) **private data**, (2) the **ability to externally communicate**, and (3) the **ability to ingest untrusted content** creates a trifecta that collapses MFA and network segmentation into a single point of failure at the prompt level. McKerchar: "Anyone who can message the agent is effectively granted the same permissions as the agent itself."
+Simon Willison [014] provides the canonical definition: the **lethal trifecta** is the combination of (1) **access to private data**, (2) **exposure to untrusted content**, and (3) the **ability to externally communicate**. Any agent combining all three "can let an attacker steal your data." The underlying mechanism is prompt injection — LLMs are unable to reliably distinguish instructions by provenance; everything becomes a flat sequence of tokens.
+
+Willison [014] catalogs 15+ production exfiltration attacks across ChatGPT, Google Bard, Amazon Q, Microsoft Copilot, Slack, GitHub Copilot Chat, xAI's Grok, Anthropic's Claude iOS, and ChatGPT Operator (April 2023 – February 2025). Almost all were fixed by vendors locking down the exfiltration vector — but once users mix and match tools themselves (especially via MCP), "there's nothing those vendors can do to protect you."
+
+Sophos [006] independently names the same pattern and draws the enterprise conclusion: "Anyone who can message the agent is effectively granted the same permissions as the agent itself."
 
 Kaspersky [010] provides the concrete proof: Matvey Kukuy extracted a private key from a running OpenClaw instance by sending a prompt-injected email — the agent read the mail and handed over the key. Microsoft's runtime defense post [013] demonstrates the same pattern in managed environments: crafted SharePoint documents trick agents into reading sensitive files the attacker cannot directly access and emailing them out.
 
 The trifecta is not a theoretical risk. It is actively exploited.
 
+### Guardrails are insufficient — structural enforcement is required
+
+Willison [014] is explicit: "we still don't know how to 100% reliably prevent this from happening." Guardrail products claiming 95% detection rates earn "deep suspicion" because "in web application security 95% is very much a failing grade." He references two promising mitigation directions — the "Design Patterns for Securing LLM Agents against Prompt Injections" paper (key insight: "once an LLM agent has ingested untrusted input, it must be constrained so that it is impossible for that input to trigger any consequential actions") and Google DeepMind's CaMeL — but notes neither helps end users mixing tools today. The only user-side defense is to **avoid the trifecta combination entirely**.
+
+This directly validates Tidegate's architectural thesis: if guardrails can't reliably prevent exfiltration at the application layer, enforcement must be structural — infrastructure-embedded, at the network and VM boundary, making bypass impossible regardless of what the LLM decides to do.
+
 ### The security boundary has shifted from application to runtime
 
-All thirteen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
+All fourteen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
 
 NIST [007] formalizes this as a regulatory question: "What are the unique security threats, risks, or vulnerabilities currently affecting AI agent systems, distinct from those affecting traditional software systems?" The Perplexity response identifies three fundamental challenges: code-data separation collapse, flexible automation without matching security primitives, and existing security mechanisms designed for pre-agent computing.
 
@@ -52,7 +62,9 @@ Kaspersky [010] reports 512 total vulnerabilities found in a single audit, 8 cri
 
 These are not theoretical — they are exploited in the wild.
 
-### The MCP scanning landscape covers payloads but not topology
+### MCP amplifies the trifecta by design
+
+Willison [014] identifies MCP as a structural amplifier: it "encourages users to mix and match tools from different sources that can do different things." A single MCP server can combine all three legs of the trifecta — the GitHub MCP exploit demonstrated exactly this, where one tool could read public issues (untrusted content), access private repos (private data), and create pull requests (external communication/exfiltration).
 
 The MCP landscape [009] has split into three tiers: static scanners (mcp-scan, MCPScan.ai), runtime proxies (Pipelock, Invariant Guardrails), and enterprise gateways (Docker MCP Gateway, MintMCP, Kong, Operant AI). Key capabilities:
 
@@ -83,12 +95,13 @@ All sources agree on:
 - **VM/microVM isolation is the gold standard.** Shared-kernel solutions are insufficient. Google [012] and Northflank [005] both default to hardware-enforced isolation. NVIDIA [002] recommends full virtualization.
 - **Disposable environments.** Microsoft [001]: "Treat the environment as disposable." NVIDIA [002]: ephemeral sandboxes. Google [012]: warm pools with checkpoint/restore.
 - **The skills ecosystem mirrors early npm/PyPI** — but with higher stakes because skills inherit agent permissions (Snyk [004], Reddit [008], Kaspersky [010]).
+- **Guardrails are probabilistic, not deterministic.** Willison [014] and Sophos [006] agree that application-layer defenses cannot guarantee prevention — only structural enforcement (network, VM) provides a deterministic boundary.
 
 ## Points of disagreement
 
-- **Prevention vs. pragmatic risk management.** Microsoft [001] and Cisco [003] lean toward "don't run this." Sophos [006] and Northflank [005] take a pragmatic stance: agentic AI is coming, so manage it. The Reddit thread [008] surfaces real practitioners who have already accepted the risk and are asking how to sandbox effectively.
+- **Prevention vs. pragmatic risk management.** Microsoft [001] and Cisco [003] lean toward "don't run this." Sophos [006] and Northflank [005] take a pragmatic stance: agentic AI is coming, so manage it. Willison [014] occupies a middle ground: the only user-side defense is avoidance of the trifecta combination, while acknowledging that application developers can use design patterns to mitigate (but not eliminate) the risk. The Reddit thread [008] surfaces real practitioners who have already accepted the risk and are asking how to sandbox effectively.
 
-- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement.
+- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). Willison [014] frames it as an unsolved problem at any layer. These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement.
 
 - **Approval caching.** NVIDIA [002] explicitly calls it dangerous: "Allow-once / run-many is not an adequate control." No other source addresses this directly, but the ClawJacked vulnerability [011] demonstrates the consequence: localhost trust (a form of cached approval) enabled full agent takeover.
 
@@ -101,5 +114,3 @@ All sources agree on:
 - **Cost and performance trade-offs of personal-device VM isolation.** Google [012] provides cloud numbers (sub-second warm pools) but no source addresses the developer experience cost of running agents inside VMs on a laptop.
 
 - **No source proposes per-destination egress enforcement with scanning.** All say "restrict egress" but stop at "allowlist known destinations." None propose the gvproxy-level, infrastructure-embedded, per-destination allowlisting that Tidegate implements.
-
-- **The "lethal trifecta" lacks a primary source.** Sophos [006] names the pattern but doesn't cite its origin. Finding or establishing the canonical definition would strengthen Tidegate's vision framing.
