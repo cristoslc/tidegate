@@ -25,6 +25,7 @@ depends-on: []
 linked-artifacts:
   - SPIKE-003
   - SPIKE-006
+  - SPIKE-023
 ---
 # ROME Agentic Training Security Implications
 

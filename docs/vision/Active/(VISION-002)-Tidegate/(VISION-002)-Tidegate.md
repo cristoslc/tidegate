@@ -24,6 +24,7 @@ linked-artifacts:
   - SPIKE-004
   - SPIKE-005
   - SPIKE-006
+  - SPIKE-023
   - VISION-000
   - VISION-001
 ---

@@ -18,6 +18,7 @@ linked-artifacts:
   - ADR-004
   - SPIKE-011
   - SPIKE-013
+  - SPIKE-023
   - VISION-001
 ---
 # Tideclaw IPC Orchestrator Scanning
