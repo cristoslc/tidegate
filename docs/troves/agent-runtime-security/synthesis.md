@@ -1,8 +1,8 @@
 # Synthesis: Agent Runtime Security
 
-Trove `agent-runtime-security` — 15 sources collected 2026-03-15, extended 2026-03-17.
+Trove `agent-runtime-security` — 17 sources collected 2026-03-15, extended 2026-03-17.
 
-Sources span 8 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], MCP scanning landscape [009, 011], independent security research [014], and credential management [015].
+Sources span 9 perspectives: vendor security research [001-003, 006, 010, 013], practitioner/community [008], regulatory/government [007], supply chain audit [004], infrastructure guidance [005, 012], MCP scanning landscape [009, 011], independent security research [014], credential management [015], and platform vendor documentation [016, 017].
 
 ## Key findings
 
@@ -26,7 +26,7 @@ This directly validates Tidegate's architectural thesis: if guardrails can't rel
 
 ### The security boundary has shifted from application to runtime
 
-All fifteen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
+All seventeen sources converge on the same structural observation: self-hosted AI agents merge untrusted code execution (skills, extensions) with untrusted instruction processing (prompts, feeds, messages) into a single loop running with durable credentials. Microsoft [001] frames this as "dual supply chain convergence." The new security boundary has three components: **identity** (what tokens the agent holds), **execution** (what tools it can invoke), and **persistence** (how changes survive across runs).
 
 NIST [007] formalizes this as a regulatory question: "What are the unique security threats, risks, or vulnerabilities currently affecting AI agent systems, distinct from those affecting traditional software systems?" The Perplexity response identifies three fundamental challenges: code-data separation collapse, flexible automation without matching security primitives, and existing security mechanisms designed for pre-agent computing.
 
@@ -51,6 +51,8 @@ This mirrors a recurring theme across the trove: patterns that work for individu
 NVIDIA [002] and Northflank [005] both argue that application-level controls are fundamentally insufficient — once control passes to a subprocess, the application has no visibility. NVIDIA: "OS-level controls, like macOS Seatbelt, work beneath the application layer to cover every process in the sandbox."
 
 Google [012] validates this at cloud scale: "Providing kernel-level isolation for agents that execute code and commands is non-negotiable." Their Agent Sandbox is built on gVisor with Kata Containers support, warm pools for sub-second latency, and is positioned as a new Kubernetes primitive — confirming the industry is converging on VM-grade isolation as baseline infrastructure.
+
+Docker [016] ships the developer-desktop equivalent: Docker Sandboxes runs each AI coding agent in a lightweight microVM (virtualization.framework on macOS, Hyper-V on Windows) with a private Docker daemon, isolated network namespace, and bidirectional workspace sync. Sandboxes cannot communicate with each other or access host localhost services. Critically, Docker implements **proxy-based credential injection** — "the agent makes API requests without credentials, and the proxy injects them transparently" via an HTTP/HTTPS filtering proxy at `host.docker.internal:3128`. This is the phantom token pattern [015] implemented at the infrastructure level by a major platform vendor, validating the approach. Docker Agent [017] adds a multi-agent orchestration layer with hierarchical delegation and MCP integration via the Docker MCP Gateway.
 
 The Reddit thread [008] adds the practitioner dimension: u/AccordingWeight6019 argues "the question is whether the community starts modeling agents around information flow constraints rather than instruction filtering" — independently arriving at Tidegate's data-flow enforcement thesis.
 
@@ -110,7 +112,7 @@ All sources agree on:
 
 - **Assume-breach posture is required.** Self-hosted agents will eventually process malicious input. Controls must prioritize containment and recoverability over prevention.
 - **Dedicated credentials, not inherited ones.** Agents should use purpose-built, least-privilege, short-lived tokens — never the user's full credential set. The phantom token pattern [015] takes this further: the agent shouldn't hold even the dedicated credential. Tidegate's container-isolation model goes further still: the agent holds no credential at all for MCP-mediated services.
-- **VM/microVM isolation is the gold standard.** Shared-kernel solutions are insufficient. Google [012] and Northflank [005] both default to hardware-enforced isolation. NVIDIA [002] recommends full virtualization.
+- **VM/microVM isolation is the gold standard.** Shared-kernel solutions are insufficient. Google [012] and Northflank [005] both default to hardware-enforced isolation. NVIDIA [002] recommends full virtualization. Docker [016] ships microVM sandboxes as a first-party feature, confirming the pattern has moved from security research to mainstream developer tooling.
 - **Disposable environments.** Microsoft [001]: "Treat the environment as disposable." NVIDIA [002]: ephemeral sandboxes. Google [012]: warm pools with checkpoint/restore.
 - **The skills ecosystem mirrors early npm/PyPI** — but with higher stakes because skills inherit agent permissions (Snyk [004], Reddit [008], Kaspersky [010]).
 - **Guardrails are probabilistic, not deterministic.** Willison [014] and Sophos [006] agree that application-layer defenses cannot guarantee prevention — only structural enforcement (network, VM, container isolation) provides a deterministic boundary.
@@ -119,17 +121,17 @@ All sources agree on:
 
 - **Prevention vs. pragmatic risk management.** Microsoft [001] and Cisco [003] lean toward "don't run this." Sophos [006] and Northflank [005] take a pragmatic stance: agentic AI is coming, so manage it. Willison [014] occupies a middle ground: the only user-side defense is avoidance of the trifecta combination, while acknowledging that application developers can use design patterns to mitigate (but not eliminate) the risk. The Reddit thread [008] surfaces real practitioners who have already accepted the risk and are asking how to sandbox effectively.
 
-- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). Willison [014] frames it as an unsolved problem at any layer. The phantom token pattern [015] adds a credential proxy layer for architectures where agents are direct API clients. These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement.
+- **Where enforcement belongs.** NVIDIA [002] advocates OS-level (Seatbelt, AppContainer). Northflank [005] and Google [012] push infrastructure-level (microVMs, Kata, K8s). Microsoft [013] implements it as a cloud webhook (Defender). Docker [016] implements it as a desktop-native microVM with credential-injecting proxy. Willison [014] frames it as an unsolved problem at any layer. These reflect deployment contexts (workstation vs. server vs. cloud) more than philosophical disagreement — but Docker's desktop-native approach is notable because it brings infrastructure-grade isolation to the individual developer without requiring cloud infrastructure.
 
 - **Approval caching.** NVIDIA [002] explicitly calls it dangerous: "Allow-once / run-many is not an adequate control." No other source addresses this directly, but the ClawJacked vulnerability [011] demonstrates the consequence: localhost trust (a form of cached approval) enabled full agent takeover.
 
 ## Gaps remaining
 
-- **macOS-specific enforcement is underexplored.** NVIDIA [002] mentions Seatbelt but no source details Apple Silicon VM isolation (Tidegate's SPEC-004/SPEC-006 territory).
+- **macOS-specific enforcement details are thin.** Docker Sandboxes [016] uses virtualization.framework on macOS, confirming the platform's VM capabilities are production-ready for agent isolation. But no source details Apple Silicon VM isolation at the level Tidegate requires (SPEC-004/SPEC-006) — e.g., Rosetta translation overhead, memory ballooning, or guest kernel configuration.
 
-- **Multi-agent coordination security is barely touched.** The BobVonNeumann agent-to-agent attack [011] hints at this, but no source addresses trust boundaries between cooperating agents systematically.
+- **Multi-agent coordination security is barely touched.** The BobVonNeumann agent-to-agent attack [011] hints at this. Docker Agent [017] provides hierarchical delegation but doesn't address inter-agent trust boundaries. No source addresses trust boundaries between cooperating agents systematically.
 
-- **Cost and performance trade-offs of personal-device VM isolation.** Google [012] provides cloud numbers (sub-second warm pools) but no source addresses the developer experience cost of running agents inside VMs on a laptop.
+- **Cost and performance trade-offs of personal-device VM isolation.** Google [012] provides cloud numbers (sub-second warm pools). Docker Sandboxes [016] demonstrates that desktop microVMs are viable (shipped as a first-party feature), but no source benchmarks the memory/CPU overhead or quantifies developer experience impact.
 
 - **No source proposes per-destination egress enforcement with scanning.** All say "restrict egress" but stop at "allowlist known destinations." None propose the gvproxy-level, infrastructure-embedded, per-destination allowlisting that Tidegate implements.
 

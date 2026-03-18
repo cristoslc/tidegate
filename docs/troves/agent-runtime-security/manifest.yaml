@@ -16,6 +16,9 @@ tags:
 - mcp-scanning
 - lethal-trifecta
 - regulatory
+- docker
+- microvm
+- multi-agent
 
 freshness-ttl:
   web: 14d
@@ -168,5 +171,28 @@ sources:
     open-source origin of the phantom token pattern. Describes proxy-based credential
     injection where agents never hold real API keys. Marketing content stripped during
     normalization; technical pattern description preserved."
+  highlights: []
+  selective: false
+- source-id: 016-docker-sandboxes
+  type: documentation-site
+  url: "https://docs.docker.com/ai/sandboxes/"
+  fetched: 2026-03-17T00:00:00Z
+  title: "Docker Sandboxes"
+  hash: "6d97eac8032a4223180614f6943920ebe3f8fe24c789093c111a725c827be2e9"
+  notes: "Official Docker docs for Sandboxes — microVM-based isolation for AI coding agents.
+    Uses virtualization.framework (macOS) / Hyper-V (Windows). Key finding: implements
+    proxy-based credential injection where agent never sees API keys. Combined overview
+    and architecture pages."
+  highlights: []
+  selective: true
+- source-id: 017-docker-agent
+  type: web
+  url: "https://docs.docker.com/ai/docker-agent/"
+  fetched: 2026-03-17T00:00:00Z
+  title: "Docker Agent"
+  hash: "e31e5d78f3b0af9ed034bb2eda4d1620675ec3d274d23b9111ac4952a08ba2fd"
+  notes: "Official Docker docs for Docker Agent — open-source multi-agent framework.
+    Hierarchical delegation, YAML-based configuration, MCP integration via Docker MCP
+    Gateway, OCI-based distribution."
   highlights: []
   selective: false
