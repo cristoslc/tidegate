@@ -1,6 +1,6 @@
 trove: agent-attack-patterns
 created: 2026-03-17
-refreshed: 2026-03-17
+refreshed: 2026-03-25
 tags:
   - attack-patterns
   - prompt-injection
@@ -140,3 +140,26 @@ sources:
     title: "OWASP Agentic AI Top 10: Threats in the Wild"
     hash: "e1cc02dba99fd7b89260018dea438cb19fdd9c7c03e41207f7d6dbbb5ba3afae"
     notes: "All 10 ASI categories with real CVEs: EchoLeak CVE-2025-32711, Copilot YOLO CVE-2025-53773, AGENTS.MD hijacking, Amazon Q CVE-2025-8217, MCPoison CVE-2025-54136."
+
+  - source-id: litellm-pypi-supply-chain
+    type: web
+    url: "https://docs.litellm.ai/blog/security-update-march-2026"
+    fetched: 2026-03-25T00:00:00Z
+    title: "Security Update: Suspected Supply Chain Incident — LiteLLM"
+    hash: "c5f4ed8ccda2c664f03e939f563022d2d3196e5676ad22b23f14af49bf951c95"
+    notes: "LiteLLM PyPI supply chain attack. litellm v1.82.7 and v1.82.8 contained credential stealers (env vars, SSH keys, cloud creds, K8s tokens). Malicious packages uploaded via compromised maintainer account linked to Trivy CI/CD attack. Exfil to models.litellm[.]cloud. Mandiant engaged."
+
+  - source-id: aquasec-trivy-supply-chain
+    type: web
+    url: "https://www.aquasec.com/blog/trivy-supply-chain-attack-what-you-need-to-know/"
+    fetched: 2026-03-25T00:00:00Z
+    title: "Trivy Supply Chain Attack: What You Need to Know — Aqua Security"
+    hash: "31243b85cf958f076942be5c638382d54843729107187a0aace4f5db2fde5e5e"
+    notes: "Upstream attack that enabled the LiteLLM compromise. Multi-stage CI/CD supply chain attack on Trivy. Attacker force-pushed 76/77 trivy-action tags to malicious commits, published malicious Trivy v0.69.4 binary. Exfil of cloud creds, SSH keys, K8s tokens from CI/CD runners. ICP blockchain C2. Attacker reestablished access after initial containment. Sygnia engaged."
+
+history:
+  - event: extended
+    date: 2026-03-25
+    commit: "--"
+    sources-added: 2
+    note: "Added LiteLLM PyPI supply chain incident and upstream Trivy supply chain attack"
