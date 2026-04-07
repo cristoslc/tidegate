@@ -1,0 +1,50 @@
+trove: majorcontext-moat
+created: 2026-04-07
+refreshed: 2026-04-07
+tags:
+  - agent-sandboxing
+  - credential-injection
+  - security
+  - moat
+  - container-isolation
+  - network-layer-auth
+
+freshness-ttl:
+  web: 30d
+
+history:
+  - event: created
+    date: 2026-04-07
+    commit: "--"
+    sources: 4
+
+referenced-by: []
+
+sources:
+  - source-id: majorcontext-moat
+    type: web
+    url: "https://majorcontext.com/moat/"
+    fetched: 2026-04-07T00:00:00Z
+    title: "Moat - Agent Sandboxing and Credential Injection"
+    hash: "8b9ea97817039a2abe5f650b42e857949523ad33b245b64424d10db61129f001"
+
+  - source-id: docker-credentials
+    type: web
+    url: "https://docs.docker.com/ai/sandboxes/security/credentials/"
+    fetched: 2026-04-07T00:00:00Z
+    title: "Credentials | Docker Docs"
+    hash: "591573d19af01724f3edbfb621510eba6a4d91dee5ff80c616f9b8649d55e633"
+
+  - source-id: anthropic-sandboxing
+    type: web
+    url: "https://www.anthropic.com/engineering/claude-code-sandboxing"
+    fetched: 2026-04-07T00:00:00Z
+    title: "Beyond permission prompts: making Claude Code more secure and autonomous"
+    hash: "c22fc2cf921c2e4cf2a78c6d2deac13bce583d767ff6542e7de8428e17fac156"
+
+  - source-id: kubernetes-agent-sandbox
+    type: web
+    url: "https://agent-sandbox.sigs.k8s.io/"
+    fetched: 2026-04-07T00:00:00Z
+    title: "Agent Sandbox - Kubernetes SIG Apps"
+    hash: "f3843594f4e943fdbe862de12e5a4a494ed96d00c200afa7942a1778a7fd451b"
