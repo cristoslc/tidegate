@@ -1,0 +1,164 @@
+{
+  "$schema": "./schema.json",
+  "snapshot_date": "2026-04-07",
+  "sources_count": 6,
+  "tools": [
+    {
+      "name": "Moat",
+      "url": "https://majorcontext.com/moat/",
+      "license": "open-source",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": false,
+        "l3_egress_proxy": true,
+        "interceptor": false,
+        "vm_isolation": true
+      },
+      "threat_vectors": [
+        "credential_theft",
+        "unauthorized_egress",
+        "container_escape"
+      ],
+      "deployment": {
+        "model": "local",
+        "platform": ["docker", "cli"]
+      },
+      "composability": {
+        "compatible_with": ["Docker Agent Sandbox"],
+        "conflicts_with": [],
+        "redundant_with": ["Docker Agent Sandbox"]
+      },
+      "notes": "Network-layer credential injection via TLS proxy. Container isolation with Docker/Apple containers/gVisor. No taint tracking."
+    },
+    {
+      "name": "Docker Agent Sandbox",
+      "url": "https://docs.docker.com/ai/sandboxes/security/credentials/",
+      "license": "commercial",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": false,
+        "l3_egress_proxy": true,
+        "interceptor": false,
+        "vm_isolation": false
+      },
+      "threat_vectors": [
+        "credential_theft",
+        "unauthorized_egress"
+      ],
+      "deployment": {
+        "model": "local",
+        "platform": ["docker", "cli"]
+      },
+      "composability": {
+        "compatible_with": ["Moat"],
+        "conflicts_with": [],
+        "redundant_with": ["Moat"]
+      },
+      "notes": "Credential injection via host proxy. OS keychain for secrets. Container-only isolation (no VM)."
+    },
+    {
+      "name": "Anthropic Sandboxed Bash",
+      "url": "https://www.anthropic.com/engineering/claude-code-sandboxing",
+      "license": "open-source",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": false,
+        "l3_egress_proxy": true,
+        "interceptor": false,
+        "vm_isolation": false
+      },
+      "threat_vectors": [
+        "unauthorized_egress",
+        "credential_theft"
+      ],
+      "deployment": {
+        "model": "local",
+        "platform": ["cli", "docker"]
+      },
+      "composability": {
+        "compatible_with": [],
+        "conflicts_with": [],
+        "redundant_with": []
+      },
+      "notes": "OS-level sandboxing (bubblewrap/seatbelt). Unix domain socket proxy for network isolation. No credential injection."
+    },
+    {
+      "name": "Kubernetes Agent Sandbox",
+      "url": "https://agent-sandbox.sigs.k8s.io/",
+      "license": "open-source",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": false,
+        "l3_egress_proxy": false,
+        "interceptor": false,
+        "vm_isolation": true
+      },
+      "threat_vectors": [
+        "container_escape",
+        "vm_escape"
+      ],
+      "deployment": {
+        "model": "cloud",
+        "platform": ["kubernetes", "gVisor", "Kata Containers"]
+      },
+      "composability": {
+        "compatible_with": [],
+        "conflicts_with": [],
+        "redundant_with": []
+      },
+      "notes": "Kubernetes CRD for sandbox management. Pluggable isolation backends. No built-in credential management."
+    },
+    {
+      "name": "Cauldron",
+      "url": "https://github.com/anthropics/cauldron",
+      "license": "open-source",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": false,
+        "l3_egress_proxy": false,
+        "interceptor": false,
+        "vm_isolation": true
+      },
+      "threat_vectors": [
+        "vm_escape",
+        "container_escape"
+      ],
+      "deployment": {
+        "model": "local",
+        "platform": ["vm", "cli"]
+      },
+      "composability": {
+        "compatible_with": [],
+        "conflicts_with": [],
+        "redundant_with": []
+      },
+      "notes": "Anthropic's VM-based sandbox for agent evaluation. Focused on isolation, not data flow enforcement."
+    },
+    {
+      "name": "LLM Guard",
+      "url": "https://github.com/protectai/llm-guard",
+      "license": "open-source",
+      "coverage": {
+        "l1_taint": false,
+        "l2_mcp_gateway": true,
+        "l3_egress_proxy": false,
+        "interceptor": true,
+        "vm_isolation": false
+      },
+      "threat_vectors": [
+        "tool_description_injection",
+        "semantic_exfiltration"
+      ],
+      "deployment": {
+        "model": "hybrid",
+        "platform": ["docker", "kubernetes"]
+      },
+      "composability": {
+        "compatible_with": ["Moat", "Docker Agent Sandbox"],
+        "conflicts_with": [],
+        "redundant_with": []
+      },
+      "notes": "Input/output scanning for LLM applications. Pattern-based detection. No infrastructure-level enforcement."
+    }
+  ]
+}

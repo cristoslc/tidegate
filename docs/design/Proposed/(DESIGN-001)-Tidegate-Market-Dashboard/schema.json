@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tidegate Market Dashboard Data",
+  "description": "Schema for tool coverage data in the Tidegate market dashboard",
+  "type": "object",
+  "properties": {
+    "snapshot_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when this snapshot was captured (YYYY-MM-DD)"
+    },
+    "sources_count": {
+      "type": "integer",
+      "description": "Number of tools in this snapshot"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "url", "coverage", "deployment"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Tool name"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to tool documentation or repository"
+          },
+          "license": {
+            "type": "string",
+            "enum": ["open-source", "commercial", "hybrid"],
+            "description": "Licensing model"
+          },
+          "coverage": {
+            "type": "object",
+            "description": "Which Tidegate enforcement layers this tool addresses",
+            "properties": {
+              "l1_taint": {
+                "type": "boolean",
+                "description": "Covers L1 taint-and-verify (eBPF file tracking, PID tainting)"
+              },
+              "l2_mcp_gateway": {
+                "type": "boolean",
+                "description": "Covers L2 MCP scanning (pattern matching, checksum validation)"
+              },
+              "l3_egress_proxy": {
+                "type": "boolean",
+                "description": "Covers L3 egress proxy (allowlist, credential injection)"
+              },
+              "interceptor": {
+                "type": "boolean",
+                "description": "Covers IPC interceptor (subagent-orchestrator scanning)"
+              },
+              "vm_isolation": {
+                "type": "boolean",
+                "description": "Covers VM boundary (microVM, gvproxy allowlist)"
+              }
+            }
+          },
+          "threat_vectors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "unauthorized_egress",
+                "credential_theft",
+                "encoded_exfiltration",
+                "semantic_exfiltration",
+                "pid1_laundering",
+                "emergent_instrumental_goals",
+                "tool_description_injection",
+                "scanner_evasion",
+                "container_escape",
+                "vm_escape"
+              ]
+            },
+            "description": "Specific threat vectors from Tidegate scorecard"
+          },
+          "deployment": {
+            "type": "object",
+            "required": ["model"],
+            "properties": {
+              "model": {
+                "type": "string",
+                "enum": ["local", "cloud", "hybrid"],
+                "description": "Deployment model"
+              },
+              "platform": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["docker", "kubernetes", "vm", "saas", "cli"]
+                },
+                "description": "Supported platforms"
+              }
+            }
+          },
+          "composability": {
+            "type": "object",
+            "description": "Compatibility with other tools",
+            "properties": {
+              "compatible_with": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tool names this can coexist with"
+              },
+              "conflicts_with": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tool names this is mutually exclusive with"
+              },
+              "redundant_with": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tool names that provide overlapping coverage"
+              }
+            }
+          },
+          "notes": {
+            "type": "string",
+            "description": "Freeform notes about coverage claims or limitations"
+          }
+        }
+      }
+    }
+  }
+}
