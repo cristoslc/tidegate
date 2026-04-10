@@ -149,4 +149,4 @@ Full dashboard with all sections visible:
 
 | Phase | Date | Commit | Notes |
 |-------|------|--------|-------|
-| Proposed | 2026-04-07 | -- | Initial creation |
+| Proposed | 2026-04-07 | 457d865 | Initial creation |
