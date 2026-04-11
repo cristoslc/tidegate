@@ -1,0 +1,45 @@
+trove: octofriend
+created: 2026-04-11
+refreshed: 2026-04-11
+tags:
+  - coding-assistant
+  - cli
+  - llm
+  - agent
+  - docker
+  - mcp
+  - skills
+  - zero-telemetry
+  - ink
+  - react
+  - typescript
+
+freshness-ttl:
+  repository: 30d
+
+history:
+  - event: created
+    date: 2026-04-11
+    commit: "--"
+    sources: 1
+
+referenced-by: []
+
+sources:
+  - source-id: octofriend-repo
+    type: repository
+    url: "https://github.com/synthetic-lab/octofriend"
+    fetched: 2026-04-11T00:00:00Z
+    title: "Octofriend - Zero-telemetry coding assistant CLI"
+    hash: "1bd421c2b977198b763248c6343799bd8229eae319f1fad0920cc52c839dbc46"
+    selective: true
+    highlights:
+      - "source/agent/trajectory-arc.ts"
+      - "source/compilers/run.ts"
+      - "source/prompts/system-prompt.ts"
+      - "source/tools/index.ts"
+      - "source/transports/transport-common.ts"
+      - "source/transports/docker.ts"
+      - "source/skills/skills.ts"
+      - "source/config.ts"
+      - "source/state.ts"

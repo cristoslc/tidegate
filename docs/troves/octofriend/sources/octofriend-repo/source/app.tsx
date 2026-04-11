@@ -1,0 +1,1378 @@
+import React, { useState, useCallback, useMemo, useEffect, useRef, useContext } from "react";
+import { Text, Box, Static, measureElement, DOMElement, useInput, useApp } from "ink";
+import clipboardy from "clipboardy";
+import { t } from "structural";
+import {
+  Config,
+  Metadata,
+  ConfigContext,
+  ConfigPathContext,
+  SetConfigContext,
+  useConfig,
+} from "./config.ts";
+import { HistoryItem, ToolCallItem } from "./history.ts";
+import Loading from "./components/loading.tsx";
+import { Header } from "./header.tsx";
+import { UnchainedContext, useColor, useUnchained } from "./theme.ts";
+import { DiffRenderer } from "./components/diff-renderer.tsx";
+import { FileRenderer } from "./components/file-renderer.tsx";
+import shell from "./tools/tool-defs/bash.ts";
+import read from "./tools/tool-defs/read.ts";
+import list from "./tools/tool-defs/list.ts";
+import edit from "./tools/tool-defs/edit.ts";
+import append from "./tools/tool-defs/append.ts";
+import prepend from "./tools/tool-defs/prepend.ts";
+import rewrite from "./tools/tool-defs/rewrite.ts";
+import createTool from "./tools/tool-defs/create.ts";
+import mcp from "./tools/tool-defs/mcp.ts";
+import fetchTool from "./tools/tool-defs/fetch.ts";
+import skill from "./tools/tool-defs/skill.ts";
+import webSearch from "./tools/tool-defs/web-search.ts";
+import glob from "./tools/tool-defs/glob.ts";
+import { ALWAYS_REQUEST_PERMISSION_TOOLS, SKIP_CONFIRMATION_TOOLS } from "./tools/index.ts";
+import { ArgumentsSchema as EditArgumentSchema } from "./tools/tool-defs/edit.ts";
+import { ToolSchemaFrom } from "./tools/common.ts";
+import { useShallow } from "zustand/react/shallow";
+import { KbShortcutPanel } from "./components/kb-select/kb-shortcut-panel.tsx";
+import { Item, ShortcutArray } from "./components/kb-select/kb-shortcut-select.tsx";
+import { useAppStore, RunArgs, useModel, InflightResponseType } from "./state.ts";
+import { Octo } from "./components/octo.tsx";
+import { Menu } from "./menu.tsx";
+import SelectInput from "./components/ink/select-input.tsx";
+import { IndicatorComponent } from "./components/select.tsx";
+import { displayLog } from "./logger.ts";
+import { CenteredBox } from "./components/centered-box.tsx";
+import { Transport } from "./transports/transport-common.ts";
+import { LocalTransport } from "./transports/local.ts";
+import { TransportContext } from "./transport-context.ts";
+import { markUpdatesSeen } from "./update-notifs/update-notifs.ts";
+import {
+  useCtrlC,
+  ExitOnDoubleCtrlC,
+  useCtrlCPressed,
+} from "./components/exit-on-double-ctrl-c.tsx";
+import { InputHistory } from "./input-history/index.ts";
+import { MultimediaInput } from "./components/multimedia-input.tsx";
+import { ImageInfo } from "./utils/image-utils.ts";
+import { Markdown } from "./markdown/index.tsx";
+import { countLines } from "./str.ts";
+import { VimModeIndicator } from "./components/vim-mode.tsx";
+import { ScrollView, IsScrollableContext } from "./components/scroll-view.tsx";
+import { TerminalSizeTracker, useTerminalSize } from "./components/terminal-size.tsx";
+import { ToolCallRequest } from "./ir/llm-ir.ts";
+import {
+  InputPriorityProvider,
+  usePriorityInput,
+  UNCHAINED_PRIORITY,
+} from "./hooks/use-priority-input.tsx";
+import { readFileSync } from "fs";
+import { CwdContext, useCwd } from "./hooks/use-cwd.tsx";
+
+type Props = {
+  config: Config;
+  configPath: string;
+  cwd: string;
+  metadata: Metadata;
+  updates: string | null;
+  unchained: boolean;
+  transport: Transport;
+  inputHistory: InputHistory;
+  bootSkills: string[];
+};
+
+type StaticItem =
+  | {
+      type: "header";
+    }
+  | {
+      type: "version";
+      metadata: Metadata;
+      config: Config;
+    }
+  | {
+      type: "updates";
+      updates: string;
+    }
+  | {
+      type: "slogan";
+    }
+  | {
+      type: "history-item";
+      item: HistoryItem;
+    }
+  | {
+      type: "boot-notification";
+      content: string;
+    };
+
+function toStaticItems(messages: HistoryItem[]): Array<StaticItem> {
+  return messages.map(message => ({
+    type: "history-item",
+    item: message,
+  }));
+}
+
+const UNCHAINED_NOTIF = "Octo runs edits and shell commands automatically";
+const CHAINED_NOTIF = "Octo asks permission before running edits or shell commands";
+
+function UnchainedShiftTabHandler({
+  setIsUnchained,
+  setTempNotification,
+}: {
+  setIsUnchained: (fn: (prev: boolean) => boolean) => void;
+  setTempNotification: (notif: string | null) => void;
+}) {
+  usePriorityInput(UNCHAINED_PRIORITY, (_, key) => {
+    if (key.shift && key.tab) {
+      setIsUnchained(prev => {
+        const unchained = !prev;
+        if (unchained) {
+          setTempNotification(UNCHAINED_NOTIF);
+        } else {
+          setTempNotification(CHAINED_NOTIF);
+        }
+        return unchained;
+      });
+    }
+  });
+  return null;
+}
+
+export default function App({
+  config,
+  configPath,
+  cwd,
+  metadata,
+  unchained,
+  transport,
+  updates,
+  inputHistory,
+  bootSkills,
+}: Props) {
+  const [currConfig, setCurrConfig] = useState(config);
+  const [isUnchained, setIsUnchained] = useState(unchained);
+  const [tempNotification, setTempNotification] = useState<string | null>(
+    isUnchained ? UNCHAINED_NOTIF : CHAINED_NOTIF,
+  );
+  const { history, modeData, setVimMode, clearNonce } = useAppStore(
+    useShallow(state => ({
+      history: state.history,
+      modeData: state.modeData,
+      setVimMode: state.setVimMode,
+      clearNonce: state.clearNonce,
+    })),
+  );
+
+  useEffect(() => {
+    if (updates != null) markUpdatesSeen();
+    if (currConfig.vimEmulation?.enabled) setVimMode("INSERT");
+  }, []);
+
+  const skillNotifs: string[] = [];
+  if (bootSkills.length > 0) {
+    skillNotifs.push(" ");
+    skillNotifs.push("Configured skills:");
+    skillNotifs.push(...bootSkills.map(s => `- ${s}`));
+  }
+
+  const staticItems: StaticItem[] = useMemo(() => {
+    return [
+      { type: "header" },
+      { type: "version", metadata, config: currConfig },
+      ...skillNotifs.map(s => ({ type: "boot-notification" as const, content: s })),
+      ...(updates ? [{ type: "updates" as const, updates }] : []),
+      { type: "slogan" },
+      ...toStaticItems(history),
+    ];
+  }, [history]);
+
+  return (
+    <InputPriorityProvider>
+      <UnchainedShiftTabHandler
+        setIsUnchained={setIsUnchained}
+        setTempNotification={setTempNotification}
+      />
+      <SetConfigContext.Provider value={setCurrConfig}>
+        <ConfigPathContext.Provider value={configPath}>
+          <ConfigContext.Provider value={currConfig}>
+            <UnchainedContext.Provider value={isUnchained}>
+              <TransportContext.Provider value={transport}>
+                <CwdContext.Provider value={cwd}>
+                  <ExitOnDoubleCtrlC>
+                    <TerminalSizeTracker>
+                      <Box flexDirection="column" width="100%" height="100%">
+                        <Static items={staticItems} key={clearNonce}>
+                          {(item, index) => (
+                            <StaticItemRenderer item={item} key={`static-${index}`} />
+                          )}
+                        </Static>
+                        {(modeData.mode === "responding" || modeData.mode === "compacting") &&
+                          (modeData.inflightResponse.reasoningContent ||
+                            modeData.inflightResponse.content) && (
+                            <MessageDisplay item={modeData.inflightResponse} />
+                          )}
+                        <BottomBar
+                          inputHistory={inputHistory}
+                          metadata={metadata}
+                          tempNotification={tempNotification}
+                        />
+                      </Box>
+                    </TerminalSizeTracker>
+                  </ExitOnDoubleCtrlC>
+                </CwdContext.Provider>
+              </TransportContext.Provider>
+            </UnchainedContext.Provider>
+          </ConfigContext.Provider>
+        </ConfigPathContext.Provider>
+      </SetConfigContext.Provider>
+    </InputPriorityProvider>
+  );
+}
+
+function BottomBar({
+  inputHistory,
+  metadata,
+  tempNotification,
+}: {
+  inputHistory: InputHistory;
+  metadata: Metadata;
+  tempNotification: string | null;
+}) {
+  const TEMP_NOTIFICATION_DURATION = 5000;
+
+  const [versionCheck, setVersionCheck] = useState("Checking for updates...");
+  const [displayedTempNotification, setDisplayedTempNotification] =
+    useState<React.ReactNode | null>(null);
+  const themeColor = useColor();
+  const ctrlCPressed = useCtrlCPressed();
+  const { modeData } = useAppStore(
+    useShallow(state => ({
+      modeData: state.modeData,
+    })),
+  );
+
+  useEffect(() => {
+    getLatestVersion().then(latestVersion => {
+      if (latestVersion && metadata.version < latestVersion) {
+        setVersionCheck(
+          "New version released! Run `npm install -g --omit=dev octofriend` to update.",
+        );
+        return;
+      }
+      setVersionCheck("Octo is up-to-date.");
+      setTimeout(() => {
+        setVersionCheck("");
+      }, 5000);
+    });
+  }, [metadata]);
+
+  useEffect(() => {
+    if (tempNotification) {
+      setDisplayedTempNotification(tempNotification);
+      const timer = setTimeout(() => {
+        setDisplayedTempNotification(null);
+      }, TEMP_NOTIFICATION_DURATION);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [tempNotification]);
+
+  if (modeData.mode === "menu") return <Menu />;
+
+  const unchained = useUnchained();
+
+  return (
+    <Box flexDirection="column" width="100%">
+      <BottomBarContent inputHistory={inputHistory} />
+      <Box width="100%" justifyContent="space-between" height={1} flexShrink={0} flexGrow={1}>
+        <Box height={1}>
+          <Text color={themeColor}>{ctrlCPressed && "Press Ctrl+C again to exit."}</Text>
+          {!ctrlCPressed && (
+            <Text color={"gray"}>
+              {unchained ? "⚡ Unchained mode" : "Collaboration mode"}{" "}
+              <Text dimColor>(Shift+Tab to toggle)</Text>
+            </Text>
+          )}
+        </Box>
+        <Text color={themeColor}>{versionCheck}</Text>
+      </Box>
+      <Box minHeight={1}>
+        {displayedTempNotification && (
+          <Box width="100%" flexShrink={0}>
+            <Text color={themeColor} wrap="wrap">
+              {displayedTempNotification}
+            </Text>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+const PackageSchema = t.subtype({
+  "dist-tags": t.subtype({
+    latest: t.str,
+  }),
+});
+async function getLatestVersion() {
+  try {
+    const response = await fetch("https://registry.npmjs.com/octofriend");
+    const contents = await response.json();
+    const packageInfo = PackageSchema.slice(contents);
+    return packageInfo["dist-tags"].latest;
+  } catch {
+    return null;
+  }
+}
+
+function BottomBarContent({ inputHistory }: { inputHistory: InputHistory }) {
+  const config = useConfig();
+  const model = useModel();
+  const transport = useContext(TransportContext);
+  const vimEnabled = !!config.vimEmulation?.enabled;
+  const {
+    modeData,
+    input,
+    abortResponse,
+    openMenu,
+    closeMenu,
+    byteCount,
+    setVimMode,
+    query,
+    setQuery,
+  } = useAppStore(
+    useShallow(state => ({
+      modeData: state.modeData,
+      input: state.input,
+      abortResponse: state.abortResponse,
+      closeMenu: state.closeMenu,
+      openMenu: state.openMenu,
+      byteCount: state.byteCount,
+      setVimMode: state.setVimMode,
+      query: state.query,
+      setQuery: state.setQuery,
+    })),
+  );
+
+  const vimMode =
+    vimEnabled && vimEnabled && modeData.mode === "input" ? modeData.vimMode : "NORMAL";
+
+  useCtrlC(() => {
+    if (vimEnabled) return;
+    setQuery("");
+  });
+
+  useInput((input, key) => {
+    if (key.escape) {
+      // Vim INSERT mode: Esc ONLY returns to NORMAL (no menu, no abort)
+      if (vimEnabled && vimMode === "INSERT" && modeData.mode === "input") {
+        setVimMode("NORMAL");
+        return;
+      }
+
+      abortResponse();
+      if (modeData.mode === "menu") closeMenu();
+    }
+
+    if (key.ctrl && input === "p") {
+      openMenu();
+    }
+  });
+  const color = useColor();
+
+  const onSubmit = useCallback(
+    async (submittedQuery?: string, images?: ImageInfo[]) => {
+      const finalQuery = submittedQuery ?? query;
+      setQuery("");
+      await input({ query: finalQuery, config, transport, images });
+    },
+    [query, config, transport, setQuery],
+  );
+
+  if (modeData.mode === "responding" || modeData.mode === "compacting") {
+    return (
+      <Box justifyContent="space-between">
+        <Loading
+          overrideStrings={
+            modeData.mode === "compacting"
+              ? ["Compacting history to save context tokens"]
+              : undefined
+          }
+        />
+        <Box>
+          {byteCount === 0 ? null : <Text color={color}>⇩ {byteCount} bytes</Text>}
+          <Text> </Text>
+          <Text color="gray">(Press ESC to interrupt)</Text>
+        </Box>
+      </Box>
+    );
+  }
+  if (modeData.mode === "error-recovery") return <Loading />;
+  if (modeData.mode === "diff-apply") {
+    return <Loading overrideStrings={["Auto-fixing diff"]} />;
+  }
+  if (modeData.mode === "fix-json") {
+    return <Loading overrideStrings={["Auto-fixing JSON"]} />;
+  }
+  if (modeData.mode === "tool-waiting") {
+    return (
+      <Loading
+        overrideStrings={["Waiting", "Watching", "Smiling", "Hungering", "Splashing", "Writhing"]}
+      />
+    );
+  }
+  if (modeData.mode === "payment-error") {
+    return <PaymentErrorScreen error={modeData.error} />;
+  }
+  if (modeData.mode === "rate-limit-error") {
+    return <RateLimitErrorScreen error={modeData.error} />;
+  }
+  if (modeData.mode === "request-error") {
+    return (
+      <RequestErrorScreen
+        mode="request-error"
+        contextualMessage="It looks like you've hit a request error!"
+        error={modeData.error}
+        curlCommand={modeData.curlCommand}
+      />
+    );
+  }
+  if (modeData.mode === "compaction-error") {
+    return (
+      <RequestErrorScreen
+        mode="compaction-error"
+        contextualMessage="History compaction failed due to a request error!"
+        error={modeData.error}
+        curlCommand={modeData.curlCommand}
+      />
+    );
+  }
+
+  if (modeData.mode === "tool-request") {
+    return <ToolRequestRenderer toolReq={modeData.toolReq} config={config} transport={transport} />;
+  }
+
+  const _: "menu" | "input" = modeData.mode;
+
+  return (
+    <Box flexDirection="column">
+      <Box marginLeft={1} justifyContent="flex-end">
+        <Text color="gray">(Ctrl+p to enter the menu)</Text>
+      </Box>
+      <MultimediaInput
+        inputHistory={inputHistory}
+        value={query}
+        onChange={setQuery}
+        onSubmit={onSubmit}
+        vimEnabled={vimEnabled}
+        vimMode={vimMode}
+        setVimMode={setVimMode}
+        modalities={model.modalities}
+      />
+      <VimModeIndicator vimEnabled={vimEnabled} vimMode={vimMode} />
+    </Box>
+  );
+}
+
+function RequestErrorScreen({
+  mode,
+  contextualMessage,
+  error,
+  curlCommand,
+}: {
+  mode: "request-error" | "compaction-error";
+  contextualMessage: string;
+  error: string;
+  curlCommand: string | null;
+}) {
+  const config = useConfig();
+  const transport = useContext(TransportContext);
+  const { retryFrom, editAndRetryFrom } = useAppStore(
+    useShallow(state => ({
+      retryFrom: state.retryFrom,
+      editAndRetryFrom: state.editAndRetryFrom,
+    })),
+  );
+  const { exit } = useApp();
+
+  const [viewError, setViewError] = useState(false);
+  const [copiedCurl, setCopiedCurl] = useState(false);
+  const [clipboardError, setClipboardError] = useState<string | null>(null);
+
+  const mapping: Record<string, Item<"view" | "copy-curl" | "retry" | "edit-retry" | "quit">> = {};
+
+  if (!viewError) {
+    mapping["v"] = {
+      label: "View error",
+      value: "view",
+    };
+  }
+
+  if (curlCommand) {
+    mapping["c"] = {
+      label: copiedCurl ? "Copied cURL!" : "Copy failed request as cURL",
+      value: "copy-curl",
+    };
+  }
+
+  mapping["r"] = {
+    label: "Retry",
+    value: "retry",
+  };
+
+  mapping["e"] = {
+    label: "Edit & retry",
+    value: "edit-retry",
+  };
+
+  mapping["q"] = {
+    label: "Quit Octo",
+    value: "quit",
+  };
+
+  const shortcutItems: ShortcutArray<"view" | "copy-curl" | "retry" | "edit-retry" | "quit"> = [
+    {
+      type: "key" as const,
+      mapping,
+    },
+  ];
+
+  const onSelect = useCallback(
+    (item: Item<"view" | "copy-curl" | "retry" | "edit-retry" | "quit">) => {
+      if (item.value === "view") {
+        setViewError(true);
+      } else if (item.value === "copy-curl") {
+        try {
+          clipboardy.writeSync(curlCommand || "Failed to generate cURL command");
+          setCopiedCurl(true);
+        } catch (error) {
+          setClipboardError(error instanceof Error ? error.message : "Failed to copy to clipboard");
+        }
+      } else if (item.value === "retry") {
+        retryFrom(mode, { config, transport });
+      } else if (item.value === "edit-retry") {
+        editAndRetryFrom(mode, { config, transport });
+      } else {
+        const _: "quit" = item.value;
+        exit();
+      }
+    },
+    [curlCommand, mode, config, transport],
+  );
+
+  return (
+    <KbShortcutPanel title="" shortcutItems={shortcutItems} onSelect={onSelect}>
+      <Text color="red">{contextualMessage}</Text>
+      {viewError && (
+        <Box marginY={1}>
+          <Text>{error}</Text>
+        </Box>
+      )}
+      {copiedCurl && (
+        <Box marginY={1}>
+          <Text>{curlCommand}</Text>
+        </Box>
+      )}
+      {clipboardError && (
+        <Box marginY={1}>
+          <Text color="red">{clipboardError}</Text>
+        </Box>
+      )}
+    </KbShortcutPanel>
+  );
+}
+
+function RateLimitErrorScreen({ error }: { error: string }) {
+  const config = useConfig();
+  const transport = useContext(TransportContext);
+  const { retryFrom } = useAppStore(
+    useShallow(state => ({
+      retryFrom: state.retryFrom,
+    })),
+  );
+
+  useInput(() => {
+    retryFrom("rate-limit-error", { config, transport });
+  });
+
+  return (
+    <CenteredBox>
+      <Text color="red">
+        It looks like you've hit a rate limit! Here's the error from the backend:
+      </Text>
+      <Text>{error}</Text>
+      <Text color="gray">Press any key when you're ready to retry.</Text>
+    </CenteredBox>
+  );
+}
+
+function PaymentErrorScreen({ error }: { error: string }) {
+  const config = useConfig();
+  const transport = useContext(TransportContext);
+  const { retryFrom } = useAppStore(
+    useShallow(state => ({
+      retryFrom: state.retryFrom,
+    })),
+  );
+
+  useInput(() => {
+    retryFrom("payment-error", { config, transport });
+  });
+
+  return (
+    <CenteredBox>
+      <Text color="red">Payment error:</Text>
+      <Text>{error}</Text>
+      <Text color="gray">Once you've paid, press any key to continue.</Text>
+    </CenteredBox>
+  );
+}
+
+const ToolRequestItem = React.memo(
+  ({
+    isSelected = false,
+    label,
+    whitelistAllowDescription,
+  }: {
+    isSelected?: boolean;
+    label: string;
+    whitelistAllowDescription?: React.ReactNode;
+  }) => {
+    const themeColor = useColor();
+
+    return (
+      <Text color={isSelected ? themeColor : undefined}>
+        {label}
+        {whitelistAllowDescription}
+      </Text>
+    );
+  },
+);
+
+function ToolRequestRenderer({
+  toolReq,
+  config,
+  transport,
+}: {
+  toolReq: ToolCallRequest;
+} & RunArgs) {
+  const themeColor = useColor();
+  const { runTool, rejectTool, isWhitelisted, addToWhitelist } = useAppStore(
+    useShallow(state => ({
+      runTool: state.runTool,
+      rejectTool: state.rejectTool,
+      isWhitelisted: state.isWhitelisted,
+      addToWhitelist: state.addToWhitelist,
+    })),
+  );
+  const unchained = useUnchained();
+
+  const whitelistKey = (() => {
+    const fn = toolReq.function;
+    switch (fn.name) {
+      case "read":
+      case "list":
+        return "read:*";
+      case "create":
+      case "rewrite":
+      case "append":
+      case "prepend":
+      case "edit":
+        return "edits:*";
+      case "mcp":
+        return `${fn.name}:${fn.arguments.server}:${fn.arguments.tool}`;
+      case "skill":
+      case "shell":
+      case "fetch":
+      case "glob":
+      case "web-search":
+        return `${fn.name}:*`;
+    }
+  })();
+  const prompt = (() => {
+    const fn = toolReq.function;
+    switch (fn.name) {
+      case "create":
+        return (
+          <Box>
+            <Text>Create file </Text>
+            <Text color={themeColor}>{fn.arguments.filePath}</Text>
+            <Text>?</Text>
+          </Box>
+        );
+      case "rewrite":
+      case "append":
+      case "prepend":
+      case "edit":
+        return (
+          <Box>
+            <Text>Make these changes to </Text>
+            <Text color={themeColor}>{fn.arguments.filePath}</Text>
+            <Text>?</Text>
+          </Box>
+        );
+      case "skill":
+      case "read":
+      case "shell":
+      case "fetch":
+      case "list":
+      case "mcp":
+      case "glob":
+      case "web-search":
+        return null;
+    }
+  })();
+
+  const toolName = toolReq.function.name;
+
+  const [isToolWhitelisted, setIsToolWhitelisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const whitelisted = await isWhitelisted(whitelistKey);
+      setIsToolWhitelisted(whitelisted);
+    })();
+  }, [whitelistKey, isWhitelisted]);
+
+  type SelectItem = {
+    label: string;
+    value: string;
+    whitelistAllowDescription?: React.ReactNode;
+  };
+  const items: SelectItem[] = [
+    {
+      label: "Yes",
+      value: "yes",
+    },
+    ...(!SKIP_CONFIRMATION_TOOLS.includes(toolName) &&
+    !ALWAYS_REQUEST_PERMISSION_TOOLS.includes(toolName) &&
+    !isToolWhitelisted
+      ? [
+          {
+            label: "Yes, and always allow",
+            value: "yes-whitelist",
+            whitelistAllowDescription: <WhitelistAllowDescription toolCallRequest={toolReq} />,
+          },
+        ]
+      : []),
+    {
+      label: "No, and tell Octo what to do differently",
+      value: "no",
+    },
+  ];
+
+  const onSelect = useCallback(
+    async (item: (typeof items)[number]) => {
+      if (item.value === "no") {
+        rejectTool(toolReq.toolCallId);
+      } else if (item.value === "yes-whitelist") {
+        await addToWhitelist(whitelistKey);
+        await runTool({ toolReq, config, transport });
+      } else {
+        await runTool({ toolReq, config, transport });
+      }
+    },
+    [toolReq, config, transport, addToWhitelist, runTool, rejectTool, whitelistKey],
+  );
+
+  const noConfirmationNeeded =
+    unchained ||
+    SKIP_CONFIRMATION_TOOLS.includes(toolReq.function.name) ||
+    isToolWhitelisted === true;
+
+  useEffect(() => {
+    if (noConfirmationNeeded) {
+      runTool({ toolReq, config, transport });
+    }
+  }, [toolReq, noConfirmationNeeded, config, transport]);
+
+  if (noConfirmationNeeded) return <Loading />;
+
+  return (
+    <Box flexDirection="column" gap={1}>
+      {prompt}
+      <SelectInput
+        items={items}
+        onSelect={onSelect}
+        indicatorComponent={IndicatorComponent}
+        itemComponent={ToolRequestItem}
+      />
+    </Box>
+  );
+}
+
+const StaticItemRenderer = React.memo(({ item }: { item: StaticItem }) => {
+  const themeColor = useColor();
+  const model = useModel();
+  const unchained = useUnchained();
+
+  if (item.type === "header") return <Header unchained={unchained} />;
+  if (item.type === "version") {
+    return (
+      <Box marginTop={1} marginLeft={1} flexDirection="column">
+        <Text color="gray">Model: {model.nickname}</Text>
+        <Text color="gray">Version: {item.metadata.version}</Text>
+      </Box>
+    );
+  }
+  if (item.type === "slogan") {
+    return (
+      <Box marginLeft={1} marginTop={1}>
+        <Text>
+          Octo is your friend. Tell Octo <Text color={themeColor}>what you want to do.</Text>
+        </Text>
+      </Box>
+    );
+  }
+  if (item.type === "updates") {
+    return (
+      <Box marginTop={1} marginLeft={1} flexDirection="column">
+        <Text bold>Updates:</Text>
+        <Box marginTop={1} marginLeft={1}>
+          <Markdown markdown={item.updates} />
+        </Box>
+        <Text color="gray">Thanks for updating!</Text>
+        <Text color="gray">See the full changelog by running: `octo changelog`</Text>
+      </Box>
+    );
+  }
+
+  if (item.type === "boot-notification") {
+    return (
+      <Box marginLeft={1}>
+        <Text color="gray">{item.content}</Text>
+      </Box>
+    );
+  }
+
+  return <MessageDisplay item={item.item} />;
+});
+
+const MessageDisplay = React.memo(({ item }: { item: HistoryItem | InflightResponseType }) => {
+  return (
+    <Box flexDirection="column" paddingRight={4}>
+      <MessageDisplayInner item={item} />
+    </Box>
+  );
+});
+
+const MessageDisplayInner = React.memo(({ item }: { item: HistoryItem | InflightResponseType }) => {
+  const { modeData } = useAppStore(
+    useShallow(state => ({
+      modeData: state.modeData,
+    })),
+  );
+
+  if (item.type === "notification") {
+    return (
+      <Box marginLeft={1}>
+        <Text color="gray">{item.content}</Text>
+      </Box>
+    );
+  }
+  if (item.type === "assistant") {
+    if (modeData.mode === "compacting") {
+      return (
+        <Box marginBottom={1}>
+          <CompactionRenderer item={item} />
+        </Box>
+      );
+    }
+    return (
+      <Box marginBottom={1}>
+        <AssistantMessageRenderer item={item} />
+      </Box>
+    );
+  }
+  if (item.type === "tool") {
+    return (
+      <Box marginTop={1}>
+        <ToolMessageRenderer item={item} />
+      </Box>
+    );
+  }
+  if (item.type === "tool-output") {
+    const lines = (() => {
+      if (item.result.lines == null) return item.result.content.split("\n").length;
+      return item.result.lines;
+    })();
+    return (
+      <Box marginBottom={1}>
+        <Text color="gray">
+          Got <Text>{lines}</Text> lines of output
+        </Text>
+      </Box>
+    );
+  }
+  if (item.type === "tool-malformed") {
+    return (
+      <Text color="red">
+        {displayLog({
+          verbose: `Error: ${item.error}`,
+          info: "Malformed tool call. Retrying...",
+        })}
+      </Text>
+    );
+  }
+  if (item.type === "tool-failed") {
+    return (
+      <Text color="red">
+        {displayLog({
+          verbose: `Error: ${item.error}`,
+          info: "Tool returned an error...",
+        })}
+      </Text>
+    );
+  }
+  if (item.type === "tool-reject") {
+    return <Text>Tool rejected; tell Octo what to do instead:</Text>;
+  }
+  if (item.type === "file-outdated") {
+    return (
+      <Box flexDirection="column">
+        <Text>File was modified since it was last read; re-reading...</Text>
+      </Box>
+    );
+  }
+  if (item.type === "file-unreadable") {
+    return (
+      <Box flexDirection="column">
+        <Text>File could not be read — has it been deleted?</Text>
+      </Box>
+    );
+  }
+
+  if (item.type === "request-failed") {
+    return <Text color="red">Request failed.</Text>;
+  }
+
+  if (item.type === "compaction-failed") {
+    return <Text color="red">Compaction failed.</Text>;
+  }
+
+  if (item.type === "compaction-checkpoint") {
+    return <CompactionSummaryRenderer summary={item.summary} />;
+  }
+
+  const _: "user" = item.type;
+
+  return (
+    <Box flexDirection="column" marginY={1}>
+      <Box flexDirection="row">
+        <Box marginRight={1}>
+          <Text color="white">▶</Text>
+        </Box>
+        {item.images && item.images.length > 0 && (
+          <Box marginRight={1}>
+            <Text inverse>
+              ⟦ 📎 {item.images.length} image{item.images.length > 1 ? "s" : ""} attached ⟧
+            </Text>
+          </Box>
+        )}
+        <Text>{item.content}</Text>
+      </Box>
+    </Box>
+  );
+});
+
+function CompactionSummaryRenderer({ summary }: { summary: string }) {
+  const color = useColor();
+  const innerSummary = summary.replace(/^<summary>/, "").replace(/<\/summary>$/, "");
+  return (
+    <Box flexDirection="column" marginY={1}>
+      <Text color="gray">History compacted! Summary: </Text>
+      <Text color="gray">{innerSummary}</Text>
+      <Text color={color}>Summary complete!</Text>
+    </Box>
+  );
+}
+
+function ToolMessageRenderer({ item }: { item: ToolCallItem }) {
+  switch (item.tool.function.name) {
+    case "read":
+      return <ReadToolRenderer item={item.tool.function} />;
+    case "list":
+      return <ListToolRenderer item={item.tool.function} />;
+    case "shell":
+      return <ShellToolRenderer item={item.tool.function} />;
+    case "edit":
+      return <EditToolRenderer item={item.tool.function} />;
+    case "create":
+      return <CreateToolRenderer item={item.tool.function} />;
+    case "mcp":
+      return <McpToolRenderer item={item.tool.function} />;
+    case "fetch":
+      return <FetchToolRenderer item={item.tool.function} />;
+    case "append":
+      return <AppendToolRenderer item={item.tool.function} />;
+    case "prepend":
+      return <PrependToolRenderer item={item.tool.function} />;
+    case "rewrite":
+      return <RewriteToolRenderer item={item.tool.function} />;
+    case "skill":
+      return <SkillToolRenderer item={item.tool.function} />;
+    case "web-search":
+      return <WebSearchToolRenderer item={item.tool.function} />;
+    case "glob":
+      return <GlobRenderer item={item.tool.function} />;
+  }
+}
+
+function GlobRenderer({ item }: { item: ToolSchemaFrom<typeof glob> }) {
+  return (
+    <Box flexDirection="column">
+      <Text color="gray">Octo searched for files using a glob pattern:</Text>
+      <GlobArg name="CWD" arg={item.arguments.cwd} />
+      <GlobArg name="Filename pattern" arg={item.arguments.search.name} />
+      <GlobArg name="Path pattern" arg={item.arguments.search.path} />
+      <GlobArg name="Max depth" arg={item.arguments.search.maxDepth} />
+    </Box>
+  );
+}
+function GlobArg({ name, arg }: { name: string; arg: string | number | undefined }) {
+  const color = useColor();
+  if (arg == null) return null;
+  return (
+    <Text>
+      <Text color="gray">{name}:</Text> <Text color={color}>{arg}</Text>
+    </Text>
+  );
+}
+function WebSearchToolRenderer(_: { item: ToolSchemaFrom<typeof webSearch> }) {
+  return (
+    <Box>
+      <Text color="gray">Octo searched the web</Text>
+    </Box>
+  );
+}
+
+function SkillToolRenderer({ item }: { item: ToolSchemaFrom<typeof skill> }) {
+  return (
+    <Box>
+      <Text color="gray">Octo read the {item.arguments.skillName} skill</Text>
+    </Box>
+  );
+}
+
+function AppendToolRenderer({ item }: { item: ToolSchemaFrom<typeof append> }) {
+  const { filePath, text } = item.arguments;
+
+  let startLineNr = 1;
+  try {
+    const file = readFileSync(filePath, "utf8");
+    const lines = countLines(file);
+    startLineNr = lines + 1;
+  } catch {
+    return null;
+  }
+
+  const renderedFile = (
+    <FileRenderer contents={text} filePath={filePath} startLineNr={startLineNr} />
+  );
+  if (!renderedFile) return null;
+
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text>Octo wants to add the following to the end of the file:</Text>
+      {renderedFile}
+    </Box>
+  );
+}
+
+function FetchToolRenderer({ item }: { item: ToolSchemaFrom<typeof fetchTool> }) {
+  const themeColor = useColor();
+  return (
+    <Box>
+      <Text color="gray">{item.name}: </Text>
+      <Text color={themeColor}>{item.arguments.url}</Text>
+    </Box>
+  );
+}
+
+function ShellToolRenderer({ item }: { item: ToolSchemaFrom<typeof shell> }) {
+  const themeColor = useColor();
+  return (
+    <Box flexDirection="column">
+      <Box>
+        <Text color="gray">{item.name}: </Text>
+        <Text color={themeColor}>{item.arguments.cmd}</Text>
+      </Box>
+      <Text color="gray">timeout: {item.arguments.timeout}</Text>
+    </Box>
+  );
+}
+
+function ReadToolRenderer({ item }: { item: ToolSchemaFrom<typeof read> }) {
+  const themeColor = useColor();
+  return (
+    <Box>
+      <Text color="gray">{item.name}: </Text>
+      <Text color={themeColor}>{item.arguments.filePath}</Text>
+    </Box>
+  );
+}
+
+function ListToolRenderer({ item }: { item: ToolSchemaFrom<typeof list> }) {
+  const themeColor = useColor();
+  return (
+    <Box>
+      <Text color="gray">{item.name}: </Text>
+      <Text color={themeColor}>{item?.arguments?.dirPath || process.cwd()}</Text>
+    </Box>
+  );
+}
+
+function EditToolRenderer({ item }: { item: ToolSchemaFrom<typeof edit> }) {
+  const themeColor = useColor();
+  return (
+    <Box flexDirection="column">
+      <Box>
+        <Text>Edit: </Text>
+        <Text color={themeColor}>{item.arguments.filePath}</Text>
+      </Box>
+      <DiffEditRenderer filePath={item.arguments.filePath} item={item.arguments} />
+    </Box>
+  );
+}
+
+function PrependToolRenderer({ item }: { item: ToolSchemaFrom<typeof prepend> }) {
+  const { text, filePath } = item.arguments;
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text>Octo wants to add the following to the beginning of the file:</Text>
+      <FileRenderer contents={text} filePath={filePath} />
+    </Box>
+  );
+}
+
+function RewriteToolRenderer({ item }: { item: ToolSchemaFrom<typeof rewrite> }) {
+  const { text, filePath } = item.arguments;
+
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text>Octo wants to rewrite the file:</Text>
+      <DiffRenderer newText={text} filepath={filePath} />
+    </Box>
+  );
+}
+
+function DiffEditRenderer({
+  item,
+  filePath,
+}: {
+  item: t.GetType<typeof EditArgumentSchema>;
+  filePath: string;
+}) {
+  return (
+    <Box flexDirection="column">
+      <Text>Octo wants to make the following changes:</Text>
+      <DiffRenderer oldText={item.search} newText={item.replace} filepath={filePath} />
+    </Box>
+  );
+}
+
+function CreateToolRenderer({ item }: { item: ToolSchemaFrom<typeof createTool> }) {
+  const themeColor = useColor();
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Box>
+        <Text>Octo wants to create </Text>
+        <Text color={themeColor}>{item.arguments.filePath}</Text>
+        <Text>:</Text>
+      </Box>
+      <Box>
+        <FileRenderer contents={item.arguments.content} filePath={item.arguments.filePath} />
+      </Box>
+    </Box>
+  );
+}
+
+function McpToolRenderer({ item }: { item: ToolSchemaFrom<typeof mcp> }) {
+  const themeColor = useColor();
+  return (
+    <Box flexDirection="column">
+      <Box>
+        <Text color="gray">{item.name}: </Text>
+        <Text color={themeColor}>
+          Server: {item.arguments.server}, Tool: {item.arguments.tool}
+        </Text>
+      </Box>
+      <Text color="gray">Arguments: {JSON.stringify(item.arguments.arguments)}</Text>
+    </Box>
+  );
+}
+
+function WhitelistAllowDescription({ toolCallRequest }: { toolCallRequest: ToolCallRequest }) {
+  const fn = toolCallRequest.function;
+  const cwd = useCwd();
+  switch (fn.name) {
+    case "glob":
+      return <Text> local glob searches in this session.</Text>;
+    case "shell": {
+      return (
+        <Text>
+          <Text> commands starting with </Text>
+          <Text bold>{fn.arguments.cmd}</Text>
+        </Text>
+      );
+    }
+    case "fetch": {
+      return (
+        <Text>
+          <Text> fetches from the web during this session.</Text>
+        </Text>
+      );
+    }
+    case "web-search": {
+      return <Text> Web Searches during this session.</Text>;
+    }
+    case "list":
+    case "read": {
+      return (
+        <Text>
+          <Text> file reads in </Text>
+          <Text bold>{cwd}</Text>
+        </Text>
+      );
+    }
+    case "edit":
+    case "create":
+    case "append":
+    case "prepend":
+    case "rewrite": {
+      return (
+        <Text>
+          <Text> file changes in </Text>
+          <Text bold>{cwd}</Text>
+        </Text>
+      );
+    }
+    case "mcp": {
+      return (
+        <Text>
+          <Text>
+            {" "}
+            MCP tools with Server: <Text bold>{fn.arguments.server}</Text> using Tool:{" "}
+            <Text bold>{fn.arguments.tool}</Text>
+          </Text>
+        </Text>
+      );
+    }
+    case "skill": {
+      return <Text>{fn.arguments.skillName} skill executions</Text>;
+    }
+  }
+}
+
+const OCTO_MARGIN = 1;
+const OCTO_PADDING = 2;
+function OctoMessageRenderer({ children }: { children?: React.ReactNode }) {
+  return (
+    <Box>
+      <Box marginRight={OCTO_MARGIN} width={OCTO_PADDING} flexShrink={0} flexGrow={0}>
+        <Octo />
+      </Box>
+      {children}
+    </Box>
+  );
+}
+
+function CompactionRenderer({ item }: { item: InflightResponseType }) {
+  const terminalSize = useTerminalSize();
+  const scrollHeight = Math.max(1, Math.min(10, terminalSize.height - 10));
+  return (
+    <OctoMessageRenderer>
+      <MaybeScrollView height={scrollHeight}>
+        <Text color="gray">{item.content}</Text>
+      </MaybeScrollView>
+    </OctoMessageRenderer>
+  );
+}
+
+function AssistantMessageRenderer({ item }: { item: InflightResponseType }) {
+  const terminalSize = useTerminalSize();
+  let thoughts = item.reasoningContent ? item.reasoningContent.trim() : item.reasoningContent;
+  let content = item.content.trim();
+
+  let reservedSpace = 6; // bottom bar + padding
+  const scrollViewHeight = Math.max(1, terminalSize.height - reservedSpace - 1);
+
+  const showThoughts = thoughts && thoughts !== "";
+  // Reserve space for the borders of the thoughtbox
+  if (showThoughts) reservedSpace += 2;
+  return (
+    <OctoMessageRenderer>
+      <MaybeScrollView height={scrollViewHeight}>
+        {showThoughts && <ThoughtBox thoughts={thoughts} />}
+        <Markdown markdown={content} />
+      </MaybeScrollView>
+    </OctoMessageRenderer>
+  );
+}
+
+function MaybeScrollView({ children, height }: { height: number; children?: React.ReactNode }) {
+  const { modeData } = useAppStore(
+    useShallow(state => ({
+      modeData: state.modeData,
+    })),
+  );
+  const isStreamingContent = modeData.mode == "responding" || modeData.mode == "compacting";
+  return (
+    <Box flexDirection="column" flexGrow={1}>
+      {isStreamingContent ? (
+        <ScrollView height={height}>{children}</ScrollView>
+      ) : (
+        <Box flexDirection="column">{children}</Box>
+      )}
+    </Box>
+  );
+}
+
+const MAX_THOUGHTBOX_HEIGHT = 8;
+const MAX_THOUGHTBOX_WIDTH = 80;
+const THOUGHTBOX_MARGIN = 4;
+function ThoughtBox({ thoughts }: { thoughts: string }) {
+  const thoughtsRef = useRef<DOMElement | null>(null);
+  const [thoughtsHeight, setThoughtsHeight] = useState(0);
+  const terminalSize = useTerminalSize();
+  const thoughtsOverflow = thoughtsHeight - (MAX_THOUGHTBOX_HEIGHT - 2);
+  const isScrollable = useContext(IsScrollableContext);
+
+  useEffect(() => {
+    if (thoughtsRef.current) {
+      const { height } = measureElement(thoughtsRef.current);
+      setThoughtsHeight(height);
+    }
+  }, [thoughts]);
+
+  const enforceMaxHeight = thoughtsOverflow > 0 && !isScrollable;
+  const octoSpace = OCTO_MARGIN + OCTO_PADDING + 1;
+  const scrollBorderWidth = 2;
+  const contentMaxWidth = terminalSize.width - THOUGHTBOX_MARGIN - octoSpace - scrollBorderWidth;
+  const maxWidth = Math.min(contentMaxWidth, MAX_THOUGHTBOX_WIDTH);
+
+  return (
+    <Box flexDirection="column">
+      <Box
+        flexGrow={0}
+        flexShrink={1}
+        height={enforceMaxHeight ? MAX_THOUGHTBOX_HEIGHT : undefined}
+        width={maxWidth}
+        overflowY={enforceMaxHeight ? "hidden" : undefined}
+        flexDirection="column"
+        borderColor="gray"
+        borderStyle="round"
+      >
+        <Box
+          ref={thoughtsRef}
+          flexGrow={0}
+          flexShrink={0}
+          flexDirection="column"
+          marginTop={enforceMaxHeight ? -1 * Math.max(0, thoughtsOverflow) : 0}
+        >
+          <Text color="gray">{thoughts}</Text>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
