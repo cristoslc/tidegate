@@ -1,0 +1,52 @@
+trove: hermes-agent
+created: 2026-04-18
+refreshed: 2026-04-18
+tags:
+  - ai-agent
+  - hermes
+  - nous-research
+  - mcp
+  - self-improving
+  - tool-calling
+  - llm-agent
+  - subagent
+  - security
+
+freshness-ttl:
+  web: 7d
+  repository: 30d
+
+history:
+  - event: created
+    date: 2026-04-18
+    commit: "--"
+    sources: 2
+
+sources:
+  - source-id: hermes-agent-repo
+    type: repository
+    url: "https://github.com/NousResearch/hermes-agent"
+    fetched: 2026-04-18T15:46:00Z
+    title: "Hermes Agent Repository"
+    hash: "c4fb8ffb75e4d371c0d61759cd2ebf3ba18d6825e1180ae49310ac7ef45111e3"
+    highlights:
+      - "AGENTS.md"
+      - "SECURITY.md"
+      - "README.md"
+      - "pyproject.toml"
+      - "tools/registry.py"
+      - "tools/approval.py"
+      - "tools/delegate_tool.py"
+      - "agent/redact.py"
+      - "tools/mcp_tool.py"
+      - "gateway/run.py"
+      - "run_agent.py"
+      - "Dockerfile"
+    selective: true
+
+  - source-id: github-hermes-agent
+    type: web
+    url: "https://github.com/NousResearch/hermes-agent"
+    fetched: 2026-04-18T15:46:00Z
+    title: "NousResearch/hermes-agent - GitHub"
+    hash: "a9c0744a933d2367818143eb5621b60ebfd4e18b7614d25a15a12bd2c34ae71c"
